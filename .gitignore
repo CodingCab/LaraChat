@@ -4,6 +4,7 @@
 /public/build
 /public/hot
 /public/storage
+/public/repositories
 /storage/*.key
 /storage/pail
 /vendor
@@ -22,3 +23,5 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/public/projects/*
+!/public/projects/.gitkeep
