@@ -10,10 +10,11 @@ class CommandControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authenticated_user_can_run_pwd_command()
+    public function test_authenticated_user_can_run_safe_commands()
     {
         $user = User::factory()->create();
 
+        // Test pwd command
         $response = $this->actingAs($user)
             ->postJson('/api/run-command', [
                 'command' => 'pwd'
@@ -29,6 +30,18 @@ class CommandControllerTest extends TestCase
             ]);
 
         $this->assertNotEmpty($response->json('output'));
+
+        // Test echo command
+        $response = $this->actingAs($user)
+            ->postJson('/api/run-command', [
+                'command' => 'echo "Hello World"'
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'output' => "Hello World",
+                'success' => true
+            ]);
     }
 
     public function test_unauthenticated_user_cannot_run_command()
@@ -40,17 +53,21 @@ class CommandControllerTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function test_only_pwd_command_is_allowed()
+    public function test_any_command_can_be_executed()
     {
         $user = User::factory()->create();
 
+        // Test various commands
         $response = $this->actingAs($user)
             ->postJson('/api/run-command', [
-                'command' => 'ls'
+                'command' => 'echo "test"'
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['command']);
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'output',
+                'success'
+            ]);
     }
 
     public function test_command_field_is_required()
@@ -75,5 +92,35 @@ class CommandControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['command']);
+    }
+
+
+    public function test_various_commands_work_correctly()
+    {
+        $user = User::factory()->create();
+
+        // Test ls command
+        $response = $this->actingAs($user)
+            ->postJson('/api/run-command', [
+                'command' => 'ls -la'
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'output',
+                'success'
+            ]);
+
+        // Test date command
+        $response = $this->actingAs($user)
+            ->postJson('/api/run-command', [
+                'command' => 'date'
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'output',
+                'success'
+            ]);
     }
 }
