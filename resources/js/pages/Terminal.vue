@@ -85,7 +85,7 @@ const executeCommand = async () => {
     });
 
     try {
-        const response = await fetch('/api/command/stream', {
+        const response = await fetch('/api/claude', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ const executeCommand = async () => {
                 if (line.trim()) {
                     try {
                         const data = JSON.parse(line);
-                        
+
                         if (data.type === 'stdout' || data.type === 'stderr') {
                             terminalHistory.value[outputIndex].content += data.data;
                             if (data.type === 'stderr') {
@@ -133,7 +133,7 @@ const executeCommand = async () => {
                             terminalHistory.value[outputIndex].type = 'error';
                             terminalHistory.value[outputIndex].streaming = false;
                         }
-                        
+
                         await nextTick();
                         scrollToBottom();
                     } catch (e) {
