@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { ref, nextTick, onMounted } from 'vue';
+import { ref, nextTick, onMounted, onUnmounted } from 'vue';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,10 +33,13 @@ const scrollToBottom = async () => {
 
 const adjustTextareaHeight = () => {
     nextTick(() => {
-        const textarea = textareaRef.value?.$el?.querySelector('textarea');
-        if (textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        const textareaComponent = textareaRef.value;
+        if (textareaComponent) {
+            const textarea = textareaComponent.$el as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+            }
         }
     });
 };
@@ -56,9 +59,12 @@ const sendMessage = async () => {
     inputMessage.value = '';
     
     nextTick(() => {
-        const textarea = textareaRef.value?.$el?.querySelector('textarea');
-        if (textarea) {
-            textarea.style.height = 'auto';
+        const textareaComponent = textareaRef.value;
+        if (textareaComponent) {
+            const textarea = textareaComponent.$el as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.style.height = 'auto';
+            }
         }
     });
 
@@ -108,6 +114,9 @@ const sendMessage = async () => {
     } finally {
         isLoading.value = false;
         await scrollToBottom();
+        
+        // Focus back to the input after sending message
+        focusInput();
     }
 };
 
@@ -126,13 +135,51 @@ const formatTime = (date: Date) => {
     });
 };
 
-onMounted(() => {
+const focusInput = () => {
     nextTick(() => {
-        const textarea = textareaRef.value?.$el?.querySelector('textarea');
-        if (textarea) {
-            textarea.focus();
+        // Access the textarea element directly from the component's exposed element
+        const textareaComponent = textareaRef.value;
+        if (textareaComponent && !isLoading.value) {
+            // The Textarea component from shadcn/ui exposes the native element via $el
+            const textarea = textareaComponent.$el as HTMLTextAreaElement;
+            if (textarea) {
+                textarea.focus();
+            }
         }
     });
+};
+
+const handlePageClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't refocus if clicking on the textarea itself or interactive elements
+    if (!target.closest('textarea, button, a, [role="button"]')) {
+        focusInput();
+    }
+};
+
+const handleVisibilityChange = () => {
+    if (!document.hidden) {
+        focusInput();
+    }
+};
+
+onMounted(() => {
+    focusInput();
+    
+    // Keep input focused when clicking anywhere on the page
+    document.addEventListener('click', handlePageClick);
+    
+    // Refocus when window/tab regains focus
+    window.addEventListener('focus', focusInput);
+    
+    // Refocus on visibility change (switching tabs)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onUnmounted(() => {
+    document.removeEventListener('click', handlePageClick);
+    window.removeEventListener('focus', focusInput);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 </script>
 
