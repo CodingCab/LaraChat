@@ -50,7 +50,7 @@ const adjustTextareaHeight = () => {
 const initializeSessionFile = () => {
     if (!sessionFilename.value && sessionId.value) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-        sessionFilename.value = `claude-session-${timestamp}-${sessionId.value}.json`;
+        sessionFilename.value = `${timestamp}-sessionId-${sessionId.value}.json`;
     }
 };
 

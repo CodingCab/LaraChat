@@ -30,7 +30,7 @@ class ClaudeController extends Controller
             'message.rawJsonResponses' => 'required|array',
         ]);
         
-        $directory = 'claude-responses';
+        $directory = 'claude-sessions';
         $filename = $request->input('filename');
         $message = $request->input('message');
         
