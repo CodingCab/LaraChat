@@ -92,4 +92,34 @@ class ClaudeController extends Controller
             optional($lock)->release();
         }
     }
+    
+    public function getSessions()
+    {
+        $directory = 'claude-sessions';
+        $sessions = [];
+        
+        if (Storage::exists($directory)) {
+            $files = Storage::files($directory);
+            
+            foreach ($files as $file) {
+                if (pathinfo($file, PATHINFO_EXTENSION) === 'json') {
+                    $filename = basename($file);
+                    $sessionName = str_replace('_', ' ', pathinfo($filename, PATHINFO_FILENAME));
+                    $sessions[] = [
+                        'filename' => $filename,
+                        'name' => $sessionName,
+                        'path' => $file,
+                        'lastModified' => Storage::lastModified($file),
+                    ];
+                }
+            }
+            
+            // Sort by last modified date, newest first
+            usort($sessions, function ($a, $b) {
+                return $b['lastModified'] - $a['lastModified'];
+            });
+        }
+        
+        return response()->json($sessions);
+    }
 }
