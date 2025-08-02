@@ -185,6 +185,8 @@ const sendMessage = async () => {
                                 sessionId.value = jsonData.id;
                             } else if (jsonData.conversationId) {
                                 sessionId.value = jsonData.conversationId;
+                            } else if (jsonData.type === 'session' && jsonData.session_id) {
+                                sessionId.value = jsonData.session_id;
                             } else {
                                 // If no session ID found, generate one
                                 sessionId.value = 'generated-' + Date.now().toString(36);
@@ -194,8 +196,11 @@ const sendMessage = async () => {
                             console.log('Session filename:', sessionFilename.value);
                         }
                         
-                        // Handle different types of JSON responses
-                        if (jsonData.type === 'text' && jsonData.text) {
+                        // Handle different types of JSON responses from Claude CLI
+                        if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
+                            // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                            assistantMessage.content += jsonData.content.text;
+                        } else if (jsonData.type === 'text' && jsonData.text) {
                             assistantMessage.content += jsonData.text;
                         } else if (jsonData.content) {
                             assistantMessage.content += jsonData.content;
@@ -225,7 +230,11 @@ const sendMessage = async () => {
                     initializeSessionFile();
                 }
                 
-                if (jsonData.type === 'text' && jsonData.text) {
+                // Handle different types of JSON responses from Claude CLI
+                if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
+                    // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                    assistantMessage.content += jsonData.content.text;
+                } else if (jsonData.type === 'text' && jsonData.text) {
                     assistantMessage.content += jsonData.text;
                 } else if (jsonData.content) {
                     assistantMessage.content += jsonData.content;
@@ -315,7 +324,11 @@ const loadSessionMessages = async () => {
             // Reconstruct assistant message from raw JSON responses
             let assistantContent = '';
             for (const jsonResponse of conversation.rawJsonResponses) {
-                if (jsonResponse.type === 'text' && jsonResponse.text) {
+                // Handle different types of JSON responses from Claude CLI
+                if (jsonResponse.type === 'content' && jsonResponse.content && jsonResponse.content.type === 'text') {
+                    // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                    assistantContent += jsonResponse.content.text;
+                } else if (jsonResponse.type === 'text' && jsonResponse.text) {
                     assistantContent += jsonResponse.text;
                 } else if (jsonResponse.content) {
                     assistantContent += jsonResponse.content;
