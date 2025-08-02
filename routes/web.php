@@ -15,5 +15,9 @@ Route::get('terminal', function () {
     return Inertia::render('Terminal');
 })->middleware(['auth', 'verified'])->name('terminal');
 
+Route::get('claude', function () {
+    return Inertia::render('Claude');
+})->middleware(['auth', 'verified'])->name('claude');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
