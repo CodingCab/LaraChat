@@ -14,12 +14,14 @@ class ClaudeService
             ob_end_flush();
 
             $wrapperPath = base_path('claude-wrapper.sh');
-            $command = [$wrapperPath, $prompt];
+            $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
             
             if ($options) {
                 $optionsParts = explode(' ', $options);
                 $command = array_merge($command, $optionsParts);
             }
+            
+            $command[] = $prompt;
 
             $process = new Process($command);
             $process->setTimeout(null);
@@ -32,17 +34,18 @@ class ClaudeService
                     echo $data;
                     flush();
                 } else {
-                    echo "Error: " . $data;
+                    // Send error as JSON
+                    echo json_encode(['error' => $data]) . "\n";
                     flush();
                 }
             }
 
             if (!$process->isSuccessful()) {
-                echo "\nProcess exited with code: " . $process->getExitCode();
+                echo json_encode(['error' => "Process exited with code: " . $process->getExitCode()]) . "\n";
                 flush();
             }
         }, 200, [
-            'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Type' => 'application/x-ndjson; charset=utf-8',
             'X-Accel-Buffering' => 'no',
             'Cache-Control' => 'no-cache',
         ]);

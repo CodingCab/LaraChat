@@ -25,3 +25,4 @@ yarn-error.log
 /.zed
 /public/projects/*
 !/public/projects/.gitkeep
+/storage/app/private/claude-responses
