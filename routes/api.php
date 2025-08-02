@@ -7,4 +7,5 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/claude', [ClaudeController::class, 'store']);
     Route::post('/claude/save-response', [ClaudeController::class, 'saveResponse']);
     Route::get('/claude/sessions', [ClaudeController::class, 'getSessions']);
+    Route::get('/claude/sessions/{filename}', [ClaudeController::class, 'getSessionMessages']);
 });

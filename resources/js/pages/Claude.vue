@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send } from 'lucide-vue-next';
+import axios from 'axios';
+
+const props = defineProps<{
+    sessionFile?: string;
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Claude', href: '/claude' },
@@ -290,7 +295,56 @@ const handleVisibilityChange = () => {
     }
 };
 
-onMounted(() => {
+const loadSessionMessages = async () => {
+    if (!props.sessionFile) return;
+    
+    try {
+        const response = await axios.get(`/api/claude/sessions/${props.sessionFile}`);
+        const sessionData = response.data;
+        
+        // Process each conversation in the session
+        for (const conversation of sessionData) {
+            // Add user message
+            messages.value.push({
+                id: Date.now() + Math.random(),
+                content: conversation.userMessage,
+                role: 'user',
+                timestamp: new Date(conversation.timestamp),
+            });
+            
+            // Reconstruct assistant message from raw JSON responses
+            let assistantContent = '';
+            for (const jsonResponse of conversation.rawJsonResponses) {
+                if (jsonResponse.type === 'text' && jsonResponse.text) {
+                    assistantContent += jsonResponse.text;
+                } else if (jsonResponse.content) {
+                    assistantContent += jsonResponse.content;
+                }
+            }
+            
+            if (assistantContent) {
+                messages.value.push({
+                    id: Date.now() + Math.random() + 1,
+                    content: assistantContent,
+                    role: 'assistant',
+                    timestamp: new Date(conversation.timestamp),
+                });
+            }
+        }
+        
+        // Set the session filename for continued conversation
+        sessionFilename.value = props.sessionFile;
+        
+        await scrollToBottom();
+    } catch (error) {
+        console.error('Error loading session messages:', error);
+    }
+};
+
+onMounted(async () => {
+    // Load session messages if sessionFile is provided
+    await loadSessionMessages();
+    
     focusInput();
     
     // Keep input focused when clicking anywhere on the page

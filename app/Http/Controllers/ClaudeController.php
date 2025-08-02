@@ -122,4 +122,23 @@ class ClaudeController extends Controller
         
         return response()->json($sessions);
     }
+    
+    public function getSessionMessages($filename)
+    {
+        $directory = 'claude-sessions';
+        $path = $directory . '/' . $filename;
+        
+        if (!Storage::exists($path)) {
+            return response()->json(['error' => 'Session file not found'], 404);
+        }
+        
+        $content = Storage::get($path);
+        $messages = json_decode($content, true);
+        
+        if (!$messages) {
+            return response()->json(['error' => 'Invalid session file'], 422);
+        }
+        
+        return response()->json($messages);
+    }
 }
