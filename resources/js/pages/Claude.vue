@@ -32,10 +32,13 @@ const scrollToBottom = async () => {
 };
 
 const adjustTextareaHeight = () => {
-    if (textareaRef.value) {
-        textareaRef.value.style.height = 'auto';
-        textareaRef.value.style.height = `${Math.min(textareaRef.value.scrollHeight, 120)}px`;
-    }
+    nextTick(() => {
+        const textarea = textareaRef.value?.$el?.querySelector('textarea');
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+        }
+    });
 };
 
 const sendMessage = async () => {
@@ -52,12 +55,23 @@ const sendMessage = async () => {
     const messageToSend = inputMessage.value;
     inputMessage.value = '';
     
-    if (textareaRef.value) {
-        textareaRef.value.style.height = 'auto';
-    }
+    nextTick(() => {
+        const textarea = textareaRef.value?.$el?.querySelector('textarea');
+        if (textarea) {
+            textarea.style.height = 'auto';
+        }
+    });
 
     isLoading.value = true;
     await scrollToBottom();
+
+    const assistantMessage: Message = {
+        id: Date.now() + 1,
+        content: '',
+        role: 'assistant',
+        timestamp: new Date(),
+    };
+    messages.value.push(assistantMessage);
 
     try {
         const response = await fetch('/api/claude', {
@@ -66,36 +80,34 @@ const sendMessage = async () => {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
             },
-            body: JSON.stringify({ message: messageToSend }),
+            body: JSON.stringify({ prompt: messageToSend }),
         });
 
         if (!response.ok) {
             throw new Error('Failed to send message');
         }
 
-        const data = await response.json();
-        
-        const assistantMessage: Message = {
-            id: Date.now() + 1,
-            content: data.response,
-            role: 'assistant',
-            timestamp: new Date(),
-        };
+        if (!response.body) {
+            throw new Error('No response body');
+        }
 
-        messages.value.push(assistantMessage);
-        await scrollToBottom();
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            assistantMessage.content += chunk;
+            await scrollToBottom();
+        }
     } catch (error) {
         console.error('Error sending message:', error);
-        const errorMessage: Message = {
-            id: Date.now() + 1,
-            content: 'Sorry, I encountered an error. Please try again.',
-            role: 'assistant',
-            timestamp: new Date(),
-        };
-        messages.value.push(errorMessage);
-        await scrollToBottom();
+        assistantMessage.content = 'Sorry, I encountered an error. Please try again.';
     } finally {
         isLoading.value = false;
+        await scrollToBottom();
     }
 };
 
@@ -115,9 +127,12 @@ const formatTime = (date: Date) => {
 };
 
 onMounted(() => {
-    if (textareaRef.value) {
-        textareaRef.value.focus();
-    }
+    nextTick(() => {
+        const textarea = textareaRef.value?.$el?.querySelector('textarea');
+        if (textarea) {
+            textarea.focus();
+        }
+    });
 });
 </script>
 

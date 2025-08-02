@@ -67,11 +67,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 ## Security Warning
 
-⚠️ The `CommandController` executes system commands without sanitization. This is a security risk and should be restricted or removed in production.
 
 ## Development Notes
 
-- The app includes a Dashboard and Terminal page with command execution capabilities
+- The app includes a Dashboard and Claude chat page
 - Navigation is configured in `AppSidebar.vue` and `AppHeader.vue`
 - Theme support (light/dark) is built-in with appearance management
 - Prettier is configured with Tailwind CSS class sorting
