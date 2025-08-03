@@ -115,7 +115,14 @@ class ClaudeController extends Controller
             foreach ($files as $file) {
                 if (pathinfo($file, PATHINFO_EXTENSION) === 'json') {
                     $filename = basename($file);
-                    $sessionName = str_replace('_', ' ', pathinfo($filename, PATHINFO_FILENAME));
+                    $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
+                    
+                    // Remove the timestamp prefix (format: YYYY-MM-DDTHH-MM-SS-sessionId-)
+                    $sessionName = $filenameWithoutExt;
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-sessionId-(.+)$/', $filenameWithoutExt, $matches)) {
+                        $sessionName = 'Session ' . $matches[1];
+                    }
+                    
                     $sessions[] = [
                         'filename' => $filename,
                         'name' => $sessionName,
