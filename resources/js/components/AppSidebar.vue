@@ -19,7 +19,7 @@ import {
 import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
-import { Link, usePage } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import { BookOpen, FileText, Folder, GitBranch, LayoutGrid, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
@@ -75,6 +75,10 @@ const handleCloneRepository = async () => {
         cloneError.value = err.response?.data?.error || err.response?.data?.message || 'Failed to clone repository';
     }
 };
+
+const handleRepositoryClick = (repositoryName: string) => {
+    router.visit(`/claude?repository=${encodeURIComponent(repositoryName)}`);
+};
 </script>
 
 <template>
@@ -112,9 +116,15 @@ const handleCloneRepository = async () => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem v-for="repo in repositories" :key="repo.id">
-                        <SidebarMenuButton :tooltip="repo.url">
-                            <GitBranch />
-                            <span class="truncate">{{ repo.name }}</span>
+                        <SidebarMenuButton as-child :tooltip="repo.url">
+                            <a
+                                :href="`/claude?repository=${encodeURIComponent(repo.name)}`"
+                                @click.prevent="handleRepositoryClick(repo.name)"
+                                class="cursor-pointer"
+                            >
+                                <GitBranch />
+                                <span class="truncate">{{ repo.name }}</span>
+                            </a>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
