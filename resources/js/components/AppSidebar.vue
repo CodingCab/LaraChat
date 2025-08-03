@@ -16,7 +16,7 @@ import {
 import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare } from 'lucide-vue-next';
+import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare, Plus, GitBranch } from 'lucide-vue-next';
 import { onMounted } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -70,6 +70,26 @@ onMounted(async () => {
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+
+            <SidebarGroup class="px-2 py-0">
+                <div class="flex items-center justify-between">
+                    <SidebarGroupLabel>Repositories</SidebarGroupLabel>
+                    <button
+                        class="h-5 w-5 rounded-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-center transition-colors"
+                        @click="$event => console.log('Add repository clicked')"
+                    >
+                        <Plus class="h-3 w-3" />
+                    </button>
+                </div>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton>
+                            <GitBranch />
+                            <span>No repositories yet</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
 
             <SidebarGroup class="px-2 py-0" v-if="claudeSessions.length > 0">
                 <SidebarGroupLabel>Claude Sessions</SidebarGroupLabel>
