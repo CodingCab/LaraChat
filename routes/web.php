@@ -13,11 +13,16 @@ Route::get('dashboard', function () {
 
 
 Route::get('claude', function () {
-    return Inertia::render('Claude');
+    return Inertia::render('Claude', [
+        'repository' => request()->query('repository')
+    ]);
 })->middleware(['auth', 'verified'])->name('claude');
 
 Route::get('claude/{session}', function ($session) {
-    return Inertia::render('Claude', ['sessionFile' => $session]);
+    return Inertia::render('Claude', [
+        'sessionFile' => $session,
+        'repository' => request()->query('repository')
+    ]);
 })->middleware(['auth', 'verified'])->name('claude.session');
 
 require __DIR__.'/settings.php';

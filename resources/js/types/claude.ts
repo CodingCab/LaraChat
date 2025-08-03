@@ -12,10 +12,12 @@ export interface SessionConversation {
     sessionId?: string;
     rawJsonResponses?: any[];
     isComplete?: boolean;
+    repositoryPath?: string;
 }
 
 export interface ClaudeApiRequest {
     prompt: string;
     sessionId: string;
     sessionFilename: string;
+    repositoryPath?: string;
 }

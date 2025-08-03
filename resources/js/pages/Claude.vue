@@ -7,15 +7,17 @@ import { useChatMessages } from '@/composables/useChatMessages';
 import { useChatUI } from '@/composables/useChatUI';
 import { useClaudeApi } from '@/composables/useClaudeApi';
 import { useClaudeSessions } from '@/composables/useClaudeSessions';
+import { useRepositories } from '@/composables/useRepositories';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Eye, EyeOff, Send } from 'lucide-vue-next';
+import { Eye, EyeOff, GitBranch, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     sessionFile?: string;
+    repository?: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
@@ -34,6 +36,14 @@ const hideSystemMessages = ref(true);
 const pollingInterval = ref<number | null>(null);
 const lastMessageCount = ref(0);
 const incompleteMessageFound = ref(false);
+const selectedRepository = ref<string | null>(props.repository || null);
+
+// Repository management
+const { repositories, fetchRepositories } = useRepositories();
+const selectedRepositoryData = computed(() => {
+    if (!selectedRepository.value) return null;
+    return repositories.value.find((r) => r.name === selectedRepository.value);
+});
 
 // Setup focus handlers
 setupFocusHandlers(isLoading);
@@ -104,6 +114,7 @@ const sendMessage = async () => {
             filename: sessionFilename.value!,
             name: messageToSend.length > 30 ? messageToSend.substring(0, 30) + '...' : messageToSend,
             userMessage: messageToSend,
+            repository: selectedRepository.value || undefined,
             path: `/claude/${sessionFilename.value}`,
             lastModified: Date.now(),
         };
@@ -121,6 +132,7 @@ const sendMessage = async () => {
                 prompt: messageToSend,
                 sessionId: sessionId.value || undefined, // Don't pass null/empty session ID
                 sessionFilename: sessionFilename.value!,
+                repositoryPath: selectedRepositoryData.value?.local_path,
             },
             (text, rawResponse) => {
                 // Extract session ID from init response
@@ -159,7 +171,10 @@ const sendMessage = async () => {
 
         // Redirect to session URL if this is a new session
         if (!props.sessionFile && sessionFilename.value) {
-            router.visit(`/claude/${sessionFilename.value}`);
+            const url = selectedRepository.value
+                ? `/claude/${sessionFilename.value}?repository=${encodeURIComponent(selectedRepository.value)}`
+                : `/claude/${sessionFilename.value}`;
+            router.visit(url);
         }
 
         // Refresh sessions list to ensure it's up to date
@@ -283,6 +298,14 @@ const loadSessionMessages = async (isPolling = false) => {
                     }
                 }
             }
+
+            // Set repository from session data if available and not already set from props
+            if (!props.repository && lastConversation.repositoryPath) {
+                // Extract repository name from path
+                const pathParts = lastConversation.repositoryPath.split('/');
+                const repoName = pathParts[pathParts.length - 1];
+                selectedRepository.value = repoName;
+            }
         }
 
         // Wait for DOM to update with all messages before scrolling
@@ -345,6 +368,7 @@ watch(
 onMounted(async () => {
     await loadSessionMessages();
     focusInput(false);
+    await fetchRepositories();
 });
 
 onUnmounted(() => {
@@ -392,6 +416,10 @@ onUnmounted(() => {
             <!-- Input Area -->
             <div class="border-t bg-white p-4 dark:bg-gray-800">
                 <div>
+                    <div v-if="selectedRepositoryData" class="mb-2 flex items-center text-sm text-muted-foreground">
+                        <GitBranch class="mr-1 h-3 w-3" />
+                        Working in: <span class="ml-1 font-medium">{{ selectedRepositoryData.name }}</span>
+                    </div>
                     <div class="flex items-end space-x-2">
                         <Textarea
                             ref="textareaRef"

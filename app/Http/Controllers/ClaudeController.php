@@ -19,13 +19,15 @@ class ClaudeController extends Controller
             'prompt' => 'required|string',
             'sessionId' => 'nullable|string',
             'sessionFilename' => 'nullable|string',
+            'repositoryPath' => 'nullable|string',
         ]);
         
         return ClaudeService::stream(
             $request->input('prompt'), 
             $request->input('options', '--permission-mode bypassPermissions'),
             $request->input('sessionId'),
-            $request->input('sessionFilename')
+            $request->input('sessionFilename'),
+            $request->input('repositoryPath')
         );
     }
     
@@ -39,6 +41,7 @@ class ClaudeController extends Controller
             'message.timestamp' => 'required|string',
             'message.isComplete' => 'required|boolean',
             'message.rawJsonResponses' => 'required|array',
+            'message.repositoryPath' => 'nullable|string',
         ]);
         
         $directory = 'claude-sessions';
@@ -123,13 +126,24 @@ class ClaudeController extends Controller
                         $sessionName = 'Session ' . $matches[1];
                     }
                     
-                    // Read the first user message from the session file
+                    // Read the first user message and repository from the session file
                     $userMessage = $sessionName; // Default to session name if can't read message
+                    $repositoryName = null;
                     try {
                         $content = Storage::get($file);
                         $data = json_decode($content, true);
-                        if (!empty($data) && isset($data[0]['userMessage'])) {
-                            $userMessage = $data[0]['userMessage'];
+                        if (!empty($data)) {
+                            if (isset($data[0]['userMessage'])) {
+                                $userMessage = $data[0]['userMessage'];
+                            }
+                            // Get repository name from the last conversation that has one
+                            foreach (array_reverse($data) as $conversation) {
+                                if (!empty($conversation['repositoryPath'])) {
+                                    $pathParts = explode('/', $conversation['repositoryPath']);
+                                    $repositoryName = end($pathParts);
+                                    break;
+                                }
+                            }
                         }
                     } catch (\Exception $e) {
                         // If we can't read the file, use the default name
@@ -139,6 +153,7 @@ class ClaudeController extends Controller
                         'filename' => $filename,
                         'name' => $sessionName,
                         'userMessage' => $userMessage,
+                        'repository' => $repositoryName,
                         'path' => $file,
                         'lastModified' => Storage::lastModified($file),
                     ];

@@ -135,7 +135,7 @@ const handleRepositoryClick = (repositoryName: string) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="session in claudeSessions" :key="session.filename">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
-                            <Link :href="`/claude/${session.filename}`">
+                            <Link :href="session.repository ? `/claude/${session.filename}?repository=${encodeURIComponent(session.repository)}` : `/claude/${session.filename}`">
                                 <FileText />
                                 <span class="truncate">{{
                                     session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage

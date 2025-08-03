@@ -9,9 +9,9 @@ use Symfony\Component\Process\Process;
 
 class ClaudeService
 {
-    public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null)
+    public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null)
     {
-        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename) {
+        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename, $repositoryPath) {
             ob_implicit_flush(true);
             ob_end_flush();
 
@@ -31,7 +31,28 @@ class ClaudeService
             
             $command[] = $prompt;
 
-            $process = new Process($command);
+            // Set the working directory if repository path is provided
+            $workingDirectory = null;
+            if ($repositoryPath) {
+                // Convert relative path to absolute path
+                $workingDirectory = storage_path('app/private/' . $repositoryPath);
+                
+                // Check if directory exists
+                if (!is_dir($workingDirectory)) {
+                    \Log::error('Repository directory does not exist', [
+                        'repository_path' => $repositoryPath,
+                        'full_path' => $workingDirectory
+                    ]);
+                    throw new \Exception("Repository directory not found: {$repositoryPath}");
+                }
+                
+                \Log::info('Setting working directory for Claude command', [
+                    'repository_path' => $repositoryPath,
+                    'working_directory' => $workingDirectory
+                ]);
+            }
+
+            $process = new Process($command, $workingDirectory);
             $process->setTimeout(null);
             $process->setIdleTimeout(null);
 
@@ -51,7 +72,8 @@ class ClaudeService
             \Log::info('Starting Claude stream', [
                 'prompt' => $prompt,
                 'sessionId' => $sessionId,
-                'filename' => $filename
+                'filename' => $filename,
+                'repositoryPath' => $repositoryPath
             ]);
             
             // Buffer for incomplete JSON lines
@@ -91,7 +113,7 @@ class ClaudeService
                                     
                                     // Save after each response
                                     if ($filename) {
-                                        self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false);
+                                        self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
                                     }
                                 }
                             } catch (\Exception $e) {
@@ -126,7 +148,7 @@ class ClaudeService
 
             // Final save with complete flag
             if ($filename) {
-                self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true);
+                self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
             }
 
             if (!$process->isSuccessful()) {
@@ -161,7 +183,7 @@ class ClaudeService
         return null;
     }
     
-    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete): void
+    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
         $directory = 'claude-sessions';
         
@@ -198,7 +220,8 @@ class ClaudeService
                     'userMessage' => $userMessage,
                     'timestamp' => now()->toIso8601String(),
                     'isComplete' => $isComplete,
-                    'rawJsonResponses' => $rawJsonResponses
+                    'rawJsonResponses' => $rawJsonResponses,
+                    'repositoryPath' => $repositoryPath
                 ];
                 
                 // Check if this is a new conversation or an update to the current one
