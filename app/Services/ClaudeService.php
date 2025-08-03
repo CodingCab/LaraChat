@@ -9,14 +9,20 @@ use Symfony\Component\Process\Process;
 
 class ClaudeService
 {
-    public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null)
+    public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null)
     {
-        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename) {
+        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename, $repositoryPath) {
             ob_implicit_flush(true);
             ob_end_flush();
 
             $wrapperPath = base_path('claude-wrapper.sh');
             $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
+            
+            // Use --resume for continuing an existing session with a valid UUID
+            if ($sessionId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $sessionId)) {
+                $command[] = '--resume';
+                $command[] = $sessionId;
+            }
             
             if ($options) {
                 $optionsParts = explode(' ', $options);
@@ -25,7 +31,28 @@ class ClaudeService
             
             $command[] = $prompt;
 
-            $process = new Process($command);
+            // Set the working directory if repository path is provided
+            $workingDirectory = null;
+            if ($repositoryPath) {
+                // Convert relative path to absolute path
+                $workingDirectory = storage_path('app/private/' . $repositoryPath);
+                
+                // Check if directory exists
+                if (!is_dir($workingDirectory)) {
+                    \Log::error('Repository directory does not exist', [
+                        'repository_path' => $repositoryPath,
+                        'full_path' => $workingDirectory
+                    ]);
+                    throw new \Exception("Repository directory not found: {$repositoryPath}");
+                }
+                
+                \Log::info('Setting working directory for Claude command', [
+                    'repository_path' => $repositoryPath,
+                    'working_directory' => $workingDirectory
+                ]);
+            }
+
+            $process = new Process($command, $workingDirectory);
             $process->setTimeout(null);
             $process->setIdleTimeout(null);
 
@@ -45,7 +72,8 @@ class ClaudeService
             \Log::info('Starting Claude stream', [
                 'prompt' => $prompt,
                 'sessionId' => $sessionId,
-                'filename' => $filename
+                'filename' => $filename,
+                'repositoryPath' => $repositoryPath
             ]);
             
             // Buffer for incomplete JSON lines
@@ -85,7 +113,7 @@ class ClaudeService
                                     
                                     // Save after each response
                                     if ($filename) {
-                                        self::saveResponse($prompt, $filename, $extractedSessionId, $rawJsonResponses, false);
+                                        self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
                                     }
                                 }
                             } catch (\Exception $e) {
@@ -120,7 +148,7 @@ class ClaudeService
 
             // Final save with complete flag
             if ($filename) {
-                self::saveResponse($prompt, $filename, $extractedSessionId, $rawJsonResponses, true);
+                self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
             }
 
             if (!$process->isSuccessful()) {
@@ -136,6 +164,11 @@ class ClaudeService
     
     private static function extractSessionId($jsonData): ?string
     {
+        // Check for session ID in system init response
+        if ($jsonData['type'] === 'system' && $jsonData['subtype'] === 'init' && isset($jsonData['session_id'])) {
+            return $jsonData['session_id'];
+        }
+        
         // Try different possible fields for session ID
         if (isset($jsonData['sessionId'])) {
             return $jsonData['sessionId'];
@@ -145,14 +178,12 @@ class ClaudeService
             return $jsonData['id'];
         } elseif (isset($jsonData['conversationId'])) {
             return $jsonData['conversationId'];
-        } elseif ($jsonData['type'] === 'session' && isset($jsonData['session_id'])) {
-            return $jsonData['session_id'];
         }
         
         return null;
     }
     
-    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, array $rawJsonResponses, bool $isComplete): void
+    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
         $directory = 'claude-sessions';
         
@@ -185,11 +216,12 @@ class ClaudeService
                 }
                 
                 $messageData = [
-                    'sessionId' => $sessionId ?? 'generated-' . uniqid(),
+                    'sessionId' => $sessionId ?? $extractedSessionId ?? \Illuminate\Support\Str::uuid()->toString(),
                     'userMessage' => $userMessage,
                     'timestamp' => now()->toIso8601String(),
                     'isComplete' => $isComplete,
-                    'rawJsonResponses' => $rawJsonResponses
+                    'rawJsonResponses' => $rawJsonResponses,
+                    'repositoryPath' => $repositoryPath
                 ];
                 
                 // Check if this is a new conversation or an update to the current one

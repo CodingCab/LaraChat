@@ -1,5 +1,4 @@
 import type { ClaudeApiRequest, SessionConversation } from '@/types/claude';
-import { parseClaudeResponse } from '@/utils/claudeResponseParser';
 import axios from 'axios';
 import { ref } from 'vue';
 
@@ -42,11 +41,9 @@ export function useClaudeApi() {
                 if (line.trim()) {
                     try {
                         const jsonData = JSON.parse(line);
-                        const textContent = parseClaudeResponse(jsonData);
 
-                        if (textContent) {
-                            onChunk(textContent, jsonData);
-                        }
+                        // Always pass the raw response to onChunk for proper handling
+                        onChunk('', jsonData);
                     } catch (e) {
                         console.error('Error parsing JSON:', e, 'Line:', line);
                     }
@@ -58,11 +55,9 @@ export function useClaudeApi() {
         if (buffer.trim()) {
             try {
                 const jsonData = JSON.parse(buffer);
-                const textContent = parseClaudeResponse(jsonData);
 
-                if (textContent) {
-                    onChunk(textContent, jsonData);
-                }
+                // Always pass the raw response to onChunk for proper handling
+                onChunk('', jsonData);
             } catch (e) {
                 console.error('Error parsing final buffer:', e);
             }

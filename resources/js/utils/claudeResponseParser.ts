@@ -45,7 +45,16 @@ export function extractTextFromResponses(rawResponses: ClaudeResponse[]): string
 export function extractTextFromResponse(rawResponse: any): string {
     // Handle system initialization
     if (rawResponse.type === 'system' && rawResponse.subtype === 'init') {
-        return `System initialized with model: ${rawResponse.model || 'unknown'}`;
+        return ''; // Don't show system init messages in the main chat
+    }
+
+    // Handle content blocks (streaming format from Claude CLI)
+    if (rawResponse.type === 'content' && rawResponse.content) {
+        if (typeof rawResponse.content === 'object' && rawResponse.content.type === 'text' && rawResponse.content.text) {
+            return rawResponse.content.text;
+        } else if (typeof rawResponse.content === 'string') {
+            return rawResponse.content;
+        }
     }
 
     // Handle Claude Code CLI assistant response format
@@ -100,9 +109,9 @@ export function extractTextFromResponse(rawResponse: any): string {
     // Fallback to original parser
     const fallbackContent = parseClaudeResponse(rawResponse);
 
-    // If still no content, provide debug information about the response
-    if (!fallbackContent && rawResponse.type) {
-        return `[${rawResponse.type} response - ${JSON.stringify(rawResponse).substring(0, 100)}...]`;
+    // If still no content, don't show debug info for non-content responses
+    if (!fallbackContent && rawResponse.type && ['system', 'session'].includes(rawResponse.type)) {
+        return ''; // Skip system/session messages
     }
 
     return fallbackContent;

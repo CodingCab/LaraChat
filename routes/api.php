@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClaudeController;
+use App\Http\Controllers\RepositoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])->group(function () {
@@ -9,4 +10,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/claude/sessions', [ClaudeController::class, 'getSessions']);
     Route::get('/claude/sessions/{filename}', [ClaudeController::class, 'getSessionMessages']);
     Route::get('/claude/debug/{filename}', [ClaudeController::class, 'debugSession']);
+    
+    Route::get('/repositories', [RepositoryController::class, 'index']);
+    Route::post('/repositories', [RepositoryController::class, 'store']);
+    Route::delete('/repositories/{repository}', [RepositoryController::class, 'destroy']);
+    Route::post('/repositories/{repository}/pull', [RepositoryController::class, 'pull']);
 });

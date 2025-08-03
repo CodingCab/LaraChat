@@ -23,14 +23,13 @@ export function useMessagePolling(sessionFilename: ref<string | null>) {
             // Process only new conversations
             for (const conversation of sessionData) {
                 const conversationTime = new Date(conversation.timestamp).getTime();
-                
+
                 // Skip if this conversation is older than our last message
                 if (conversationTime <= lastMessageTime) continue;
 
                 // Check if we already have this user message
                 const hasUserMessage = chatStore.messages.some(
-                    m => m.role === 'user' && m.content === conversation.userMessage && 
-                    Math.abs(m.timestamp.getTime() - conversationTime) < 1000
+                    (m) => m.role === 'user' && m.content === conversation.userMessage && Math.abs(m.timestamp.getTime() - conversationTime) < 1000,
                 );
 
                 if (!hasUserMessage) {
