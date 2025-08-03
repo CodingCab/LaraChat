@@ -36,6 +36,18 @@ class ClaudeService
             $extractedSessionId = $sessionId;
             $filename = $sessionFilename;
             
+            // Generate filename if not provided
+            if (!$filename) {
+                $timestamp = date('Y-m-d_H-i-s');
+                $filename = "{$timestamp}-claude-chat.json";
+            }
+            
+            \Log::info('Starting Claude stream', [
+                'prompt' => $prompt,
+                'sessionId' => $sessionId,
+                'filename' => $filename
+            ]);
+            
             // Buffer for incomplete JSON lines
             $buffer = '';
 
@@ -57,12 +69,17 @@ class ClaudeService
                                 if ($jsonData) {
                                     $rawJsonResponses[] = $jsonData;
                                     
+                                    \Log::info('Parsed JSON response', [
+                                        'type' => $jsonData['type'] ?? 'unknown',
+                                        'has_content' => isset($jsonData['content']),
+                                        'response_sample' => substr(json_encode($jsonData), 0, 200)
+                                    ]);
+                                    
                                     // Extract session ID if not provided
                                     if (!$extractedSessionId) {
                                         $extractedSessionId = self::extractSessionId($jsonData);
-                                        if ($extractedSessionId && !$filename) {
-                                            $timestamp = date('Y-m-d_H-i-s');
-                                            $filename = "{$timestamp}-sessionId-{$extractedSessionId}.json";
+                                        if ($extractedSessionId) {
+                                            \Log::info('Extracted session ID', ['sessionId' => $extractedSessionId]);
                                         }
                                     }
                                     
@@ -72,7 +89,10 @@ class ClaudeService
                                     }
                                 }
                             } catch (\Exception $e) {
-                                // Ignore JSON parsing errors
+                                \Log::error('JSON parsing error', [
+                                    'error' => $e->getMessage(),
+                                    'line' => $line
+                                ]);
                             }
                         }
                     }
@@ -136,9 +156,17 @@ class ClaudeService
     {
         $directory = 'claude-sessions';
         
+        \Log::info('Saving response', [
+            'filename' => $filename,
+            'sessionId' => $sessionId,
+            'response_count' => count($rawJsonResponses),
+            'isComplete' => $isComplete
+        ]);
+        
         // Create directory if it doesn't exist
         if (!Storage::exists($directory)) {
             Storage::makeDirectory($directory);
+            \Log::info('Created claude-sessions directory');
         }
         
         $path = $directory . '/' . $filename;

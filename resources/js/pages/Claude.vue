@@ -102,6 +102,12 @@ const sendMessage = async () => {
         sessionId.value = 'generated-' + Date.now().toString(36);
     }
     initializeSessionFile();
+    
+    console.log('Sending message with:', {
+        sessionId: sessionId.value,
+        sessionFilename: sessionFilename.value,
+        prompt: messageToSend
+    });
 
     try {
         const response = await fetch('/api/claude', {

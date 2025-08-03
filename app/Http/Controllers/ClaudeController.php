@@ -162,4 +162,24 @@ class ClaudeController extends Controller
         
         return response()->json($messages);
     }
+    
+    public function debugSession($filename)
+    {
+        $directory = 'claude-sessions';
+        $path = $directory . '/' . $filename;
+        
+        if (!Storage::exists($path)) {
+            return response()->json(['error' => 'Session file not found'], 404);
+        }
+        
+        $rawContent = Storage::get($path);
+        $decoded = json_decode($rawContent, true);
+        
+        return response()->json([
+            'raw_content' => $rawContent,
+            'decoded' => $decoded,
+            'file_size' => Storage::size($path),
+            'last_modified' => Storage::lastModified($path),
+        ]);
+    }
 }
