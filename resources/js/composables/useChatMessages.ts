@@ -1,4 +1,5 @@
 import type { Message } from '@/types/claude';
+import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { ref } from 'vue';
 
 export function useChatMessages() {
@@ -38,10 +39,25 @@ export function useChatMessages() {
         const index = messages.value.findIndex((m) => m.id === messageId);
         if (index !== -1) {
             const message = messages.value[index];
-            message.content += text;
 
-            if (rawResponse && message.rawResponses) {
+            if (rawResponse) {
+                // Add the raw response
+                if (!message.rawResponses) {
+                    message.rawResponses = [];
+                }
                 message.rawResponses.push(rawResponse);
+
+                // Rebuild content from all raw responses
+                message.content = '';
+                for (const response of message.rawResponses) {
+                    const extractedText = extractTextFromResponse(response);
+                    if (extractedText) {
+                        message.content += extractedText;
+                    }
+                }
+            } else if (text) {
+                // Fallback to appending text if no raw response
+                message.content += text;
             }
 
             // Trigger reactivity
