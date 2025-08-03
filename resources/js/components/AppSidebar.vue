@@ -2,12 +2,22 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
-import axios from 'axios';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
@@ -65,7 +75,7 @@ onMounted(async () => {
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
-            
+
             <SidebarGroup class="px-2 py-0" v-if="claudeSessions.length > 0">
                 <SidebarGroupLabel>Claude Sessions</SidebarGroupLabel>
                 <SidebarMenu>
