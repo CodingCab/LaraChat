@@ -113,17 +113,16 @@ const loadSessionMessages = async () => {
                 timestamp: new Date(conversation.timestamp),
             });
 
-            // Extract assistant content from raw responses
-            const assistantContent = extractTextFromResponses(conversation.rawJsonResponses || []);
-
-            if (assistantContent || conversation.rawJsonResponses?.length) {
-                messages.value.push({
-                    id: Date.now() + Math.random() + 1,
-                    content: assistantContent || '[No text content extracted]',
-                    role: 'assistant',
-                    timestamp: new Date(conversation.timestamp),
-                    rawResponses: conversation.rawJsonResponses || [],
-                });
+            if (conversation.rawJsonResponses?.length) {
+                for (const rawResponse of conversation.rawJsonResponses) {
+                    messages.value.push({
+                        id: Date.now() + Math.random() + 1,
+                        content: extractTextFromResponses(rawResponse),
+                        role: 'assistant',
+                        timestamp: new Date(conversation.timestamp),
+                        rawResponses: rawResponse,
+                    });
+                }
             }
         }
 
