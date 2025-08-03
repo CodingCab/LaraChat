@@ -18,6 +18,12 @@ class ClaudeService
             $wrapperPath = base_path('claude-wrapper.sh');
             $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
             
+            // Use --resume for continuing an existing session with a valid UUID
+            if ($sessionId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $sessionId)) {
+                $command[] = '--resume';
+                $command[] = $sessionId;
+            }
+            
             if ($options) {
                 $optionsParts = explode(' ', $options);
                 $command = array_merge($command, $optionsParts);
@@ -85,7 +91,7 @@ class ClaudeService
                                     
                                     // Save after each response
                                     if ($filename) {
-                                        self::saveResponse($prompt, $filename, $extractedSessionId, $rawJsonResponses, false);
+                                        self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false);
                                     }
                                 }
                             } catch (\Exception $e) {
@@ -120,7 +126,7 @@ class ClaudeService
 
             // Final save with complete flag
             if ($filename) {
-                self::saveResponse($prompt, $filename, $extractedSessionId, $rawJsonResponses, true);
+                self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true);
             }
 
             if (!$process->isSuccessful()) {
@@ -136,6 +142,11 @@ class ClaudeService
     
     private static function extractSessionId($jsonData): ?string
     {
+        // Check for session ID in system init response
+        if ($jsonData['type'] === 'system' && $jsonData['subtype'] === 'init' && isset($jsonData['session_id'])) {
+            return $jsonData['session_id'];
+        }
+        
         // Try different possible fields for session ID
         if (isset($jsonData['sessionId'])) {
             return $jsonData['sessionId'];
@@ -145,14 +156,12 @@ class ClaudeService
             return $jsonData['id'];
         } elseif (isset($jsonData['conversationId'])) {
             return $jsonData['conversationId'];
-        } elseif ($jsonData['type'] === 'session' && isset($jsonData['session_id'])) {
-            return $jsonData['session_id'];
         }
         
         return null;
     }
     
-    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, array $rawJsonResponses, bool $isComplete): void
+    private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete): void
     {
         $directory = 'claude-sessions';
         
@@ -185,7 +194,7 @@ class ClaudeService
                 }
                 
                 $messageData = [
-                    'sessionId' => $sessionId ?? 'generated-' . uniqid(),
+                    'sessionId' => $sessionId ?? $extractedSessionId ?? \Illuminate\Support\Str::uuid()->toString(),
                     'userMessage' => $userMessage,
                     'timestamp' => now()->toIso8601String(),
                     'isComplete' => $isComplete,

@@ -68,16 +68,15 @@ const filteredMessages = computed(() => {
 });
 
 const initializeSession = () => {
-    if (!sessionId.value) {
-        sessionId.value = 'generated-' + Date.now().toString(36);
-    }
-
+    // Don't set a session ID here - let Claude CLI generate it
+    
     if (!sessionFilename.value) {
         if (props.sessionFile) {
             sessionFilename.value = props.sessionFile;
         } else {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-            sessionFilename.value = `${timestamp}-sessionId-${sessionId.value}.json`;
+            const tempId = Date.now().toString(36);
+            sessionFilename.value = `${timestamp}-session-${tempId}.json`;
         }
     }
 };
@@ -124,10 +123,15 @@ const sendMessage = async () => {
         await sendMessageToApi(
             {
                 prompt: messageToSend,
-                sessionId: sessionId.value!,
+                sessionId: sessionId.value || undefined, // Don't pass null/empty session ID
                 sessionFilename: sessionFilename.value!,
             },
             (text, rawResponse) => {
+                // Extract session ID from init response
+                if (rawResponse && rawResponse.type === 'system' && rawResponse.subtype === 'init' && rawResponse.session_id) {
+                    sessionId.value = rawResponse.session_id;
+                }
+                
                 // Check if this is a system message that should be hidden
                 if (hideSystemMessages.value && rawResponse) {
                     // Check if this response contains text content
@@ -268,8 +272,17 @@ const loadSessionMessages = async (isPolling = false) => {
 
         // Set session info
         sessionFilename.value = props.sessionFile;
-        if (sessionData.length > 0 && sessionData[0].sessionId) {
-            sessionId.value = sessionData[0].sessionId;
+        if (sessionData.length > 0) {
+            // Find the actual Claude session ID from the raw responses
+            const lastConversation = sessionData[sessionData.length - 1];
+            if (lastConversation.rawJsonResponses && lastConversation.rawJsonResponses.length > 0) {
+                for (const response of lastConversation.rawJsonResponses) {
+                    if (response.type === 'system' && response.subtype === 'init' && response.session_id) {
+                        sessionId.value = response.session_id;
+                        break;
+                    }
+                }
+            }
         }
 
         // Wait for DOM to update with all messages before scrolling
