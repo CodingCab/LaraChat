@@ -366,15 +366,22 @@ const stopPolling = () => {
 watch(
     () => props.sessionFile,
     async (newFile, oldFile) => {
-        if (newFile && newFile !== oldFile) {
+        if (newFile !== oldFile) {
             // Stop any existing polling
             stopPolling();
             // Reset tracking variables
             lastMessageCount.value = 0;
             incompleteMessageFound.value = false;
-            // Clear existing messages when switching sessions
+            // Clear existing messages when switching sessions or when no session is specified
             messages.value = [];
-            await loadSessionMessages();
+            
+            if (newFile) {
+                await loadSessionMessages();
+            } else {
+                // No session file specified - reset session state
+                sessionFilename.value = null;
+                sessionId.value = null;
+            }
         }
     },
 );
@@ -385,15 +392,27 @@ watch(
     (newRepo) => {
         if (newRepo) {
             selectedRepository.value = newRepo;
+        } else {
+            // No repository specified - clear the selection
+            selectedRepository.value = null;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 onMounted(async () => {
     // Fetch repositories first to ensure they're available
     await fetchRepositories();
-    await loadSessionMessages();
+    
+    if (props.sessionFile) {
+        await loadSessionMessages();
+    } else {
+        // No session file - ensure messages are cleared
+        messages.value = [];
+        sessionFilename.value = null;
+        sessionId.value = null;
+    }
+    
     focusInput(false);
 });
 
@@ -444,7 +463,8 @@ onUnmounted(() => {
                 <div>
                     <div v-if="selectedRepository" class="mb-2 flex items-center text-sm text-muted-foreground">
                         <GitBranch class="mr-1 h-3 w-3" />
-                        Working in: <span class="ml-1 font-medium">{{ selectedRepositoryData ? selectedRepositoryData.name : selectedRepository }}</span>
+                        Working in:
+                        <span class="ml-1 font-medium">{{ selectedRepositoryData ? selectedRepositoryData.name : selectedRepository }}</span>
                         <span v-if="!selectedRepositoryData && repositories.length > 0" class="ml-2 text-xs text-yellow-600">(not found)</span>
                     </div>
                     <div class="flex items-end space-x-2">

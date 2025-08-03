@@ -77,7 +77,10 @@ const handleCloneRepository = async () => {
 };
 
 const handleRepositoryClick = (repositoryName: string) => {
-    router.visit(`/claude?repository=${encodeURIComponent(repositoryName)}`);
+    router.visit(`/claude?repository=${encodeURIComponent(repositoryName)}`, {
+        preserveScroll: true,
+        preserveState: true,
+    });
 };
 </script>
 
@@ -87,7 +90,7 @@ const handleRepositoryClick = (repositoryName: string) => {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')">
+                        <Link :href="route('dashboard')" :preserve-scroll="true" :preserve-state="true">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -135,7 +138,15 @@ const handleRepositoryClick = (repositoryName: string) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="session in claudeSessions" :key="session.filename">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
-                            <Link :href="session.repository ? `/claude/${session.filename}?repository=${encodeURIComponent(session.repository)}` : `/claude/${session.filename}`">
+                            <Link
+                                :href="
+                                    session.repository
+                                        ? `/claude/${session.filename}?repository=${encodeURIComponent(session.repository)}`
+                                        : `/claude/${session.filename}`
+                                "
+                                :preserve-scroll="true"
+                                :preserve-state="true"
+                            >
                                 <FileText />
                                 <span class="truncate">{{
                                     session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
