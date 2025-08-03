@@ -2,11 +2,26 @@
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Terminal } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
+import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare } from 'lucide-vue-next';
+import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
+
+const page = usePage();
+const claudeSessions = ref<Array<{ filename: string; name: string; userMessage: string; path: string; lastModified: number }>>([]);
 
 const mainNavItems: NavItem[] = [
     {
@@ -15,9 +30,9 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Terminal',
-        href: '/terminal',
-        icon: Terminal,
+        title: 'Claude',
+        href: '/claude',
+        icon: MessageSquare,
     },
 ];
 
@@ -33,6 +48,15 @@ const footerNavItems: NavItem[] = [
         icon: BookOpen,
     },
 ];
+
+onMounted(async () => {
+    try {
+        const response = await axios.get('/api/claude/sessions');
+        claudeSessions.value = response.data;
+    } catch (error) {
+        console.error('Failed to fetch Claude sessions:', error);
+    }
+});
 </script>
 
 <template>
@@ -51,6 +75,20 @@ const footerNavItems: NavItem[] = [
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+
+            <SidebarGroup class="px-2 py-0" v-if="claudeSessions.length > 0">
+                <SidebarGroupLabel>Claude Sessions</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem v-for="session in claudeSessions" :key="session.filename">
+                        <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
+                            <Link :href="`/claude/${session.filename}`">
+                                <FileText />
+                                <span class="truncate">{{ session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage }}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
         </SidebarContent>
 
         <SidebarFooter>
