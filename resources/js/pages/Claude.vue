@@ -30,7 +30,6 @@ const messagesContainer = ref<HTMLElement>();
 const textareaRef = ref<HTMLTextAreaElement>();
 const sessionFilename = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
-const rawJsonResponses = ref<any[]>([]);
 
 const scrollToBottom = async () => {
     await nextTick();
@@ -53,47 +52,13 @@ const adjustTextareaHeight = () => {
 };
 
 const initializeSessionFile = () => {
-    if (!sessionFilename.value && sessionId.value) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-        sessionFilename.value = `${timestamp}-sessionId-${sessionId.value}.json`;
-    }
-};
-
-const saveResponseToFile = async (userMessage: string, isComplete: boolean = false) => {
-    try {
-        if (!sessionId.value || !sessionFilename.value) {
-            console.warn('Cannot save: missing sessionId or filename', { sessionId: sessionId.value, filename: sessionFilename.value });
-            return;
+    if (!sessionFilename.value) {
+        if (props.sessionFile) {
+            sessionFilename.value = props.sessionFile;
+        } else if (sessionId.value) {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+            sessionFilename.value = `${timestamp}-sessionId-${sessionId.value}.json`;
         }
-        
-        const messageData = {
-            sessionId: sessionId.value,
-            userMessage: userMessage,
-            timestamp: new Date().toISOString(),
-            isComplete: isComplete,
-            rawJsonResponses: rawJsonResponses.value
-        };
-        
-        console.log('Saving to file:', sessionFilename.value, 'with', rawJsonResponses.value.length, 'responses');
-        
-        const response = await fetch('/api/claude/save-response', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            },
-            body: JSON.stringify({ 
-                filename: sessionFilename.value, 
-                message: messageData 
-            }),
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Save response error:', response.status, errorText);
-        }
-    } catch (error) {
-        console.error('Error saving response to file:', error);
     }
 };
 
@@ -132,8 +97,11 @@ const sendMessage = async () => {
     };
     messages.value.push(assistantMessage);
 
-    // Reset raw JSON responses for new conversation
-    rawJsonResponses.value = [];
+    // Initialize session if needed
+    if (!sessionId.value) {
+        sessionId.value = 'generated-' + Date.now().toString(36);
+    }
+    initializeSessionFile();
 
     try {
         const response = await fetch('/api/claude', {
@@ -142,7 +110,11 @@ const sendMessage = async () => {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
             },
-            body: JSON.stringify({ prompt: messageToSend }),
+            body: JSON.stringify({ 
+                prompt: messageToSend,
+                sessionId: sessionId.value,
+                sessionFilename: sessionFilename.value
+            }),
         });
 
         if (!response.ok) {
@@ -172,29 +144,6 @@ const sendMessage = async () => {
                     try {
                         const jsonData = JSON.parse(line);
                         console.log('Received JSON:', jsonData);
-                        rawJsonResponses.value.push(jsonData);
-                        
-                        // Extract session ID from the first response
-                        if (!sessionId.value) {
-                            // Try different possible fields for session ID
-                            if (jsonData.sessionId) {
-                                sessionId.value = jsonData.sessionId;
-                            } else if (jsonData.session_id) {
-                                sessionId.value = jsonData.session_id;
-                            } else if (jsonData.id) {
-                                sessionId.value = jsonData.id;
-                            } else if (jsonData.conversationId) {
-                                sessionId.value = jsonData.conversationId;
-                            } else if (jsonData.type === 'session' && jsonData.session_id) {
-                                sessionId.value = jsonData.session_id;
-                            } else {
-                                // If no session ID found, generate one
-                                sessionId.value = 'generated-' + Date.now().toString(36);
-                            }
-                            console.log('Session ID set to:', sessionId.value);
-                            initializeSessionFile();
-                            console.log('Session filename:', sessionFilename.value);
-                        }
                         
                         // Handle different types of JSON responses from Claude CLI
                         if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
@@ -209,9 +158,6 @@ const sendMessage = async () => {
                         }
                         
                         await scrollToBottom();
-                        
-                        // Save immediately after each JSON response
-                        await saveResponseToFile(messageToSend, false);
                     } catch (e) {
                         console.error('Error parsing JSON:', e, 'Line:', line);
                     }
@@ -223,12 +169,6 @@ const sendMessage = async () => {
         if (buffer.trim()) {
             try {
                 const jsonData = JSON.parse(buffer);
-                rawJsonResponses.value.push(jsonData);
-                
-                if (!sessionId.value && jsonData.sessionId) {
-                    sessionId.value = jsonData.sessionId;
-                    initializeSessionFile();
-                }
                 
                 // Handle different types of JSON responses from Claude CLI
                 if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
@@ -239,16 +179,10 @@ const sendMessage = async () => {
                 } else if (jsonData.content) {
                     assistantMessage.content += jsonData.content;
                 }
-                
-                // Save the final piece
-                await saveResponseToFile(messageToSend, false);
             } catch (e) {
                 console.error('Error parsing final buffer:', e);
             }
         }
-        
-        // Final save when streaming is complete
-        await saveResponseToFile(messageToSend, true);
     } catch (error) {
         console.error('Error sending message:', error);
         assistantMessage.content = 'Sorry, I encountered an error. Please try again.';
@@ -347,6 +281,11 @@ const loadSessionMessages = async () => {
         
         // Set the session filename for continued conversation
         sessionFilename.value = props.sessionFile;
+        
+        // Extract session ID from the loaded data if available
+        if (sessionData.length > 0 && sessionData[0].sessionId) {
+            sessionId.value = sessionData[0].sessionId;
+        }
         
         await scrollToBottom();
     } catch (error) {

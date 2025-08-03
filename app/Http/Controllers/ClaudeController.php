@@ -15,7 +15,18 @@ class ClaudeController extends Controller
      */
     public function store(Request $request)
     {
-        return ClaudeService::stream(request('prompt'), request('options', '--permission-mode bypassPermissions'));
+        $request->validate([
+            'prompt' => 'required|string',
+            'sessionId' => 'nullable|string',
+            'sessionFilename' => 'nullable|string',
+        ]);
+        
+        return ClaudeService::stream(
+            $request->input('prompt'), 
+            $request->input('options', '--permission-mode bypassPermissions'),
+            $request->input('sessionId'),
+            $request->input('sessionFilename')
+        );
     }
     
     public function saveResponse(Request $request)
