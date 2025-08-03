@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useChatMessages } from '@/composables/useChatMessages';
 import { useChatUI } from '@/composables/useChatUI';
 import { useClaudeApi } from '@/composables/useClaudeApi';
+import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
@@ -22,6 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
 const { messagesContainer, textareaRef, scrollToBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
+const { claudeSessions } = useClaudeSessions();
 
 // Local state
 const inputMessage = ref('');
@@ -67,6 +69,23 @@ const sendMessage = async () => {
 
     // Initialize session
     initializeSession();
+
+    // Add dummy session to sidebar immediately if this is a new session
+    if (!props.sessionFile) {
+        const dummySession = {
+            filename: sessionFilename.value!,
+            name: messageToSend.length > 30 ? messageToSend.substring(0, 30) + '...' : messageToSend,
+            userMessage: messageToSend,
+            path: `/claude/${sessionFilename.value}`,
+            lastModified: Date.now(),
+        };
+        
+        // Check if session already exists
+        const existingSession = claudeSessions.value.find(s => s.filename === sessionFilename.value);
+        if (!existingSession) {
+            claudeSessions.value.unshift(dummySession);
+        }
+    }
 
     try {
         await sendMessageToApi(

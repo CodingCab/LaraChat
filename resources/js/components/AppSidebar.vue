@@ -15,13 +15,13 @@ import {
 } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
 import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import AppLogo from './AppLogo.vue';
+import { useClaudeSessions } from '@/composables/useClaudeSessions';
 
 const page = usePage();
-const claudeSessions = ref<Array<{ filename: string; name: string; userMessage: string; path: string; lastModified: number }>>([]);
+const { claudeSessions, fetchSessions } = useClaudeSessions();
 
 const mainNavItems: NavItem[] = [
     {
@@ -50,12 +50,7 @@ const footerNavItems: NavItem[] = [
 ];
 
 onMounted(async () => {
-    try {
-        const response = await axios.get('/api/claude/sessions');
-        claudeSessions.value = response.data;
-    } catch (error) {
-        console.error('Failed to fetch Claude sessions:', error);
-    }
+    await fetchSessions();
 });
 </script>
 
