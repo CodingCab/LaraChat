@@ -1,10 +1,11 @@
 export function parseUrlsToLinks(text: string): string {
-    // Regex pattern to match URLs
-    const urlPattern = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+    // Improved regex pattern to match URLs
+    // This pattern better handles URLs with paths, query parameters, and fragments
+    const urlPattern = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
 
     // Replace URLs with HTML anchor tags
     return text.replace(urlPattern, (url) => {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline hover:opacity-80">${url}</a>`;
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors">${url}</a>`;
     });
 }
 
