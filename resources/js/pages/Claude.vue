@@ -10,7 +10,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { Code2, Send } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     sessionFile?: string;
@@ -137,11 +137,32 @@ const loadSessionMessages = async () => {
             sessionId.value = sessionData[0].sessionId;
         }
 
-        await scrollToBottom();
+        // Wait for DOM to update with all messages before scrolling
+        await nextTick();
+        // Add a delay to ensure all messages are fully rendered
+        setTimeout(async () => {
+            await scrollToBottom();
+            // Try scrolling again after another delay
+            setTimeout(() => {
+                scrollToBottom();
+            }, 200);
+        }, 150);
     } catch (error) {
         console.error('Error loading session messages:', error);
     }
 };
+
+// Watch for changes in sessionFile prop
+watch(
+    () => props.sessionFile,
+    async (newFile, oldFile) => {
+        if (newFile && newFile !== oldFile) {
+            // Clear existing messages when switching sessions
+            messages.value = [];
+            await loadSessionMessages();
+        }
+    },
+);
 
 onMounted(async () => {
     await loadSessionMessages();

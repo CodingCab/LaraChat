@@ -7,7 +7,40 @@ export function useChatUI() {
     const scrollToBottom = async () => {
         await nextTick();
         if (messagesContainer.value) {
-            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+            // Get the actual DOM element from the Vue component ref
+            const element = (messagesContainer.value as any).$el || messagesContainer.value;
+
+            // Try multiple selectors for the ScrollArea viewport
+            let viewport = element.querySelector('[data-reka-scroll-area-viewport]');
+
+            // If not found, try to find the first scrollable child
+            if (!viewport) {
+                viewport = element.querySelector('div[style*="overflow"]');
+            }
+
+            // If still not found, try the first child div
+            if (!viewport) {
+                viewport = element.querySelector('div > div');
+            }
+
+            // If still not found, check if the element itself is scrollable
+            if (!viewport && element.scrollHeight > element.clientHeight) {
+                viewport = element;
+            }
+
+            // If we found a scrollable element, scroll it
+            if (viewport) {
+                console.log('Scrolling element found:', viewport);
+                console.log('ScrollHeight:', viewport.scrollHeight, 'ScrollTop:', viewport.scrollTop);
+                viewport.scrollTop = viewport.scrollHeight;
+
+                // Force a second scroll after a delay in case content is still loading
+                setTimeout(() => {
+                    viewport.scrollTop = viewport.scrollHeight;
+                }, 50);
+            } else {
+                console.log('No scrollable element found');
+            }
         }
     };
 
