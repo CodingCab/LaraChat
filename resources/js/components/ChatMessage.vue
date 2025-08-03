@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import type { Message } from '@/types/claude';
-import { ref } from 'vue';
+import { parseMessageContent } from '@/utils/urlParser';
+import { computed, ref } from 'vue';
 
-defineProps<{
+const props = defineProps<{
     message: Message;
     formatTime: (date: Date) => string;
     showRawResponses: boolean;
 }>();
 
 const showLocalRawResponse = ref(false);
+
+const parsedContent = computed(() => {
+    return parseMessageContent(props.message.content);
+});
 
 const getContentType = (message: Message): string | null => {
     if (message.role !== 'assistant' || !message.rawResponses || message.rawResponses.length === 0) {
@@ -37,7 +42,7 @@ const toggleRawResponse = () => {
                 message.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100',
             ]"
         >
-            <p class="text-sm break-words whitespace-pre-wrap">{{ message.content }}</p>
+            <p class="text-sm break-words whitespace-pre-wrap" v-html="parsedContent"></p>
             <div class="mt-1 flex items-center justify-between">
                 <p :class="['text-[11px]', message.role === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400']">
                     {{ formatTime(message.timestamp) }}
