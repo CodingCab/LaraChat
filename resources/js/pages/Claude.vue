@@ -21,6 +21,7 @@ interface Message {
     content: string;
     role: 'user' | 'assistant';
     timestamp: Date;
+    rawResponses?: any[];
 }
 
 const messages = ref<Message[]>([]);
@@ -30,6 +31,8 @@ const messagesContainer = ref<HTMLElement>();
 const textareaRef = ref<HTMLTextAreaElement>();
 const sessionFilename = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
+const showRawResponses = ref(false);
+const currentRawResponses = ref<any[]>([]);
 
 const scrollToBottom = async () => {
     await nextTick();
@@ -94,8 +97,12 @@ const sendMessage = async () => {
         content: '',
         role: 'assistant',
         timestamp: new Date(),
+        rawResponses: [],
     };
     messages.value.push(assistantMessage);
+    
+    // Reset raw responses for current message
+    currentRawResponses.value = [];
 
     // Initialize session if needed
     if (!sessionId.value) {
@@ -151,6 +158,10 @@ const sendMessage = async () => {
                         const jsonData = JSON.parse(line);
                         console.log('Received JSON:', jsonData);
                         
+                        // Store raw response
+                        currentRawResponses.value.push(jsonData);
+                        assistantMessage.rawResponses = [...currentRawResponses.value];
+                        
                         // Handle different types of JSON responses from Claude CLI
                         let textToAdd = '';
                         
@@ -193,6 +204,10 @@ const sendMessage = async () => {
         if (buffer.trim()) {
             try {
                 const jsonData = JSON.parse(buffer);
+                
+                // Store raw response
+                currentRawResponses.value.push(jsonData);
+                assistantMessage.rawResponses = [...currentRawResponses.value];
                 
                 // Handle different types of JSON responses from Claude CLI
                 let textToAdd = '';
@@ -329,12 +344,13 @@ const loadSessionMessages = async () => {
             
             console.log('Reconstructed content:', assistantContent);
             
-            if (assistantContent) {
+            if (assistantContent || (conversation.rawJsonResponses && conversation.rawJsonResponses.length > 0)) {
                 messages.value.push({
                     id: Date.now() + Math.random() + 1,
-                    content: assistantContent,
+                    content: assistantContent || '[No text content extracted]',
                     role: 'assistant',
                     timestamp: new Date(conversation.timestamp),
+                    rawResponses: conversation.rawJsonResponses || [],
                 });
             }
         }
@@ -378,6 +394,16 @@ onUnmounted(() => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
+        <!-- Debug Toggle -->
+        <div class="fixed top-20 right-4 z-50">
+            <Button 
+                @click="showRawResponses = !showRawResponses"
+                variant="outline"
+                size="sm"
+            >
+                {{ showRawResponses ? 'Hide' : 'Show' }} Raw Responses
+            </Button>
+        </div>
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 dark:bg-gray-900">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
@@ -409,6 +435,17 @@ onUnmounted(() => {
                             >
                                 {{ formatTime(message.timestamp) }}
                             </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Raw JSON Responses Display -->
+                    <div v-if="showRawResponses && message.role === 'assistant' && message.rawResponses && message.rawResponses.length > 0" 
+                         class="mt-2 space-y-2">
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Raw JSON Responses ({{ message.rawResponses.length }}):</div>
+                        <div v-for="(response, index) in message.rawResponses" 
+                             :key="`raw-${message.id}-${index}`"
+                             class="bg-gray-100 dark:bg-gray-800 rounded p-2 text-xs font-mono overflow-x-auto">
+                            <pre>{{ JSON.stringify(response, null, 2) }}</pre>
                         </div>
                     </div>
                     <div v-if="isLoading" class="flex justify-start">
