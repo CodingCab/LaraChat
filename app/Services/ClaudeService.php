@@ -164,20 +164,27 @@ class ClaudeService
                     'rawJsonResponses' => $rawJsonResponses
                 ];
                 
-                // Find if we're updating an existing conversation or adding a new one
-                $updated = false;
-                foreach ($data as &$conversation) {
-                    // Update the last conversation if it's not complete and has the same user message
-                    if (!$conversation['isComplete'] && 
-                        $conversation['userMessage'] === $userMessage) {
-                        $conversation = $messageData;
-                        $updated = true;
-                        break;
+                // Check if this is a new conversation or an update to the current one
+                $isNewConversation = true;
+                
+                // Only update if it's the last conversation and it's not complete
+                if (!empty($data)) {
+                    $lastIndex = count($data) - 1;
+                    $lastConversation = &$data[$lastIndex];
+                    
+                    if (!$lastConversation['isComplete'] && 
+                        $lastConversation['userMessage'] === $userMessage &&
+                        $lastConversation['sessionId'] === $messageData['sessionId']) {
+                        // Update the existing conversation with new responses
+                        $lastConversation['rawJsonResponses'] = $rawJsonResponses;
+                        $lastConversation['isComplete'] = $isComplete;
+                        $lastConversation['timestamp'] = $messageData['timestamp'];
+                        $isNewConversation = false;
                     }
                 }
                 
-                // If not updated, add as new conversation
-                if (!$updated) {
+                // If it's a new conversation, append it
+                if ($isNewConversation) {
                     $data[] = $messageData;
                 }
                 
