@@ -123,9 +123,22 @@ class ClaudeController extends Controller
                         $sessionName = 'Session ' . $matches[1];
                     }
                     
+                    // Read the first user message from the session file
+                    $userMessage = $sessionName; // Default to session name if can't read message
+                    try {
+                        $content = Storage::get($file);
+                        $data = json_decode($content, true);
+                        if (!empty($data) && isset($data[0]['userMessage'])) {
+                            $userMessage = $data[0]['userMessage'];
+                        }
+                    } catch (\Exception $e) {
+                        // If we can't read the file, use the default name
+                    }
+                    
                     $sessions[] = [
                         'filename' => $filename,
                         'name' => $sessionName,
+                        'userMessage' => $userMessage,
                         'path' => $file,
                         'lastModified' => Storage::lastModified($file),
                     ];

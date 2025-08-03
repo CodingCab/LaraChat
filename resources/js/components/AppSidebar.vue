@@ -21,7 +21,7 @@ import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const claudeSessions = ref<Array<{ filename: string; name: string; path: string; lastModified: number }>>([]);
+const claudeSessions = ref<Array<{ filename: string; name: string; userMessage: string; path: string; lastModified: number }>>([]);
 
 const mainNavItems: NavItem[] = [
     {
@@ -80,10 +80,10 @@ onMounted(async () => {
                 <SidebarGroupLabel>Claude Sessions</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="session in claudeSessions" :key="session.filename">
-                        <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.name">
+                        <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
                             <Link :href="`/claude/${session.filename}`">
                                 <FileText />
-                                <span>{{ session.name }}</span>
+                                <span class="truncate">{{ session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage }}</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
