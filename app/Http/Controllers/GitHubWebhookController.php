@@ -11,17 +11,20 @@ class GitHubWebhookController extends Controller
 {
     public function handle(Request $request)
     {
+
         $payload = $request->getContent();
         $signature = $request->header('X-Hub-Signature-256');
-        
+
         if (!$this->verifyWebhookSignature($payload, $signature)) {
             Log::warning('GitHub webhook signature verification failed');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-        
+
         $event = $request->header('X-GitHub-Event');
         $data = json_decode($payload, true);
-        
+
+        return response()->json(['status' => 'ok'], 200);
+
         $webhookLog = GitHubWebhookLog::create([
             'event_type' => $event,
             'delivery_id' => $request->header('X-GitHub-Delivery'),
@@ -29,16 +32,16 @@ class GitHubWebhookController extends Controller
             'payload' => $data,
             'status' => 'processing',
         ]);
-        
+
         Log::info('GitHub webhook received', [
             'event' => $event,
             'delivery_id' => $request->header('X-GitHub-Delivery'),
         ]);
-        
+
         try {
             // Dispatch job for async processing
             ProcessGitHubWebhook::dispatch($webhookLog, $event, $data);
-            
+
             return response()->json(['status' => 'queued'], 200);
         } catch (\Exception $e) {
             Log::error('GitHub webhook processing failed', [
@@ -46,33 +49,33 @@ class GitHubWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             $webhookLog->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
             ]);
-            
+
             return response()->json(['error' => 'Processing failed'], 500);
         }
     }
-    
+
     private function verifyWebhookSignature($payload, $signature)
     {
         if (empty($signature)) {
             return false;
         }
-        
+
         $secret = config('services.github.webhook_secret');
         if (empty($secret)) {
             Log::warning('GitHub webhook secret not configured');
             return false;
         }
-        
+
         $expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
-        
+
         return hash_equals($expected, $signature);
     }
-    
+
     private function processWebhookEvent($event, $data)
     {
         switch ($event) {
@@ -104,7 +107,7 @@ class GitHubWebhookController extends Controller
                 Log::info('Unhandled GitHub webhook event', ['event' => $event]);
         }
     }
-    
+
     private function handlePushEvent($data)
     {
         Log::info('Push event received', [
@@ -114,7 +117,7 @@ class GitHubWebhookController extends Controller
             'ref' => $data['ref'] ?? null,
         ]);
     }
-    
+
     private function handlePullRequestEvent($data)
     {
         Log::info('Pull request event received', [
@@ -125,7 +128,7 @@ class GitHubWebhookController extends Controller
             'user' => $data['pull_request']['user']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleIssuesEvent($data)
     {
         Log::info('Issues event received', [
@@ -136,7 +139,7 @@ class GitHubWebhookController extends Controller
             'user' => $data['issue']['user']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleReleaseEvent($data)
     {
         Log::info('Release event received', [
@@ -147,7 +150,7 @@ class GitHubWebhookController extends Controller
             'author' => $data['release']['author']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleCreateEvent($data)
     {
         Log::info('Create event received', [
@@ -157,7 +160,7 @@ class GitHubWebhookController extends Controller
             'sender' => $data['sender']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleDeleteEvent($data)
     {
         Log::info('Delete event received', [
@@ -167,7 +170,7 @@ class GitHubWebhookController extends Controller
             'sender' => $data['sender']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleStarEvent($data)
     {
         Log::info('Star event received', [
@@ -177,7 +180,7 @@ class GitHubWebhookController extends Controller
             'sender' => $data['sender']['login'] ?? 'unknown',
         ]);
     }
-    
+
     private function handleForkEvent($data)
     {
         Log::info('Fork event received', [
