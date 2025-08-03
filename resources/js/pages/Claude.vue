@@ -257,17 +257,35 @@ const loadSessionMessages = async () => {
             
             // Reconstruct assistant message from raw JSON responses
             let assistantContent = '';
-            for (const jsonResponse of conversation.rawJsonResponses) {
-                // Handle different types of JSON responses from Claude CLI
-                if (jsonResponse.type === 'content' && jsonResponse.content && jsonResponse.content.type === 'text') {
-                    // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
-                    assistantContent += jsonResponse.content.text;
-                } else if (jsonResponse.type === 'text' && jsonResponse.text) {
-                    assistantContent += jsonResponse.text;
-                } else if (jsonResponse.content) {
-                    assistantContent += jsonResponse.content;
+            console.log('Processing conversation:', conversation);
+            console.log('Raw responses:', conversation.rawJsonResponses);
+            
+            if (conversation.rawJsonResponses && Array.isArray(conversation.rawJsonResponses)) {
+                for (const jsonResponse of conversation.rawJsonResponses) {
+                    // Skip error responses
+                    if (jsonResponse.error) {
+                        continue;
+                    }
+                    
+                    // Handle different types of JSON responses from Claude CLI
+                    if (jsonResponse.type === 'content' && jsonResponse.content) {
+                        if (typeof jsonResponse.content === 'object' && jsonResponse.content.type === 'text' && jsonResponse.content.text) {
+                            // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                            assistantContent += jsonResponse.content.text;
+                        } else if (typeof jsonResponse.content === 'string') {
+                            assistantContent += jsonResponse.content;
+                        }
+                    } else if (jsonResponse.type === 'text' && jsonResponse.text) {
+                        assistantContent += jsonResponse.text;
+                    } else if (jsonResponse.text && typeof jsonResponse.text === 'string') {
+                        assistantContent += jsonResponse.text;
+                    } else if (jsonResponse.content && typeof jsonResponse.content === 'string') {
+                        assistantContent += jsonResponse.content;
+                    }
                 }
             }
+            
+            console.log('Reconstructed content:', assistantContent);
             
             if (assistantContent) {
                 messages.value.push({

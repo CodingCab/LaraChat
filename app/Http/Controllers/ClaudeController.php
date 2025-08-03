@@ -150,6 +150,16 @@ class ClaudeController extends Controller
             return response()->json(['error' => 'Invalid session file'], 422);
         }
         
+        // Log the structure for debugging
+        \Log::info('Session data structure:', [
+            'filename' => $filename,
+            'message_count' => count($messages),
+            'first_message_keys' => !empty($messages) ? array_keys($messages[0]) : [],
+            'first_response_sample' => !empty($messages) && !empty($messages[0]['rawJsonResponses']) 
+                ? array_slice($messages[0]['rawJsonResponses'], 0, 2) 
+                : []
+        ]);
+        
         return response()->json($messages);
     }
 }
