@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Code2, Eye, EyeOff, Send } from 'lucide-vue-next';
+import { Eye, EyeOff, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -30,7 +30,6 @@ const { claudeSessions, refreshSessions } = useClaudeSessions();
 const inputMessage = ref('');
 const sessionFilename = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
-const showRawResponses = ref(false);
 const hideSystemMessages = ref(true);
 const pollingInterval = ref<number | null>(null);
 const lastMessageCount = ref(0);
@@ -365,14 +364,6 @@ onUnmounted(() => {
             >
                 <component :is="hideSystemMessages ? EyeOff : Eye" class="h-4 w-4" />
             </Button>
-            <Button
-                @click="showRawResponses = !showRawResponses"
-                variant="ghost"
-                size="icon"
-                :title="showRawResponses ? 'Hide Raw Responses' : 'Show Raw Responses'"
-            >
-                <Code2 class="h-4 w-4" />
-            </Button>
         </template>
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 dark:bg-gray-900">
             <!-- Chat Messages -->
@@ -383,7 +374,7 @@ onUnmounted(() => {
                         :key="message.id"
                         :message="message"
                         :format-time="formatTime"
-                        :show-raw-responses="showRawResponses"
+                        :show-raw-responses="false"
                     />
 
                     <div v-if="isLoading" class="flex justify-start">
