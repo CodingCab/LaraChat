@@ -118,16 +118,15 @@ const loadSessionMessages = async () => {
                     const rawResponse = conversation.rawJsonResponses[i];
                     const content = extractTextFromResponse(rawResponse);
 
-                    // Only add messages that have actual content
-                    if (content) {
-                        messages.value.push({
-                            id: Date.now() + Math.random() + i,
-                            content: content,
-                            role: 'assistant',
-                            timestamp: new Date(conversation.timestamp),
-                            rawResponses: [rawResponse],
-                        });
-                    }
+                    // Add all responses, even if they don't have traditional text content
+                    // This ensures we see system messages, tool usage, results, etc.
+                    messages.value.push({
+                        id: Date.now() + Math.random() + i,
+                        content: content || `[${rawResponse.type || 'unknown'} response]`,
+                        role: 'assistant',
+                        timestamp: new Date(conversation.timestamp),
+                        rawResponses: [rawResponse],
+                    });
                 }
             }
         }
