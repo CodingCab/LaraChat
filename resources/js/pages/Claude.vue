@@ -11,8 +11,8 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Code2, Send } from 'lucide-vue-next';
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { Code2, Eye, EyeOff, Send } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     sessionFile?: string;
@@ -31,12 +31,41 @@ const inputMessage = ref('');
 const sessionFilename = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
 const showRawResponses = ref(false);
+const hideSystemMessages = ref(true);
 const pollingInterval = ref<number | null>(null);
 const lastMessageCount = ref(0);
 const incompleteMessageFound = ref(false);
 
 // Setup focus handlers
 setupFocusHandlers(isLoading);
+
+// Computed properties
+const filteredMessages = computed(() => {
+    if (!hideSystemMessages.value) {
+        return messages.value;
+    }
+    
+    return messages.value.filter(message => {
+        // Always show user messages
+        if (message.role === 'user') {
+            return true;
+        }
+        
+        // For assistant messages, check if they contain text content
+        if (message.rawResponses && message.rawResponses.length > 0) {
+            // Check if any of the raw responses are of type 'text'
+            return message.rawResponses.some(response => {
+                if (response.type === 'assistant' && response.message?.content) {
+                    return response.message.content.some((item: any) => item.type === 'text');
+                }
+                return false;
+            });
+        }
+        
+        // If no raw responses, show the message (it might be a regular text response)
+        return true;
+    });
+});
 
 const initializeSession = () => {
     if (!sessionId.value) {
@@ -301,6 +330,15 @@ onUnmounted(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <template #header-actions>
             <Button
+                @click="hideSystemMessages = !hideSystemMessages"
+                variant="ghost"
+                size="icon"
+                :title="hideSystemMessages ? 'Show System Messages' : 'Hide System Messages'"
+                class="mr-2"
+            >
+                <component :is="hideSystemMessages ? EyeOff : Eye" class="h-4 w-4" />
+            </Button>
+            <Button
                 @click="showRawResponses = !showRawResponses"
                 variant="ghost"
                 size="icon"
@@ -314,7 +352,7 @@ onUnmounted(() => {
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
                 <div class="space-y-4">
                     <ChatMessage
-                        v-for="message in messages"
+                        v-for="message in filteredMessages"
                         :key="message.id"
                         :message="message"
                         :format-time="formatTime"
