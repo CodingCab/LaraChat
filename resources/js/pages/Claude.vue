@@ -10,6 +10,7 @@ import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
+import { router } from '@inertiajs/vue3';
 import { Code2, Send } from 'lucide-vue-next';
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -109,6 +110,11 @@ const sendMessage = async () => {
         isLoading.value = false;
         await scrollToBottom();
         focusInput(false);
+        
+        // Redirect to session URL if this is a new session
+        if (!props.sessionFile && sessionFilename.value) {
+            router.visit(`/claude/${sessionFilename.value}`);
+        }
         
         // Refresh sessions list to ensure it's up to date
         if (!props.sessionFile) {
