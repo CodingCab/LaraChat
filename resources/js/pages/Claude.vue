@@ -204,7 +204,7 @@ onMounted(async () => {
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 dark:bg-gray-900">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
-                <div class="mx-auto max-w-3xl space-y-4">
+                <div class="space-y-4">
                     <ChatMessage
                         v-for="message in messages"
                         :key="message.id"
@@ -227,7 +227,7 @@ onMounted(async () => {
 
             <!-- Input Area -->
             <div class="border-t bg-white p-4 dark:bg-gray-800">
-                <div class="mx-auto max-w-3xl">
+                <div>
                     <div class="flex items-end space-x-2">
                         <Textarea
                             ref="textareaRef"
@@ -235,7 +235,7 @@ onMounted(async () => {
                             @keydown="handleKeydown"
                             @input="adjustTextareaHeight"
                             placeholder="Type a message..."
-                            class="max-h-[120px] min-h-[40px] resize-none overflow-y-auto"
+                            class="max-h-[120px] min-h-[40px] resize-none overflow-y-auto text-sm"
                             :rows="1"
                             :disabled="isLoading"
                         />
