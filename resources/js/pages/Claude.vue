@@ -44,24 +44,24 @@ const filteredMessages = computed(() => {
     if (!hideSystemMessages.value) {
         return messages.value;
     }
-    
-    return messages.value.filter(message => {
+
+    return messages.value.filter((message) => {
         // Always show user messages
         if (message.role === 'user') {
             return true;
         }
-        
+
         // For assistant messages, check if they contain text content
         if (message.rawResponses && message.rawResponses.length > 0) {
             // Check if any of the raw responses are of type 'text'
-            return message.rawResponses.some(response => {
+            return message.rawResponses.some((response) => {
                 if (response.type === 'assistant' && response.message?.content) {
                     return response.message.content.some((item: any) => item.type === 'text');
                 }
                 return false;
             });
         }
-        
+
         // If no raw responses, show the message (it might be a regular text response)
         return true;
     });
@@ -69,7 +69,7 @@ const filteredMessages = computed(() => {
 
 const initializeSession = () => {
     // Don't set a session ID here - let Claude CLI generate it
-    
+
     if (!sessionFilename.value) {
         if (props.sessionFile) {
             sessionFilename.value = props.sessionFile;
@@ -95,9 +95,6 @@ const sendMessage = async () => {
     // Start loading
     isLoading.value = true;
     await scrollToBottom();
-
-    // Add assistant message placeholder
-    const assistantMessage = addAssistantMessage();
 
     // Initialize session
     initializeSession();
@@ -131,27 +128,31 @@ const sendMessage = async () => {
                 if (rawResponse && rawResponse.type === 'system' && rawResponse.subtype === 'init' && rawResponse.session_id) {
                     sessionId.value = rawResponse.session_id;
                 }
-                
+
                 // Check if this is a system message that should be hidden
                 if (hideSystemMessages.value && rawResponse) {
                     // Check if this response contains text content
-                    const hasTextContent = 
+                    const hasTextContent =
                         (rawResponse.type === 'content' && rawResponse.content) ||
                         (rawResponse.type === 'assistant' && rawResponse.message?.content?.some((item: any) => item.type === 'text'));
-                    
+
                     // Only append if it has text content or hideSystemMessages is false
                     if (!hasTextContent && rawResponse.type !== 'content') {
                         return; // Skip non-text responses when hiding system messages
                     }
                 }
-                
+
+                // Create a new assistant message for each response
+                const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
                 scrollToBottom();
             },
         );
     } catch (error) {
         console.error('Error sending message:', error);
-        appendToMessage(assistantMessage.id, 'Sorry, I encountered an error. Please try again.');
+        // Create an error message if no assistant message exists
+        const errorMessage = addAssistantMessage();
+        appendToMessage(errorMessage.id, 'Sorry, I encountered an error. Please try again.');
     } finally {
         isLoading.value = false;
         await scrollToBottom();

@@ -41,7 +41,7 @@ export function useClaudeApi() {
                 if (line.trim()) {
                     try {
                         const jsonData = JSON.parse(line);
-                        
+
                         // Always pass the raw response to onChunk for proper handling
                         onChunk('', jsonData);
                     } catch (e) {
@@ -55,7 +55,7 @@ export function useClaudeApi() {
         if (buffer.trim()) {
             try {
                 const jsonData = JSON.parse(buffer);
-                
+
                 // Always pass the raw response to onChunk for proper handling
                 onChunk('', jsonData);
             } catch (e) {
