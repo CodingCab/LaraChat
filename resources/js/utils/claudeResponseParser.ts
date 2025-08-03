@@ -41,3 +41,24 @@ export function extractTextFromResponses(rawResponses: ClaudeResponse[]): string
 
     return content;
 }
+
+export function extractTextFromResponse(rawResponse: any): string {
+    // Handle Claude Code CLI response format
+    if (rawResponse.type === 'assistant' && rawResponse.message) {
+        const message = rawResponse.message;
+        if (message.content && Array.isArray(message.content)) {
+            return message.content
+                .filter((item: any) => item.type === 'text')
+                .map((item: any) => item.text)
+                .join('');
+        }
+    }
+
+    // Handle other response types
+    if (rawResponse.type === 'result' && rawResponse.result) {
+        return rawResponse.result;
+    }
+
+    // Fallback to original parser
+    return parseClaudeResponse(rawResponse);
+}

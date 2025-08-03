@@ -8,7 +8,7 @@ import { useChatUI } from '@/composables/useChatUI';
 import { useClaudeApi } from '@/composables/useClaudeApi';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { extractTextFromResponses } from '@/utils/claudeResponseParser';
+import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { Send } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 
@@ -114,14 +114,20 @@ const loadSessionMessages = async () => {
             });
 
             if (conversation.rawJsonResponses?.length) {
-                for (const rawResponse of conversation.rawJsonResponses) {
-                    messages.value.push({
-                        id: Date.now() + Math.random() + 1,
-                        content: extractTextFromResponses(rawResponse),
-                        role: 'assistant',
-                        timestamp: new Date(conversation.timestamp),
-                        rawResponses: rawResponse,
-                    });
+                for (let i = 0; i < conversation.rawJsonResponses.length; i++) {
+                    const rawResponse = conversation.rawJsonResponses[i];
+                    const content = extractTextFromResponse(rawResponse);
+
+                    // Only add messages that have actual content
+                    if (content) {
+                        messages.value.push({
+                            id: Date.now() + Math.random() + i,
+                            content: content,
+                            role: 'assistant',
+                            timestamp: new Date(conversation.timestamp),
+                            rawResponses: [rawResponse],
+                        });
+                    }
                 }
             }
         }
