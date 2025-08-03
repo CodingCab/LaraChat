@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ClaudeController;
+use App\Http\Controllers\GitHubWebhookController;
 use App\Http\Controllers\RepositoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,3 +17,5 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete('/repositories/{repository}', [RepositoryController::class, 'destroy']);
     Route::post('/repositories/{repository}/pull', [RepositoryController::class, 'pull']);
 });
+
+Route::post('/github/webhook', [GitHubWebhookController::class, 'handle']);

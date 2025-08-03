@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { ref } from 'vue';
 
-export const claudeSessions = ref<Array<{ filename: string; name: string; userMessage: string; repository?: string; path: string; lastModified: number }>>([]);
+export const claudeSessions = ref<
+    Array<{ filename: string; name: string; userMessage: string; repository?: string; path: string; lastModified: number }>
+>([]);
 
 export function useClaudeSessions() {
     const isLoadingSessions = ref(false);
