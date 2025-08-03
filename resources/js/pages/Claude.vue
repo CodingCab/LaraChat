@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { Code2, Send } from 'lucide-vue-next';
-import { nextTick, onMounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     sessionFile?: string;
@@ -23,13 +23,16 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
 const { messagesContainer, textareaRef, scrollToBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
-const { claudeSessions } = useClaudeSessions();
+const { claudeSessions, refreshSessions } = useClaudeSessions();
 
 // Local state
 const inputMessage = ref('');
 const sessionFilename = ref<string | null>(null);
 const sessionId = ref<string | null>(null);
 const showRawResponses = ref(false);
+const pollingInterval = ref<number | null>(null);
+const lastMessageCount = ref(0);
+const incompleteMessageFound = ref(false);
 
 // Setup focus handlers
 setupFocusHandlers(isLoading);
@@ -106,6 +109,14 @@ const sendMessage = async () => {
         isLoading.value = false;
         await scrollToBottom();
         focusInput(false);
+        
+        // Refresh sessions list to ensure it's up to date
+        if (!props.sessionFile) {
+            // This was a new session, refresh the list after a short delay
+            setTimeout(() => {
+                refreshSessions();
+            }, 1000);
+        }
     }
 };
 
@@ -116,36 +127,93 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
 };
 
-const loadSessionMessages = async () => {
+const loadSessionMessages = async (isPolling = false) => {
     if (!props.sessionFile) return;
 
     try {
         const sessionData = await loadSession(props.sessionFile);
 
-        // Process each conversation
-        for (const conversation of sessionData) {
-            // Add user message
-            messages.value.push({
-                id: Date.now() + Math.random(),
-                content: conversation.userMessage,
-                role: 'user',
-                timestamp: new Date(conversation.timestamp),
-            });
+        // Track if there are incomplete conversations
+        incompleteMessageFound.value = false;
 
-            if (conversation.rawJsonResponses?.length) {
-                for (let i = 0; i < conversation.rawJsonResponses.length; i++) {
-                    const rawResponse = conversation.rawJsonResponses[i];
-                    const content = extractTextFromResponse(rawResponse);
+        if (!isPolling) {
+            // Initial load - clear messages and load all
+            messages.value = [];
+            
+            // Process each conversation
+            for (const conversation of sessionData) {
+                // Check if conversation is incomplete
+                if (!conversation.isComplete) {
+                    incompleteMessageFound.value = true;
+                }
 
-                    // Add all responses, even if they don't have traditional text content
-                    // This ensures we see system messages, tool usage, results, etc.
-                    messages.value.push({
-                        id: Date.now() + Math.random() + i,
-                        content: content || `[${rawResponse.type || 'unknown'} response]`,
-                        role: 'assistant',
-                        timestamp: new Date(conversation.timestamp),
-                        rawResponses: [rawResponse],
-                    });
+                // Add user message
+                messages.value.push({
+                    id: Date.now() + Math.random(),
+                    content: conversation.userMessage,
+                    role: 'user',
+                    timestamp: new Date(conversation.timestamp),
+                });
+
+                if (conversation.rawJsonResponses?.length) {
+                    for (let i = 0; i < conversation.rawJsonResponses.length; i++) {
+                        const rawResponse = conversation.rawJsonResponses[i];
+                        const content = extractTextFromResponse(rawResponse);
+
+                        // Add all responses, even if they don't have traditional text content
+                        // This ensures we see system messages, tool usage, results, etc.
+                        messages.value.push({
+                            id: Date.now() + Math.random() + i,
+                            content: content || `[${rawResponse.type || 'unknown'} response]`,
+                            role: 'assistant',
+                            timestamp: new Date(conversation.timestamp),
+                            rawResponses: [rawResponse],
+                        });
+                    }
+                }
+            }
+        } else {
+            // Polling - only update the last conversation if it was incomplete
+            if (sessionData.length > 0) {
+                const lastConversation = sessionData[sessionData.length - 1];
+                
+                // Check if the last conversation is complete now
+                if (!lastConversation.isComplete) {
+                    incompleteMessageFound.value = true;
+                }
+                
+                // Find the last assistant message index
+                let lastAssistantIndex = -1;
+                for (let i = messages.value.length - 1; i >= 0; i--) {
+                    if (messages.value[i].role === 'assistant') {
+                        lastAssistantIndex = i;
+                        break;
+                    }
+                }
+                
+                // Update the last assistant message(s) if the conversation has more responses
+                if (lastAssistantIndex >= 0 && lastConversation.rawJsonResponses?.length) {
+                    // Count existing assistant messages for this conversation
+                    let existingResponseCount = 0;
+                    for (let i = lastAssistantIndex; i >= 0 && messages.value[i].role === 'assistant'; i--) {
+                        existingResponseCount++;
+                    }
+                    
+                    // Add new responses if there are more than we already have
+                    if (lastConversation.rawJsonResponses.length > existingResponseCount) {
+                        for (let i = existingResponseCount; i < lastConversation.rawJsonResponses.length; i++) {
+                            const rawResponse = lastConversation.rawJsonResponses[i];
+                            const content = extractTextFromResponse(rawResponse);
+                            
+                            messages.value.push({
+                                id: Date.now() + Math.random() + i,
+                                content: content || `[${rawResponse.type || 'unknown'} response]`,
+                                role: 'assistant',
+                                timestamp: new Date(lastConversation.timestamp),
+                                rawResponses: [rawResponse],
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -166,8 +234,33 @@ const loadSessionMessages = async () => {
                 scrollToBottom();
             }, 200);
         }, 150);
+
+        // Start polling if there are incomplete messages
+        if (incompleteMessageFound.value && !pollingInterval.value) {
+            startPolling();
+        } else if (!incompleteMessageFound.value && pollingInterval.value) {
+            // Stop polling if all messages are complete
+            stopPolling();
+        }
     } catch (error) {
         console.error('Error loading session messages:', error);
+    }
+};
+
+const startPolling = () => {
+    if (pollingInterval.value) return;
+    
+    console.log('Starting polling for session updates...');
+    pollingInterval.value = window.setInterval(() => {
+        loadSessionMessages(true);
+    }, 2000); // Poll every 2 seconds
+};
+
+const stopPolling = () => {
+    if (pollingInterval.value) {
+        console.log('Stopping polling for session updates...');
+        clearInterval(pollingInterval.value);
+        pollingInterval.value = null;
     }
 };
 
@@ -176,6 +269,11 @@ watch(
     () => props.sessionFile,
     async (newFile, oldFile) => {
         if (newFile && newFile !== oldFile) {
+            // Stop any existing polling
+            stopPolling();
+            // Reset tracking variables
+            lastMessageCount.value = 0;
+            incompleteMessageFound.value = false;
             // Clear existing messages when switching sessions
             messages.value = [];
             await loadSessionMessages();
@@ -186,6 +284,10 @@ watch(
 onMounted(async () => {
     await loadSessionMessages();
     focusInput(false);
+});
+
+onUnmounted(() => {
+    stopPolling();
 });
 </script>
 

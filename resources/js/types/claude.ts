@@ -11,6 +11,7 @@ export interface SessionConversation {
     timestamp: string;
     sessionId?: string;
     rawJsonResponses?: any[];
+    isComplete?: boolean;
 }
 
 export interface ClaudeApiRequest {
