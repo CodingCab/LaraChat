@@ -128,6 +128,19 @@ const sendMessage = async () => {
                 sessionFilename: sessionFilename.value!,
             },
             (text, rawResponse) => {
+                // Check if this is a system message that should be hidden
+                if (hideSystemMessages.value && rawResponse) {
+                    // Check if this response contains text content
+                    const hasTextContent = 
+                        (rawResponse.type === 'content' && rawResponse.content) ||
+                        (rawResponse.type === 'assistant' && rawResponse.message?.content?.some((item: any) => item.type === 'text'));
+                    
+                    // Only append if it has text content or hideSystemMessages is false
+                    if (!hasTextContent && rawResponse.type !== 'content') {
+                        return; // Skip non-text responses when hiding system messages
+                    }
+                }
+                
                 appendToMessage(assistantMessage.id, text, rawResponse);
                 scrollToBottom();
             },
