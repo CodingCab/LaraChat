@@ -42,7 +42,15 @@ const selectedRepository = ref<string | null>(props.repository || null);
 const { repositories, fetchRepositories } = useRepositories();
 const selectedRepositoryData = computed(() => {
     if (!selectedRepository.value) return null;
-    return repositories.value.find((r) => r.name === selectedRepository.value);
+    // Try to match by folder name in local_path or by exact name
+    return repositories.value.find((r) => {
+        // Check if the local_path ends with the selected repository name
+        if (r.local_path && r.local_path.endsWith('/' + selectedRepository.value)) {
+            return true;
+        }
+        // Also check for exact name match (case-insensitive)
+        return r.name.toLowerCase() === selectedRepository.value.toLowerCase();
+    });
 });
 
 // Setup focus handlers
@@ -299,12 +307,18 @@ const loadSessionMessages = async (isPolling = false) => {
                 }
             }
 
-            // Set repository from session data if available and not already set from props
-            if (!props.repository && lastConversation.repositoryPath) {
-                // Extract repository name from path
-                const pathParts = lastConversation.repositoryPath.split('/');
-                const repoName = pathParts[pathParts.length - 1];
-                selectedRepository.value = repoName;
+            // Set repository from session data if available, but only if not already set from props
+            // Check all conversations to find one with a repository path
+            if (!selectedRepository.value) {
+                for (const conversation of sessionData) {
+                    if (conversation.repositoryPath) {
+                        // Extract repository name from path
+                        const pathParts = conversation.repositoryPath.split('/');
+                        const repoName = pathParts[pathParts.length - 1];
+                        selectedRepository.value = repoName;
+                        break; // Use the first repository found
+                    }
+                }
             }
         }
 
@@ -365,10 +379,22 @@ watch(
     },
 );
 
+// Watch for changes in repository prop
+watch(
+    () => props.repository,
+    (newRepo) => {
+        if (newRepo) {
+            selectedRepository.value = newRepo;
+        }
+    },
+    { immediate: true }
+);
+
 onMounted(async () => {
+    // Fetch repositories first to ensure they're available
+    await fetchRepositories();
     await loadSessionMessages();
     focusInput(false);
-    await fetchRepositories();
 });
 
 onUnmounted(() => {
@@ -416,9 +442,10 @@ onUnmounted(() => {
             <!-- Input Area -->
             <div class="border-t bg-white p-4 dark:bg-gray-800">
                 <div>
-                    <div v-if="selectedRepositoryData" class="mb-2 flex items-center text-sm text-muted-foreground">
+                    <div v-if="selectedRepository" class="mb-2 flex items-center text-sm text-muted-foreground">
                         <GitBranch class="mr-1 h-3 w-3" />
-                        Working in: <span class="ml-1 font-medium">{{ selectedRepositoryData.name }}</span>
+                        Working in: <span class="ml-1 font-medium">{{ selectedRepositoryData ? selectedRepositoryData.name : selectedRepository }}</span>
+                        <span v-if="!selectedRepositoryData && repositories.length > 0" class="ml-2 text-xs text-yellow-600">(not found)</span>
                     </div>
                     <div class="flex items-end space-x-2">
                         <Textarea
