@@ -152,15 +152,33 @@ const sendMessage = async () => {
                         console.log('Received JSON:', jsonData);
                         
                         // Handle different types of JSON responses from Claude CLI
-                        if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
-                            // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
-                            assistantMessage.content += jsonData.content.text;
+                        let textToAdd = '';
+                        
+                        if (jsonData.type === 'content' && jsonData.content) {
+                            if (typeof jsonData.content === 'object' && jsonData.content.type === 'text' && jsonData.content.text) {
+                                // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                                textToAdd = jsonData.content.text;
+                            } else if (typeof jsonData.content === 'string') {
+                                textToAdd = jsonData.content;
+                            }
                         } else if (jsonData.type === 'text' && jsonData.text) {
-                            assistantMessage.content += jsonData.text;
-                        } else if (jsonData.content) {
-                            assistantMessage.content += jsonData.content;
+                            textToAdd = jsonData.text;
+                        } else if (jsonData.text && typeof jsonData.text === 'string') {
+                            textToAdd = jsonData.text;
+                        } else if (jsonData.content && typeof jsonData.content === 'string') {
+                            textToAdd = jsonData.content;
                         } else if (jsonData.error) {
-                            assistantMessage.content += `Error: ${jsonData.error}`;
+                            textToAdd = `Error: ${jsonData.error}`;
+                        }
+                        
+                        if (textToAdd) {
+                            assistantMessage.content += textToAdd;
+                            console.log('Added text:', textToAdd);
+                            // Update the message in the array to trigger reactivity
+                            const messageIndex = messages.value.findIndex(m => m.id === assistantMessage.id);
+                            if (messageIndex !== -1) {
+                                messages.value[messageIndex] = { ...assistantMessage };
+                            }
                         }
                         
                         await scrollToBottom();
@@ -177,13 +195,31 @@ const sendMessage = async () => {
                 const jsonData = JSON.parse(buffer);
                 
                 // Handle different types of JSON responses from Claude CLI
-                if (jsonData.type === 'content' && jsonData.content && jsonData.content.type === 'text') {
-                    // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
-                    assistantMessage.content += jsonData.content.text;
+                let textToAdd = '';
+                
+                if (jsonData.type === 'content' && jsonData.content) {
+                    if (typeof jsonData.content === 'object' && jsonData.content.type === 'text' && jsonData.content.text) {
+                        // Claude CLI format: {"type":"content","content":{"type":"text","text":"..."}}
+                        textToAdd = jsonData.content.text;
+                    } else if (typeof jsonData.content === 'string') {
+                        textToAdd = jsonData.content;
+                    }
                 } else if (jsonData.type === 'text' && jsonData.text) {
-                    assistantMessage.content += jsonData.text;
-                } else if (jsonData.content) {
-                    assistantMessage.content += jsonData.content;
+                    textToAdd = jsonData.text;
+                } else if (jsonData.text && typeof jsonData.text === 'string') {
+                    textToAdd = jsonData.text;
+                } else if (jsonData.content && typeof jsonData.content === 'string') {
+                    textToAdd = jsonData.content;
+                }
+                
+                if (textToAdd) {
+                    assistantMessage.content += textToAdd;
+                    console.log('Added text from final buffer:', textToAdd);
+                    // Update the message in the array to trigger reactivity
+                    const messageIndex = messages.value.findIndex(m => m.id === assistantMessage.id);
+                    if (messageIndex !== -1) {
+                        messages.value[messageIndex] = { ...assistantMessage };
+                    }
                 }
             } catch (e) {
                 console.error('Error parsing final buffer:', e);
