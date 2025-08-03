@@ -9,7 +9,7 @@ import { useClaudeApi } from '@/composables/useClaudeApi';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
-import { Send } from 'lucide-vue-next';
+import { Code2, Send } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -151,12 +151,16 @@ onMounted(async () => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- Debug Toggle -->
-        <div class="fixed top-20 right-4 z-50">
-            <Button @click="showRawResponses = !showRawResponses" variant="outline" size="sm">
-                {{ showRawResponses ? 'Hide' : 'Show' }} Raw Responses
+        <template #header-actions>
+            <Button
+                @click="showRawResponses = !showRawResponses"
+                variant="ghost"
+                size="icon"
+                :title="showRawResponses ? 'Hide Raw Responses' : 'Show Raw Responses'"
+            >
+                <Code2 class="h-4 w-4" />
             </Button>
-        </div>
+        </template>
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 dark:bg-gray-900">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
