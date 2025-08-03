@@ -11,7 +11,6 @@ class GitHubWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-
         $payload = $request->getContent();
         $signature = $request->header('X-Hub-Signature-256');
 
@@ -23,9 +22,7 @@ class GitHubWebhookController extends Controller
         $event = $request->header('X-GitHub-Event');
         $data = json_decode($payload, true);
 
-        return response()->json(['status' => 'ok'], 200);
-
-        $webhookLog = GitHubWebhookLog::create([
+        $webhookLog = GitHubWebhookLog::query()->make([
             'event_type' => $event,
             'delivery_id' => $request->header('X-GitHub-Delivery'),
             'repository' => $data['repository']['full_name'] ?? null,
