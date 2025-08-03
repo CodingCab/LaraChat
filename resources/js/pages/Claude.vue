@@ -83,9 +83,9 @@ const sendMessage = async () => {
             path: `/claude/${sessionFilename.value}`,
             lastModified: Date.now(),
         };
-        
+
         // Check if session already exists
-        const existingSession = claudeSessions.value.find(s => s.filename === sessionFilename.value);
+        const existingSession = claudeSessions.value.find((s) => s.filename === sessionFilename.value);
         if (!existingSession) {
             claudeSessions.value.unshift(dummySession);
         }
@@ -110,12 +110,12 @@ const sendMessage = async () => {
         isLoading.value = false;
         await scrollToBottom();
         focusInput(false);
-        
+
         // Redirect to session URL if this is a new session
         if (!props.sessionFile && sessionFilename.value) {
             router.visit(`/claude/${sessionFilename.value}`);
         }
-        
+
         // Refresh sessions list to ensure it's up to date
         if (!props.sessionFile) {
             // This was a new session, refresh the list after a short delay
@@ -145,7 +145,7 @@ const loadSessionMessages = async (isPolling = false) => {
         if (!isPolling) {
             // Initial load - clear messages and load all
             messages.value = [];
-            
+
             // Process each conversation
             for (const conversation of sessionData) {
                 // Check if conversation is incomplete
@@ -182,12 +182,12 @@ const loadSessionMessages = async (isPolling = false) => {
             // Polling - only update the last conversation if it was incomplete
             if (sessionData.length > 0) {
                 const lastConversation = sessionData[sessionData.length - 1];
-                
+
                 // Check if the last conversation is complete now
                 if (!lastConversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
-                
+
                 // Find the last assistant message index
                 let lastAssistantIndex = -1;
                 for (let i = messages.value.length - 1; i >= 0; i--) {
@@ -196,7 +196,7 @@ const loadSessionMessages = async (isPolling = false) => {
                         break;
                     }
                 }
-                
+
                 // Update the last assistant message(s) if the conversation has more responses
                 if (lastAssistantIndex >= 0 && lastConversation.rawJsonResponses?.length) {
                     // Count existing assistant messages for this conversation
@@ -204,13 +204,13 @@ const loadSessionMessages = async (isPolling = false) => {
                     for (let i = lastAssistantIndex; i >= 0 && messages.value[i].role === 'assistant'; i--) {
                         existingResponseCount++;
                     }
-                    
+
                     // Add new responses if there are more than we already have
                     if (lastConversation.rawJsonResponses.length > existingResponseCount) {
                         for (let i = existingResponseCount; i < lastConversation.rawJsonResponses.length; i++) {
                             const rawResponse = lastConversation.rawJsonResponses[i];
                             const content = extractTextFromResponse(rawResponse);
-                            
+
                             messages.value.push({
                                 id: Date.now() + Math.random() + i,
                                 content: content || `[${rawResponse.type || 'unknown'} response]`,
@@ -255,7 +255,7 @@ const loadSessionMessages = async (isPolling = false) => {
 
 const startPolling = () => {
     if (pollingInterval.value) return;
-    
+
     console.log('Starting polling for session updates...');
     pollingInterval.value = window.setInterval(() => {
         loadSessionMessages(true);

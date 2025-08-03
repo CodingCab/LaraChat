@@ -13,12 +13,12 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, FileText, Folder, LayoutGrid, MessageSquare } from 'lucide-vue-next';
 import { onMounted } from 'vue';
 import AppLogo from './AppLogo.vue';
-import { useClaudeSessions } from '@/composables/useClaudeSessions';
 
 const page = usePage();
 const { claudeSessions, fetchSessions } = useClaudeSessions();
@@ -78,7 +78,9 @@ onMounted(async () => {
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
                             <Link :href="`/claude/${session.filename}`">
                                 <FileText />
-                                <span class="truncate">{{ session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage }}</span>
+                                <span class="truncate">{{
+                                    session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
+                                }}</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
