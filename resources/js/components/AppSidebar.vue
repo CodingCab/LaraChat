@@ -20,7 +20,7 @@ import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { BookOpen, FileText, Folder, GitBranch, LayoutGrid, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
+import { BookOpen, FileText, Folder, GitBranch, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -34,11 +34,6 @@ const branch = ref('');
 const cloneError = ref('');
 
 const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
-    },
     {
         title: 'Claude',
         href: '/claude',
@@ -90,7 +85,7 @@ const handleRepositoryClick = (repositoryName: string) => {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('dashboard')" :preserve-scroll="true" :preserve-state="true">
+                        <Link :href="route('claude')" :preserve-scroll="true" :preserve-state="true">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
