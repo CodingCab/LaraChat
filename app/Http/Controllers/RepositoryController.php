@@ -55,8 +55,8 @@ class RepositoryController extends Controller
         // Extract repository name from URL
         $repoName = $this->extractRepoName($url);
 
-        // Generate unique local path in base directory
-        $localPath = 'repositories/base/' . Str::slug($repoName) . '-' . Str::random(6);
+        // Generate local path in base directory using repository name
+        $localPath = 'repositories/base/' . $repoName;
         $fullPath = storage_path('app/private/' . $localPath);
 
         // Create directory if it doesn't exist
