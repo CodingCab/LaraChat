@@ -175,7 +175,7 @@ const sendMessage = async () => {
     } finally {
         isLoading.value = false;
         await scrollToBottom();
-        focusInput(false);
+        // Removed auto-focus after sending message to allow user to select/copy text
 
         // Redirect to session URL if this is a new session
         if (!props.sessionFile && sessionFilename.value) {
@@ -411,9 +411,9 @@ onMounted(async () => {
         messages.value = [];
         sessionFilename.value = null;
         sessionId.value = null;
+        // Only focus on initial mount for new sessions
+        focusInput(false);
     }
-    
-    focusInput(false);
 });
 
 onUnmounted(() => {

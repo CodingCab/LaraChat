@@ -83,32 +83,36 @@ export function useChatUI() {
 
     const handlePageClick = (e: MouseEvent, isLoading: boolean) => {
         const target = e.target as HTMLElement;
-        if (!target.closest('textarea, button, a, [role="button"]')) {
+        // Don't auto-focus if user is selecting text or interacting with content
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) {
+            return; // User is selecting text, don't steal focus
+        }
+        
+        // Don't auto-focus if clicking on interactive elements or message content
+        if (!target.closest('textarea, button, a, [role="button"], pre, code, .prose, [class*="message"], [class*="chat"]')) {
+            // Only focus if clicking on truly empty areas (like the background)
+            if (target.closest('.p-4, [class*="container"], [class*="scroll"]')) {
+                return; // Clicking in content areas, don't auto-focus
+            }
             focusInput(isLoading);
         }
     };
 
     const handleVisibilityChange = (isLoading: boolean) => {
-        if (!document.hidden) {
-            focusInput(isLoading);
-        }
+        // Removed auto-focus on visibility change to not interrupt user actions
     };
 
     const setupFocusHandlers = (isLoading: { value: boolean }) => {
         const pageClickHandler = (e: MouseEvent) => handlePageClick(e, isLoading.value);
-        const visibilityHandler = () => handleVisibilityChange(isLoading.value);
-        const focusHandler = () => focusInput(isLoading.value);
 
         onMounted(() => {
             document.addEventListener('click', pageClickHandler);
-            window.addEventListener('focus', focusHandler);
-            document.addEventListener('visibilitychange', visibilityHandler);
+            // Removed auto-focus on window focus and visibility change
         });
 
         onUnmounted(() => {
             document.removeEventListener('click', pageClickHandler);
-            window.removeEventListener('focus', focusHandler);
-            document.removeEventListener('visibilitychange', visibilityHandler);
         });
     };
 
