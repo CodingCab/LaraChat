@@ -10,6 +10,21 @@ use Illuminate\Support\Facades\Cache;
 
 class ClaudeController extends Controller
 {
+    public function stop(Request $request)
+    {
+        $request->validate([
+            'processId' => 'required|string',
+        ]);
+        
+        $processId = $request->input('processId');
+        $success = ClaudeService::stopProcess($processId);
+        
+        return response()->json([
+            'success' => $success,
+            'message' => $success ? 'Process stopped successfully' : 'Process not found or already stopped'
+        ]);
+    }
+    
     /**
      * @throws Exception
      */

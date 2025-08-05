@@ -9,9 +9,13 @@ use Symfony\Component\Process\Process;
 
 class ClaudeService
 {
+    private static $runningProcesses = [];
     public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null)
     {
-        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename, $repositoryPath) {
+        // Generate a unique process ID for this request
+        $processId = uniqid('claude_', true);
+        
+        return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename, $repositoryPath, $processId) {
             ob_implicit_flush(true);
             if (ob_get_level() > 0) {
                 ob_end_flush();
@@ -59,6 +63,13 @@ class ClaudeService
             $process->setIdleTimeout(null);
 
             $process->start();
+            
+            // Store the process for potential termination
+            self::$runningProcesses[$processId] = $process;
+            
+            // Send process ID to frontend
+            echo json_encode(['type' => 'process_started', 'processId' => $processId]) . "\n";
+            flush();
             
             // Initialize session data
             $rawJsonResponses = [];
@@ -153,6 +164,13 @@ class ClaudeService
                 self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
             }
 
+            // Clean up process from tracking
+            unset(self::$runningProcesses[$processId]);
+            
+            // Send process ended signal
+            echo json_encode(['type' => 'process_ended', 'processId' => $processId]) . "\n";
+            flush();
+            
             if (!$process->isSuccessful()) {
                 echo json_encode(['error' => "Process exited with code: " . $process->getExitCode()]) . "\n";
                 flush();
@@ -256,5 +274,32 @@ class ClaudeService
         } finally {
             optional($lock)->release();
         }
+    }
+    
+    public static function stopProcess(string $processId): bool
+    {
+        if (isset(self::$runningProcesses[$processId])) {
+            $process = self::$runningProcesses[$processId];
+            
+            try {
+                // Stop the process
+                $process->stop(3.0); // 3 second timeout
+                
+                // Remove from tracking
+                unset(self::$runningProcesses[$processId]);
+                
+                \Log::info('Claude process stopped', ['processId' => $processId]);
+                
+                return true;
+            } catch (\Exception $e) {
+                \Log::error('Error stopping Claude process', [
+                    'processId' => $processId,
+                    'error' => $e->getMessage()
+                ]);
+                return false;
+            }
+        }
+        
+        return false;
     }
 }
