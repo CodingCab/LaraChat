@@ -13,7 +13,9 @@ class ClaudeService
     {
         return new StreamedResponse(function () use ($prompt, $options, $sessionId, $sessionFilename, $repositoryPath) {
             ob_implicit_flush(true);
-            ob_end_flush();
+            if (ob_get_level() > 0) {
+                ob_end_flush();
+            }
 
             $wrapperPath = base_path('claude-wrapper.sh');
             $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
