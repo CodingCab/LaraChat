@@ -15,6 +15,10 @@ class Repository extends Model
         'branch',
         'last_pulled_at'
     ];
+    
+    protected $attributes = [
+        'branch' => 'main',
+    ];
 
     protected $casts = [
         'last_pulled_at' => 'datetime',

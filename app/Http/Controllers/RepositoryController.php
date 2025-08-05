@@ -27,6 +27,18 @@ class RepositoryController extends Controller
         $user = $request->user();
         $url = $request->input('url');
         $branch = $request->input('branch');
+        
+        // Check if repository already exists for this user
+        $existingRepository = $user->repositories()
+            ->where('url', $url)
+            ->first();
+            
+        if ($existingRepository) {
+            return response()->json([
+                'message' => 'Repository already exists',
+                'repository' => $existingRepository
+            ], 409);
+        }
 
         // Extract repository name from URL
         $repoName = $this->extractRepoName($url);
