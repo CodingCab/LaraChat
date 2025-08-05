@@ -148,9 +148,15 @@ const handleRepositoryClick = (repositoryName: string) => {
                                 :preserve-state="true"
                             >
                                 <FileText />
-                                <span class="truncate">{{
-                                    session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
-                                }}</span>
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate block">{{
+                                        session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
+                                    }}</span>
+                                    <div v-if="session.repository" class="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                        <GitBranch class="h-3 w-3 shrink-0" />
+                                        <span class="truncate">{{ session.repository }}</span>
+                                    </div>
+                                </div>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
