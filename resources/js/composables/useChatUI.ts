@@ -88,7 +88,7 @@ export function useChatUI() {
         if (selection && selection.toString().length > 0) {
             return; // User is selecting text, don't steal focus
         }
-        
+
         // Don't auto-focus if clicking on interactive elements or message content
         if (!target.closest('textarea, button, a, [role="button"], pre, code, .prose, [class*="message"], [class*="chat"]')) {
             // Only focus if clicking on truly empty areas (like the background)

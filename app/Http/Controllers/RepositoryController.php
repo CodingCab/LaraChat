@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CopyRepositoryToHot;
 use App\Models\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
@@ -12,9 +13,20 @@ class RepositoryController extends Controller
 {
     public function index(Request $request)
     {
-        return $request->user()->repositories()
+        $repositories = $request->user()->repositories()
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Check hot folder status for each repository
+        $repositories->transform(function ($repository) {
+            $repoName = $this->extractRepoName($repository->url);
+            $hotPattern = storage_path('app/private/repositories/hot/' . $repoName . '/' . $repoName . '_*');
+            $hotFolders = glob($hotPattern);
+            $repository->has_hot_folder = !empty($hotFolders);
+            return $repository;
+        });
+
+        return $repositories;
     }
 
     public function store(Request $request)
@@ -27,12 +39,12 @@ class RepositoryController extends Controller
         $user = $request->user();
         $url = $request->input('url');
         $branch = $request->input('branch');
-        
+
         // Check if repository already exists for this user
         $existingRepository = $user->repositories()
             ->where('url', $url)
             ->first();
-            
+
         if ($existingRepository) {
             return response()->json([
                 'message' => 'Repository already exists',
@@ -43,8 +55,8 @@ class RepositoryController extends Controller
         // Extract repository name from URL
         $repoName = $this->extractRepoName($url);
 
-        // Generate unique local path in common directory
-        $localPath = 'repositories/common/' . Str::slug($repoName) . '-' . Str::random(6);
+        // Generate unique local path in base directory
+        $localPath = 'repositories/base/' . Str::slug($repoName) . '-' . Str::random(6);
         $fullPath = storage_path('app/private/' . $localPath);
 
         // Create directory if it doesn't exist
@@ -143,6 +155,33 @@ class RepositoryController extends Controller
         return response()->json([
             'message' => 'Repository updated successfully',
             'repository' => $repository
+        ]);
+    }
+
+    public function copyToHot(Repository $repository)
+    {
+        // Ensure user owns the repository
+        if ($repository->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Check if hot folder already exists
+        $repoName = $this->extractRepoName($repository->url);
+        $hotPattern = storage_path('app/private/repositories/hot/' . $repoName . '/' . $repoName . '_*');
+        $hotFolders = glob($hotPattern);
+        if (!empty($hotFolders)) {
+            return response()->json([
+                'message' => 'Hot folder already exists',
+                'has_hot_folder' => true
+            ]);
+        }
+
+        // Dispatch job to copy repository to hot folder
+        CopyRepositoryToHot::dispatchAfterResponse($repository);
+
+        return response()->json([
+            'message' => 'Repository copy job dispatched',
+            'has_hot_folder' => false
         ]);
     }
 

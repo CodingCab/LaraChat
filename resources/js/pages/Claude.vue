@@ -374,7 +374,7 @@ watch(
             incompleteMessageFound.value = false;
             // Clear existing messages when switching sessions or when no session is specified
             messages.value = [];
-            
+
             if (newFile) {
                 await loadSessionMessages();
             } else {
@@ -403,7 +403,7 @@ watch(
 onMounted(async () => {
     // Fetch repositories first to ensure they're available
     await fetchRepositories();
-    
+
     if (props.sessionFile) {
         await loadSessionMessages();
     } else {

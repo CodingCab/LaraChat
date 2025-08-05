@@ -11,6 +11,7 @@ export interface Repository {
     last_pulled_at: string | null;
     created_at: string;
     updated_at: string;
+    has_hot_folder?: boolean;
 }
 
 export function useRepositories() {
@@ -83,6 +84,25 @@ export function useRepositories() {
         }
     };
 
+    const copyToHot = async (id: number) => {
+        loading.value = true;
+        error.value = null;
+        try {
+            const response = await axios.post(`/api/repositories/${id}/copy-to-hot`);
+            // Update the repository status if needed
+            const index = repositories.value.findIndex((repo) => repo.id === id);
+            if (index !== -1 && response.data.has_hot_folder !== undefined) {
+                repositories.value[index].has_hot_folder = response.data.has_hot_folder;
+            }
+            return response.data;
+        } catch (err: any) {
+            error.value = err.response?.data?.message || 'Failed to copy repository to hot folder';
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    };
+
     return {
         repositories,
         loading,
@@ -91,5 +111,6 @@ export function useRepositories() {
         cloneRepository,
         deleteRepository,
         pullRepository,
+        copyToHot,
     };
 }

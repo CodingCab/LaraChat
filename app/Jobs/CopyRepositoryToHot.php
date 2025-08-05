@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CopyRepositoryToHot implements ShouldQueue
 {
@@ -23,31 +24,37 @@ class CopyRepositoryToHot implements ShouldQueue
     public function __construct(
         protected Repository $repository
     ) {
-        $this->hotDirectory = public_path('hot');
+        $this->hotDirectory = storage_path('app/private/repositories/hot');
     }
 
     public function handle()
     {
         try {
-            if (!File::exists($this->repository->local_path)) {
-                throw new \Exception("Repository not found at path: {$this->repository->local_path}");
+            $sourcePath = storage_path('app/private/' . $this->repository->local_path);
+            
+            if (!File::exists($sourcePath)) {
+                throw new \Exception("Repository not found at path: {$sourcePath}");
             }
 
-            if (!File::exists($this->hotDirectory)) {
-                File::makeDirectory($this->hotDirectory, 0755, true);
+            $repoName = $this->extractRepoName($this->repository->url);
+            $uuid = Str::uuid()->toString();
+            $repoHotDirectory = $this->hotDirectory . '/' . $repoName;
+            
+            if (!File::exists($repoHotDirectory)) {
+                File::makeDirectory($repoHotDirectory, 0755, true);
             }
 
-            $destinationPath = $this->hotDirectory . '/' . basename($this->repository->local_path);
+            $destinationPath = $repoHotDirectory . '/' . $repoName . '_' . $uuid;
 
             if (File::exists($destinationPath)) {
                 File::deleteDirectory($destinationPath);
             }
 
-            $this->copyDirectory($this->repository->local_path, $destinationPath);
+            $this->copyDirectory($sourcePath, $destinationPath);
 
             Log::info('Repository copied to hot folder', [
                 'repository' => $this->repository->name,
-                'source' => $this->repository->local_path,
+                'source' => $sourcePath,
                 'destination' => $destinationPath,
             ]);
 
@@ -93,6 +100,13 @@ class CopyRepositoryToHot implements ShouldQueue
             $destDir = $destination . '/' . basename($directory);
             $this->copyDirectory($directory, $destDir);
         }
+    }
+
+    protected function extractRepoName(string $url): string
+    {
+        $url = rtrim($url, '.git');
+        $parts = explode('/', $url);
+        return end($parts);
     }
 
     public function failed(\Throwable $exception)

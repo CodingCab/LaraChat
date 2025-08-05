@@ -20,13 +20,13 @@ import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { BookOpen, FileText, Folder, GitBranch, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
+import { AlertCircle, BookOpen, CheckCircle, FileText, Folder, GitBranch, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const { claudeSessions, fetchSessions } = useClaudeSessions();
-const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
+const { repositories, fetchRepositories, cloneRepository, loading, copyToHot } = useRepositories();
 
 const showCloneDialog = ref(false);
 const repositoryUrl = ref('');
@@ -77,6 +77,34 @@ const handleRepositoryClick = (repositoryName: string) => {
         preserveState: true,
     });
 };
+
+const handleCopyToHot = async (repositoryId: number) => {
+    console.log('handleCopyToHot called with id:', repositoryId);
+    
+    if (!repositoryId) {
+        console.error('No repository ID provided');
+        return;
+    }
+    
+    try {
+        const response = await copyToHot(repositoryId);
+        console.log('Response from copyToHot:', response);
+        
+        if (response.has_hot_folder) {
+            console.log('Hot folder already exists');
+        } else {
+            console.log('Copy job dispatched successfully');
+            // Refresh repositories after a delay to check status
+            setTimeout(() => {
+                console.log('Refreshing repositories...');
+                fetchRepositories();
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Failed to copy repository to hot folder:', error);
+        alert('Failed to copy repository to hot folder. Check console for details.');
+    }
+};
 </script>
 
 <template>
@@ -114,15 +142,24 @@ const handleRepositoryClick = (repositoryName: string) => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem v-for="repo in repositories" :key="repo.id">
-                        <SidebarMenuButton as-child :tooltip="repo.url">
-                            <a
-                                :href="`/claude?repository=${encodeURIComponent(repo.name)}`"
-                                @click.prevent="handleRepositoryClick(repo.name)"
-                                class="cursor-pointer"
+                        <SidebarMenuButton @click="handleRepositoryClick(repo.name)" :tooltip="repo.url">
+                            <GitBranch />
+                            <span class="truncate flex-1">{{ repo.name }}</span>
+                            <div 
+                                v-if="repo.has_hot_folder"
+                                class="ml-auto"
+                                title="Hot folder ready"
                             >
-                                <GitBranch />
-                                <span class="truncate">{{ repo.name }}</span>
-                            </a>
+                                <CheckCircle class="h-3.5 w-3.5 text-green-500" />
+                            </div>
+                            <div
+                                v-else
+                                class="ml-auto hover:scale-110 transition-transform cursor-pointer"
+                                @click.stop="() => handleCopyToHot(repo.id)"
+                                title="Click to copy to hot folder"
+                            >
+                                <AlertCircle class="h-3.5 w-3.5 text-yellow-500" />
+                            </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
@@ -143,11 +180,11 @@ const handleRepositoryClick = (repositoryName: string) => {
                                 :preserve-state="true"
                             >
                                 <FileText />
-                                <div class="flex-1 min-w-0">
-                                    <span class="truncate block">{{
+                                <div class="min-w-0 flex-1">
+                                    <span class="block truncate">{{
                                         session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
                                     }}</span>
-                                    <div v-if="session.repository" class="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                    <div v-if="session.repository" class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                                         <GitBranch class="h-3 w-3 shrink-0" />
                                         <span class="truncate">{{ session.repository }}</span>
                                     </div>

@@ -16,6 +16,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/repositories', [RepositoryController::class, 'store']);
     Route::delete('/repositories/{repository}', [RepositoryController::class, 'destroy']);
     Route::post('/repositories/{repository}/pull', [RepositoryController::class, 'pull']);
+    Route::post('/repositories/{repository}/copy-to-hot', [RepositoryController::class, 'copyToHot']);
 });
 
 Route::post('/github/webhook', [GitHubWebhookController::class, 'handle']);
