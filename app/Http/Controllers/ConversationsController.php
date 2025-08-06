@@ -77,7 +77,8 @@ class ConversationsController extends Controller
             'filename' => $sessionFilename,
         ]);
 
-        StreamMessageJob::dispatch($conversation, $message);
+        // Store the message in session to handle it on the conversation page
+        session()->flash('initial_message', $message);
 
         // Redirect to the conversation page
         return redirect()->route('claude.conversation', $conversation->id);

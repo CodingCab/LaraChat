@@ -80,16 +80,16 @@ const handleRepositoryClick = (repositorySlug: string) => {
 
 const handleCopyToHot = async (repositoryId: number) => {
     console.log('handleCopyToHot called with id:', repositoryId);
-    
+
     if (!repositoryId) {
         console.error('No repository ID provided');
         return;
     }
-    
+
     try {
         const response = await copyToHot(repositoryId);
         console.log('Response from copyToHot:', response);
-        
+
         if (response.has_hot_folder) {
             console.log('Hot folder already exists');
         } else {
@@ -144,17 +144,13 @@ const handleCopyToHot = async (repositoryId: number) => {
                     <SidebarMenuItem v-for="repo in repositories" :key="repo.id">
                         <SidebarMenuButton @click="handleRepositoryClick(repo.slug)" :tooltip="repo.url">
                             <GitBranch />
-                            <span class="truncate flex-1">{{ repo.name }}</span>
-                            <div 
-                                v-if="repo.has_hot_folder"
-                                class="ml-auto"
-                                title="Hot folder ready"
-                            >
+                            <span class="flex-1 truncate">{{ repo.name }}</span>
+                            <div v-if="repo.has_hot_folder" class="ml-auto" title="Hot folder ready">
                                 <CheckCircle class="h-3.5 w-3.5 text-green-500" />
                             </div>
                             <div
                                 v-else
-                                class="ml-auto hover:scale-110 transition-transform cursor-pointer"
+                                class="ml-auto cursor-pointer transition-transform hover:scale-110"
                                 @click.stop="() => handleCopyToHot(repo.id)"
                                 title="Click to copy to hot folder"
                             >
@@ -170,21 +166,19 @@ const handleCopyToHot = async (repositoryId: number) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
-                            <Link
-                                :href="`/claude/conversation/${conversation.id}`"
-                                :preserve-scroll="true"
-                                :preserve-state="true"
-                            >
+                            <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true">
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
                                     <span class="block truncate">{{ conversation.title }}</span>
                                     <div class="mt-0.5 flex items-center justify-between gap-1 text-xs text-muted-foreground">
-                                        <div v-if="conversation.repository" class="flex items-center gap-1 min-w-0">
+                                        <div v-if="conversation.repository" class="flex min-w-0 items-center gap-1">
                                             <GitBranch class="h-3 w-3 shrink-0" />
                                             <span class="truncate">{{ conversation.repository }}</span>
                                         </div>
                                         <span v-else></span>
-                                        <span v-if="conversation.project_directory" class="truncate text-right">{{ conversation.project_directory }}</span>
+                                        <span v-if="conversation.project_directory" class="truncate text-right">{{
+                                            conversation.project_directory
+                                        }}</span>
                                     </div>
                                 </div>
                             </Link>
@@ -192,7 +186,6 @@ const handleCopyToHot = async (repositoryId: number) => {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarGroup>
-
         </SidebarContent>
 
         <SidebarFooter>

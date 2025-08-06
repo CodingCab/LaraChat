@@ -25,12 +25,14 @@ Route::get('claude/new', [ConversationsController::class, 'store'])
     ->middleware(['auth', 'verified'])
     ->name('claude.new');
 
-Route::get('claude/{session}', function ($session) {
-    return Inertia::render('Claude', [
-        'sessionFile' => $session,
-        'repository' => request()->query('repository')
-    ]);
-})->middleware(['auth', 'verified'])->name('claude.session');
+////
+////Route::get('claude/{session}', function ($session) {
+////    return Inertia::render('Claude', [
+////        'sessionFile' => $session,
+////        'repository' => request()->query('repository')
+////    ]);
+////})->middleware(['auth', 'verified'])->name('claude.session');
+//a
 
 Route::get('claude/conversation/{conversation}', function ($conversation) {
     $conv = \App\Models\Conversation::findOrFail($conversation);
@@ -38,7 +40,8 @@ Route::get('claude/conversation/{conversation}', function ($conversation) {
         'conversationId' => $conv->id,
         'repository' => $conv->repository,
         'sessionId' => $conv->claude_session_id,
-        'sessionFile' => $conv->filename
+        'sessionFile' => $conv->filename,
+        'initialMessage' => session('initial_message')
     ]);
 })->middleware(['auth', 'verified'])->name('claude.conversation');
 

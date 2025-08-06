@@ -70,7 +70,7 @@ export function useClaudeApi() {
         // Return the conversation ID and filename if they were created
         return {
             conversationId: conversationId ? parseInt(conversationId) : null,
-            sessionFilename: sessionFilename || null
+            sessionFilename: sessionFilename || null,
         };
     };
 

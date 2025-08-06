@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/vue3';
-import { GitBranch, FileCode, FolderOpen, Clock, Activity, MessageSquare, Copy, Terminal, Send } from 'lucide-vue-next';
-import { onMounted, ref, computed } from 'vue';
 import axios from 'axios';
+import { Activity, Clock, Copy, FileCode, FolderOpen, GitBranch, MessageSquare, Send, Terminal } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
 
 const props = defineProps<{
     repository: {
@@ -35,10 +35,7 @@ const props = defineProps<{
     }>;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Repositories', href: '/repositories' },
-    { title: props.repository.name },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Repositories', href: '/repositories' }, { title: props.repository.name }];
 
 const fileTree = ref<any[]>([]);
 const loadingTree = ref(false);
@@ -75,7 +72,7 @@ const openConversation = (conversationId: number) => {
 
 const startChatWithMessage = () => {
     if (messageInput.value.trim()) {
-        router.visit(`/claude/new?message=${encodeURIComponent(messageInput.value.trim())}`);
+        router.visit(`/claude/new?repository=${encodeURIComponent(props.repository.name)}&message=${encodeURIComponent(messageInput.value.trim())}`);
     }
 };
 
@@ -87,18 +84,18 @@ const formattedDate = computed(() => {
     return new Date(props.repository.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
     });
 });
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="container mx-auto py-6 space-y-6">
+        <div class="container mx-auto space-y-6 py-6">
             <!-- Repository Header -->
             <div class="flex items-start justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold flex items-center gap-3">
+                    <h1 class="flex items-center gap-3 text-3xl font-bold">
                         <GitBranch class="h-8 w-8" />
                         {{ repository.name }}
                     </h1>
@@ -107,24 +104,16 @@ const formattedDate = computed(() => {
                         <Badge variant="outline" v-if="repository.branch">
                             {{ repository.branch }}
                         </Badge>
-                        <Badge v-if="repository.has_hot_folder" variant="default" class="bg-green-500">
-                            Hot Folder Ready
-                        </Badge>
-                        <Badge v-else variant="secondary">
-                            Not in Hot Folder
-                        </Badge>
-                        <span class="text-sm text-muted-foreground flex items-center gap-1">
+                        <Badge v-if="repository.has_hot_folder" variant="default" class="bg-green-500"> Hot Folder Ready </Badge>
+                        <Badge v-else variant="secondary"> Not in Hot Folder </Badge>
+                        <span class="flex items-center gap-1 text-sm text-muted-foreground">
                             <Clock class="h-3 w-3" />
                             Cloned {{ formattedDate }}
                         </span>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <Button 
-                        v-if="!repository.has_hot_folder" 
-                        @click="copyToHot"
-                        variant="outline"
-                    >
+                    <Button v-if="!repository.has_hot_folder" @click="copyToHot" variant="outline">
                         <Copy class="mr-2 h-4 w-4" />
                         Copy to Hot Folder
                     </Button>
@@ -194,11 +183,11 @@ const formattedDate = computed(() => {
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <p class="text-sm font-medium text-muted-foreground">Repository Path</p>
-                                    <p class="text-sm font-mono">{{ repository.path }}</p>
+                                    <p class="font-mono text-sm">{{ repository.path }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-muted-foreground">Clone URL</p>
-                                    <p class="text-sm font-mono">{{ repository.url }}</p>
+                                    <p class="font-mono text-sm">{{ repository.url }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-muted-foreground">Branch</p>
@@ -221,7 +210,7 @@ const formattedDate = computed(() => {
                         </CardHeader>
                         <CardContent>
                             <div class="flex gap-2">
-                                <Input 
+                                <Input
                                     v-model="messageInput"
                                     placeholder="Type your message here..."
                                     @keyup.enter="startChatWithMessage"
@@ -242,10 +231,10 @@ const formattedDate = computed(() => {
                         </CardHeader>
                         <CardContent>
                             <div class="space-y-2">
-                                <div 
-                                    v-for="conversation in recent_conversations.slice(0, 5)" 
+                                <div
+                                    v-for="conversation in recent_conversations.slice(0, 5)"
                                     :key="conversation.id"
-                                    class="flex items-center justify-between p-2 rounded-lg hover:bg-accent cursor-pointer"
+                                    class="flex cursor-pointer items-center justify-between rounded-lg p-2 hover:bg-accent"
                                     @click="openConversation(conversation.id)"
                                 >
                                     <div class="flex items-center gap-2">
@@ -268,15 +257,11 @@ const formattedDate = computed(() => {
                             <CardDescription>Browse repository files and directories</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div v-if="loadingTree" class="text-center py-8 text-muted-foreground">
-                                Loading file tree...
-                            </div>
+                            <div v-if="loadingTree" class="py-8 text-center text-muted-foreground">Loading file tree...</div>
                             <div v-else-if="fileTree.length > 0" class="font-mono text-sm">
                                 <pre class="overflow-x-auto">{{ fileTree.join('\n') }}</pre>
                             </div>
-                            <div v-else class="text-center py-8 text-muted-foreground">
-                                No files found or unable to load file tree
-                            </div>
+                            <div v-else class="py-8 text-center text-muted-foreground">No files found or unable to load file tree</div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -289,10 +274,10 @@ const formattedDate = computed(() => {
                         </CardHeader>
                         <CardContent>
                             <div v-if="recent_conversations && recent_conversations.length > 0" class="space-y-2">
-                                <div 
-                                    v-for="conversation in recent_conversations" 
+                                <div
+                                    v-for="conversation in recent_conversations"
                                     :key="conversation.id"
-                                    class="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer"
+                                    class="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-accent"
                                     @click="openConversation(conversation.id)"
                                 >
                                     <div>
@@ -301,14 +286,10 @@ const formattedDate = computed(() => {
                                             {{ new Date(conversation.created_at).toLocaleString() }}
                                         </p>
                                     </div>
-                                    <Button variant="ghost" size="sm">
-                                        Open
-                                    </Button>
+                                    <Button variant="ghost" size="sm"> Open </Button>
                                 </div>
                             </div>
-                            <div v-else class="text-center py-8 text-muted-foreground">
-                                No conversations yet. Start a chat session to begin.
-                            </div>
+                            <div v-else class="py-8 text-center text-muted-foreground">No conversations yet. Start a chat session to begin.</div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -320,40 +301,30 @@ const formattedDate = computed(() => {
                             <CardDescription>Available operations for this repository</CardDescription>
                         </CardHeader>
                         <CardContent class="space-y-3">
-                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                     <p class="font-medium">Copy to Hot Folder</p>
-                                    <p class="text-sm text-muted-foreground">
-                                        Make repository available for AI assistance
-                                    </p>
+                                    <p class="text-sm text-muted-foreground">Make repository available for AI assistance</p>
                                 </div>
-                                <Button 
-                                    @click="copyToHot" 
-                                    :disabled="repository.has_hot_folder"
-                                    variant="outline"
-                                >
+                                <Button @click="copyToHot" :disabled="repository.has_hot_folder" variant="outline">
                                     <Copy class="mr-2 h-4 w-4" />
                                     {{ repository.has_hot_folder ? 'Already Copied' : 'Copy Now' }}
                                 </Button>
                             </div>
-                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                     <p class="font-medium">Start AI Chat</p>
-                                    <p class="text-sm text-muted-foreground">
-                                        Open Claude assistant for this repository
-                                    </p>
+                                    <p class="text-sm text-muted-foreground">Open Claude assistant for this repository</p>
                                 </div>
                                 <Button @click="startChatSession">
                                     <MessageSquare class="mr-2 h-4 w-4" />
                                     Start Chat
                                 </Button>
                             </div>
-                            <div class="flex items-center justify-between p-3 border rounded-lg">
+                            <div class="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                     <p class="font-medium">Open in Terminal</p>
-                                    <p class="text-sm text-muted-foreground">
-                                        Repository path: {{ repository.path }}
-                                    </p>
+                                    <p class="text-sm text-muted-foreground">Repository path: {{ repository.path }}</p>
                                 </div>
                                 <Button variant="outline" disabled>
                                     <Terminal class="mr-2 h-4 w-4" />

@@ -21,6 +21,7 @@ const props = defineProps<{
     repository?: string;
     conversationId?: number;
     sessionId?: string;
+    initialMessage?: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
@@ -442,6 +443,13 @@ onMounted(async () => {
         }
         // Only focus on initial mount for new sessions
         focusInput(false);
+    }
+
+    // If we have an initial message, send it automatically
+    if (props.initialMessage) {
+        messageInput.value = props.initialMessage;
+        await nextTick();
+        sendMessage();
     }
 });
 

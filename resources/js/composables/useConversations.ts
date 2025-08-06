@@ -1,5 +1,5 @@
-import { ref } from 'vue';
 import axios from 'axios';
+import { ref } from 'vue';
 
 interface Conversation {
     id: number;
@@ -20,7 +20,7 @@ export function useConversations() {
     const fetchConversations = async () => {
         loading.value = true;
         error.value = null;
-        
+
         try {
             console.log('Fetching conversations...');
             const response = await axios.get<Conversation[]>('/api/claude/conversations');

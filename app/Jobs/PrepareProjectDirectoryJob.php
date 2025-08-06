@@ -19,15 +19,17 @@ class PrepareProjectDirectoryJob implements ShouldQueue
     public $tries = 3;
     public $backoff = [60, 120, 300];
 
-    public function __construct(
-        public Conversation $conversation
-    ) {}
+    public function __construct(public Conversation $conversation)
+    {
+        //
+    }
 
     public function handle(): void
     {
+        dd(1);
         $repository = $this->conversation->repository;
         $projectDirectory = $this->conversation->project_directory;
-        
+
         if (!$repository || !$projectDirectory) {
             Log::error('PrepareProjectDirectoryJob: Missing repository or project_directory', [
                 'conversation_id' => $this->conversation->id,
@@ -40,10 +42,10 @@ class PrepareProjectDirectoryJob implements ShouldQueue
         $basePath = storage_path('app/private/repositories/base');
         $hotPath = storage_path('app/private/repositories/hot');
         $projectsPath = storage_path('app/private/repositories/projects');
-        
+
         $baseRepoPath = $basePath . '/' . $repository;
         $fullProjectPath = storage_path('app/private/' . $projectDirectory);
-        
+
         if (!File::exists($baseRepoPath)) {
             Log::error('PrepareProjectDirectoryJob: Base repository does not exist', [
                 'repository' => $repository,
@@ -56,17 +58,17 @@ class PrepareProjectDirectoryJob implements ShouldQueue
         File::ensureDirectoryExists(dirname($fullProjectPath));
 
         $hotRepos = File::glob($hotPath . '/' . $repository . '-*');
-        
+
         if (empty($hotRepos)) {
             Log::info('PrepareProjectDirectoryJob: Hot folder is empty, copying from base', [
                 'repository' => $repository,
             ]);
-            
+
             $uuid = Str::uuid()->toString();
             $hotRepoPath = $hotPath . '/' . $repository . '-' . $uuid;
-            
+
             $this->copyDirectory($baseRepoPath, $hotRepoPath);
-            
+
             $firstFolder = $this->getFirstFolder($hotRepoPath);
             if ($firstFolder) {
                 $this->moveDirectory($firstFolder, $fullProjectPath);
@@ -78,13 +80,13 @@ class PrepareProjectDirectoryJob implements ShouldQueue
                 'repository' => $repository,
                 'hot_repo' => $hotRepos[0],
             ]);
-            
+
             $hotRepoPath = $hotRepos[0];
-            
+
             $firstFolder = $this->getFirstFolder($hotRepoPath);
             if ($firstFolder) {
                 $this->moveDirectory($firstFolder, $fullProjectPath);
-                
+
                 File::deleteDirectory($hotRepoPath);
             } else {
                 $this->moveDirectory($hotRepoPath, $fullProjectPath);
@@ -94,7 +96,7 @@ class PrepareProjectDirectoryJob implements ShouldQueue
         Log::info('PrepareProjectDirectoryJob: Copying fresh hot repository for next time', [
             'repository' => $repository,
         ]);
-        
+
         $uuid = Str::uuid()->toString();
         $newHotRepoPath = $hotPath . '/' . $repository . '-' . $uuid;
         $this->copyDirectory($baseRepoPath, $newHotRepoPath);
@@ -170,9 +172,9 @@ class PrepareProjectDirectoryJob implements ShouldQueue
         }
 
         $directories = File::directories($path);
-        
+
         $hiddenAndSystemDirs = ['.git', '.github', '.idea', 'node_modules', 'vendor'];
-        
+
         foreach ($directories as $dir) {
             $dirName = basename($dir);
             if (!in_array($dirName, $hiddenAndSystemDirs)) {
