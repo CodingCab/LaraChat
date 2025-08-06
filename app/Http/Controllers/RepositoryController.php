@@ -13,8 +13,7 @@ class RepositoryController extends Controller
 {
     public function index(Request $request)
     {
-        $repositories = $request->user()->repositories()
-            ->orderBy('created_at', 'desc')
+        $repositories = Repository::orderBy('created_at', 'desc')
             ->get();
 
         // Check hot folder status for each repository
@@ -36,13 +35,11 @@ class RepositoryController extends Controller
             'branch' => 'nullable|string',
         ]);
 
-        $user = $request->user();
         $url = $request->input('url');
         $branch = $request->input('branch');
 
-        // Check if repository already exists for this user
-        $existingRepository = $user->repositories()
-            ->where('url', $url)
+        // Check if repository already exists
+        $existingRepository = Repository::where('url', $url)
             ->first();
 
         if ($existingRepository) {
@@ -95,7 +92,7 @@ class RepositoryController extends Controller
         $actualBranch = trim($branchResult->output());
 
         // Create repository record
-        $repository = $user->repositories()->create([
+        $repository = Repository::create([
             'name' => $repoName,
             'url' => $url,
             'local_path' => $localPath,
@@ -111,10 +108,6 @@ class RepositoryController extends Controller
 
     public function destroy(Repository $repository)
     {
-        // Ensure user owns the repository
-        if ($repository->user_id !== auth()->id()) {
-            abort(403);
-        }
 
         // Delete local repository
         $fullPath = storage_path('app/private/' . $repository->local_path);
@@ -132,10 +125,6 @@ class RepositoryController extends Controller
 
     public function pull(Repository $repository)
     {
-        // Ensure user owns the repository
-        if ($repository->user_id !== auth()->id()) {
-            abort(403);
-        }
 
         $fullPath = storage_path('app/private/' . $repository->local_path);
 
@@ -160,10 +149,6 @@ class RepositoryController extends Controller
 
     public function copyToHot(Repository $repository)
     {
-        // Ensure user owns the repository
-        if ($repository->user_id !== auth()->id()) {
-            abort(403);
-        }
 
         // Check if hot folder already exists
         $repoName = $this->extractRepoName($repository->url);

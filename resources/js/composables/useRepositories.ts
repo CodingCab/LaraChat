@@ -3,7 +3,6 @@ import { ref } from 'vue';
 
 export interface Repository {
     id: number;
-    user_id: number;
     name: string;
     url: string;
     local_path: string;
