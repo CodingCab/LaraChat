@@ -71,8 +71,8 @@ const handleCloneRepository = async () => {
     }
 };
 
-const handleRepositoryClick = (repositoryName: string) => {
-    router.visit(`/claude?repository=${encodeURIComponent(repositoryName)}`, {
+const handleRepositoryClick = (repositoryId: number) => {
+    router.visit(`/repository/${repositoryId}`, {
         preserveScroll: true,
         preserveState: true,
     });
@@ -142,7 +142,7 @@ const handleCopyToHot = async (repositoryId: number) => {
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem v-for="repo in repositories" :key="repo.id">
-                        <SidebarMenuButton @click="handleRepositoryClick(repo.name)" :tooltip="repo.url">
+                        <SidebarMenuButton @click="handleRepositoryClick(repo.id)" :tooltip="repo.url">
                             <GitBranch />
                             <span class="truncate flex-1">{{ repo.name }}</span>
                             <div 

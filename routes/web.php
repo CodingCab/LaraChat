@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\RepositoryDashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -7,6 +8,9 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+Route::get('repository/{id}', [RepositoryDashboardController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->name('repository.dashboard');
 
 
 Route::get('claude', function () {
