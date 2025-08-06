@@ -9,9 +9,8 @@ use Inertia\Inertia;
 
 class RepositoryDashboardController extends Controller
 {
-    public function show($id)
+    public function show(Repository $repository)
     {
-        $repository = Repository::findOrFail($id);
         
         // Get repository stats
         $stats = $this->getRepositoryStats($repository);
@@ -26,6 +25,7 @@ class RepositoryDashboardController extends Controller
             'repository' => [
                 'id' => $repository->id,
                 'name' => $repository->name,
+                'slug' => $repository->slug,
                 'url' => $repository->url,
                 'branch' => $repository->branch,
                 'path' => $repository->path,

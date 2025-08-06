@@ -16,12 +16,14 @@ class RepositoryController extends Controller
         $repositories = Repository::orderBy('created_at', 'desc')
             ->get();
 
-        // Check hot folder status for each repository
+        // Check hot folder status for each repository and ensure slug is included
         $repositories->transform(function ($repository) {
             $repoName = $this->extractRepoName($repository->url);
             $hotPattern = storage_path('app/private/repositories/hot/' . $repoName . '/' . $repoName . '_*');
             $hotFolders = glob($hotPattern);
             $repository->has_hot_folder = !empty($hotFolders);
+            // Ensure slug is included in the response
+            $repository->makeVisible('slug');
             return $repository;
         });
 

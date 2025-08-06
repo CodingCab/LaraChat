@@ -4,6 +4,7 @@ import { ref } from 'vue';
 export interface Repository {
     id: number;
     name: string;
+    slug: string;
     url: string;
     local_path: string;
     branch: string;

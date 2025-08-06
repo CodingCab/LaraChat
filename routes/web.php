@@ -8,7 +8,7 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('repository/{id}', [RepositoryDashboardController::class, 'show'])
+Route::get('repository/{repository:slug}', [RepositoryDashboardController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('repository.dashboard');
 
