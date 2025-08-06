@@ -16,6 +16,14 @@ import { router } from '@inertiajs/vue3';
 import { Eye, EyeOff, GitBranch, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
+// Constants
+const POLLING_INTERVAL_MS = 2000;
+const POLLING_INTERVAL_SLOW_MS = 5000;
+const SCROLL_DELAY_MS = 150;
+const SCROLL_RETRY_DELAY_MS = 200;
+const REFRESH_DELAY_MS = 500;
+const SESSION_REFRESH_DELAY_MS = 1000;
+
 const props = defineProps<{
     sessionFile?: string;
     repository?: string;
@@ -31,6 +39,7 @@ const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTi
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
 const { fetchConversations } = useConversations();
+const { repositories, fetchRepositories } = useRepositories();
 
 // Local state
 const inputMessage = ref('');
@@ -38,44 +47,31 @@ const sessionFilename = ref<string | null>(props.sessionFile || null);
 const sessionId = ref<string | null>(props.sessionId || null);
 const conversationId = ref<number | null>(props.conversationId || null);
 const hideSystemMessages = ref(true);
-const pollingInterval = ref<number | null>(null);
-const lastMessageCount = ref(0);
-const incompleteMessageFound = ref(false);
 const selectedRepository = ref<string | null>(props.repository || null);
 
-// Repository management
-const { repositories, fetchRepositories } = useRepositories();
-const selectedRepositoryData = computed(() => {
-    if (!selectedRepository.value) return null;
-    // Try to match by folder name in local_path or by exact name
-    return repositories.value.find((r) => {
-        // Check if the local_path ends with the selected repository name
-        if (r.local_path && r.local_path.endsWith('/' + selectedRepository.value)) {
-            return true;
-        }
-        // Also check for exact name match (case-insensitive)
-        return r.name.toLowerCase() === selectedRepository.value.toLowerCase();
-    });
-});
+// Polling state
+const pollingInterval = ref<number | null>(null);
+const incompleteMessageFound = ref(false);
 
 // Setup focus handlers
 setupFocusHandlers(isLoading);
 
 // Computed properties
+const selectedRepositoryData = computed(() => {
+    if (!selectedRepository.value) return null;
+    return repositories.value.find((r) => {
+        if (r.local_path?.endsWith('/' + selectedRepository.value)) return true;
+        return r.name.toLowerCase() === selectedRepository.value?.toLowerCase();
+    });
+});
+
 const filteredMessages = computed(() => {
-    if (!hideSystemMessages.value) {
-        return messages.value;
-    }
-
+    if (!hideSystemMessages.value) return messages.value;
+    
     return messages.value.filter((message) => {
-        // Always show user messages
-        if (message.role === 'user') {
-            return true;
-        }
-
-        // For assistant messages, check if they contain text content
-        if (message.rawResponses && message.rawResponses.length > 0) {
-            // Check if any of the raw responses are of type 'text'
+        if (message.role === 'user') return true;
+        
+        if (message.rawResponses?.length > 0) {
             return message.rawResponses.some((response) => {
                 if (response.type === 'assistant' && response.message?.content) {
                     return response.message.content.some((item: any) => item.type === 'text');
@@ -83,132 +79,282 @@ const filteredMessages = computed(() => {
                 return false;
             });
         }
-
-        // If no raw responses, show the message (it might be a regular text response)
         return true;
     });
 });
 
-const initializeSession = () => {
-    // Don't set a session ID here - let Claude CLI generate it
+// Utility functions
+const generateSessionFilename = () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const tempId = Date.now().toString(36);
+    return `${timestamp}-session-${tempId}.json`;
+};
 
-    if (!sessionFilename.value) {
-        if (props.sessionFile) {
-            sessionFilename.value = props.sessionFile;
-        } else {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
-            const tempId = Date.now().toString(36);
-            sessionFilename.value = `${timestamp}-session-${tempId}.json`;
+const extractSessionId = (responses: any[]) => {
+    for (const response of responses) {
+        if (response.type === 'system' && response.subtype === 'init' && response.session_id) {
+            return response.session_id;
         }
+    }
+    return null;
+};
+
+const extractRepositoryFromPath = (path: string) => {
+    const pathParts = path.split('/');
+    return pathParts[pathParts.length - 1];
+};
+
+const delayedScroll = async () => {
+    await nextTick();
+    setTimeout(async () => {
+        await scrollToBottom();
+        setTimeout(() => scrollToBottom(), SCROLL_RETRY_DELAY_MS);
+    }, SCROLL_DELAY_MS);
+};
+
+// Polling management
+const startPolling = (interval = POLLING_INTERVAL_MS) => {
+    stopPolling();
+    console.log(`Starting polling with ${interval}ms interval...`);
+    pollingInterval.value = window.setInterval(() => {
+        if (props.sessionFile) {
+            loadSessionMessages(true);
+        } else if (props.conversationId) {
+            loadConversationMessages();
+        }
+    }, interval);
+};
+
+const stopPolling = () => {
+    if (pollingInterval.value) {
+        console.log('Stopping polling...');
+        clearInterval(pollingInterval.value);
+        pollingInterval.value = null;
+    }
+};
+
+// Message handling
+const processConversationResponses = (conversation: any, isPolling = false) => {
+    const messagesList = [];
+    
+    if (!isPolling || messages.value.length === 0) {
+        messagesList.push({
+            id: Date.now() + Math.random(),
+            content: conversation.userMessage || '',
+            role: 'user',
+            timestamp: new Date(conversation.timestamp),
+        });
+    }
+    
+    if (conversation.rawJsonResponses?.length) {
+        conversation.rawJsonResponses.forEach((rawResponse: any, i: number) => {
+            const content = extractTextFromResponse(rawResponse);
+            messagesList.push({
+                id: Date.now() + Math.random() + i,
+                content: content || `[${rawResponse.type || 'unknown'} response]`,
+                role: 'assistant',
+                timestamp: new Date(conversation.timestamp),
+                rawResponses: [rawResponse],
+            });
+        });
+    }
+    
+    return messagesList;
+};
+
+const loadSessionMessages = async (isPolling = false) => {
+    if (!props.sessionFile) return;
+    
+    try {
+        const sessionData = await loadSession(props.sessionFile);
+        incompleteMessageFound.value = false;
+        
+        if (!isPolling) {
+            messages.value = [];
+            
+            for (const conversation of sessionData) {
+                if (!conversation.isComplete) {
+                    incompleteMessageFound.value = true;
+                }
+                messages.value.push(...processConversationResponses(conversation));
+            }
+            
+            // Extract session metadata
+            if (sessionData.length > 0) {
+                const lastConversation = sessionData[sessionData.length - 1];
+                const extractedSessionId = extractSessionId(lastConversation.rawJsonResponses || []);
+                if (extractedSessionId) sessionId.value = extractedSessionId;
+                
+                if (!selectedRepository.value) {
+                    for (const conversation of sessionData) {
+                        if (conversation.repositoryPath) {
+                            selectedRepository.value = extractRepositoryFromPath(conversation.repositoryPath);
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Handle polling updates for incomplete conversations
+            if (sessionData.length > 0) {
+                const lastConversation = sessionData[sessionData.length - 1];
+                if (!lastConversation.isComplete) {
+                    incompleteMessageFound.value = true;
+                    
+                    // Update only if we have new responses
+                    const existingResponseCount = messages.value.filter(m => m.role === 'assistant').length;
+                    const newResponses = lastConversation.rawJsonResponses?.slice(existingResponseCount) || [];
+                    
+                    newResponses.forEach((rawResponse: any, i: number) => {
+                        const content = extractTextFromResponse(rawResponse);
+                        messages.value.push({
+                            id: Date.now() + Math.random() + i,
+                            content: content || `[${rawResponse.type || 'unknown'} response]`,
+                            role: 'assistant',
+                            timestamp: new Date(lastConversation.timestamp),
+                            rawResponses: [rawResponse],
+                        });
+                    });
+                }
+            }
+        }
+        
+        sessionFilename.value = props.sessionFile;
+        await delayedScroll();
+        
+        // Manage polling based on completion status
+        if (incompleteMessageFound.value && !pollingInterval.value) {
+            startPolling();
+        } else if (!incompleteMessageFound.value && pollingInterval.value) {
+            stopPolling();
+        }
+    } catch (error) {
+        console.error('Error loading session messages:', error);
+    }
+};
+
+const loadConversationMessages = async () => {
+    if (!props.conversationId) return;
+    
+    try {
+        const response = await fetch(`/api/conversations/${props.conversationId}/messages`, {
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            }
+        });
+        const data = await response.json();
+        
+        messages.value = [];
+        let hasStreamingMessage = false;
+        
+        for (const msg of data.messages) {
+            if (msg.role === 'user') {
+                const userMessage = addUserMessage(msg.content || '');
+                userMessage.timestamp = new Date(msg.created_at);
+            } else if (msg.role === 'assistant') {
+                const assistantMessage = addAssistantMessage();
+                if (msg.content) assistantMessage.content = msg.content;
+                assistantMessage.timestamp = new Date(msg.created_at);
+                if (msg.is_streaming) hasStreamingMessage = true;
+            }
+        }
+        
+        // Adjust polling frequency based on streaming status
+        if (hasStreamingMessage) {
+            startPolling(POLLING_INTERVAL_MS);
+        } else if (data.messages.length > 0) {
+            startPolling(POLLING_INTERVAL_SLOW_MS);
+        }
+        
+        await scrollToBottom();
+    } catch (error) {
+        console.error('Error loading conversation messages:', error);
     }
 };
 
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || isLoading.value) return;
-
-    // Add user message
+    
     const messageToSend = inputMessage.value;
     addUserMessage(messageToSend);
-
-    // Clear input
     inputMessage.value = '';
     resetTextareaHeight();
-
-    // Start loading
     isLoading.value = true;
     await scrollToBottom();
-
-    // Initialize session
-    initializeSession();
-
-    // Add dummy session to sidebar immediately if this is a new session
-    if (!props.sessionFile) {
-        const dummySession = {
-            filename: sessionFilename.value!,
-            name: messageToSend.length > 30 ? messageToSend.substring(0, 30) + '...' : messageToSend,
-            userMessage: messageToSend,
-            repository: selectedRepository.value || undefined,
-            path: `/claude/${sessionFilename.value}`,
-            lastModified: Date.now(),
-        };
-
-        // Check if session already exists
-        const existingSession = claudeSessions.value.find((s) => s.filename === sessionFilename.value);
-        if (!existingSession) {
-            claudeSessions.value.unshift(dummySession);
+    
+    // Initialize session if needed
+    if (!sessionFilename.value) {
+        sessionFilename.value = props.sessionFile || generateSessionFilename();
+        
+        // Add to sessions list immediately for new sessions
+        if (!props.sessionFile) {
+            const existingSession = claudeSessions.value.find(s => s.filename === sessionFilename.value);
+            if (!existingSession) {
+                claudeSessions.value.unshift({
+                    filename: sessionFilename.value,
+                    name: messageToSend.substring(0, 30) + (messageToSend.length > 30 ? '...' : ''),
+                    userMessage: messageToSend,
+                    repository: selectedRepository.value || undefined,
+                    path: `/claude/${sessionFilename.value}`,
+                    lastModified: Date.now(),
+                });
+            }
         }
     }
-
+    
     try {
         const result = await sendMessageToApi(
             {
                 prompt: messageToSend,
-                sessionId: sessionId.value || undefined, // Don't pass null/empty session ID
-                sessionFilename: sessionFilename.value!,
+                sessionId: sessionId.value || undefined,
+                sessionFilename: sessionFilename.value,
                 repositoryPath: selectedRepositoryData.value?.local_path,
                 conversationId: conversationId.value || undefined,
             },
             (text, rawResponse) => {
                 // Extract session ID from init response
-                if (rawResponse && rawResponse.type === 'system' && rawResponse.subtype === 'init' && rawResponse.session_id) {
+                if (rawResponse?.type === 'system' && rawResponse.subtype === 'init' && rawResponse.session_id) {
                     sessionId.value = rawResponse.session_id;
                 }
-
-                // Check if this is a system message that should be hidden
+                
+                // Filter system messages if needed
                 if (hideSystemMessages.value && rawResponse) {
-                    // Check if this response contains text content
-                    const hasTextContent =
+                    const hasTextContent = 
                         (rawResponse.type === 'content' && rawResponse.content) ||
                         (rawResponse.type === 'assistant' && rawResponse.message?.content?.some((item: any) => item.type === 'text'));
-
-                    // Only append if it has text content or hideSystemMessages is false
-                    if (!hasTextContent && rawResponse.type !== 'content') {
-                        return; // Skip non-text responses when hiding system messages
-                    }
+                    
+                    if (!hasTextContent && rawResponse.type !== 'content') return;
                 }
-
-                // Create a new assistant message for each response
+                
                 const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
                 scrollToBottom();
             },
         );
-
-        // Store the conversation ID and filename if they were created
-        if (result && result.conversationId && !conversationId.value) {
+        
+        // Handle result
+        if (result?.conversationId && !conversationId.value) {
             conversationId.value = result.conversationId;
-            console.log('Conversation created with ID:', conversationId.value);
-            // Refresh conversations list
-            setTimeout(() => {
-                fetchConversations();
-            }, 500);
+            setTimeout(() => fetchConversations(), REFRESH_DELAY_MS);
         }
-        if (result && result.sessionFilename && !sessionFilename.value) {
+        if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
-            console.log('Session filename created:', sessionFilename.value);
         }
     } catch (error) {
         console.error('Error sending message:', error);
-        // Create an error message if no assistant message exists
         const errorMessage = addAssistantMessage();
         appendToMessage(errorMessage.id, 'Sorry, I encountered an error. Please try again.');
     } finally {
         isLoading.value = false;
         await scrollToBottom();
-        // Removed auto-focus after sending message to allow user to select/copy text
-
-        // Redirect to conversation URL if this is a new conversation
+        
+        // Handle redirects and refresh
         if (!props.sessionFile && !props.conversationId && conversationId.value) {
-            const url = `/claude/conversation/${conversationId.value}`;
-            router.visit(url);
+            router.visit(`/claude/conversation/${conversationId.value}`);
         }
-
-        // Refresh sessions list to ensure it's up to date
+        
         if (!props.sessionFile) {
-            // This was a new session, refresh the list after a short delay
-            setTimeout(() => {
-                refreshSessions();
-            }, 1000);
+            setTimeout(() => refreshSessions(), SESSION_REFRESH_DELAY_MS);
         }
     }
 };
@@ -220,296 +366,47 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
 };
 
-const loadSessionMessages = async (isPolling = false) => {
-    if (!props.sessionFile) return;
-
-    try {
-        const sessionData = await loadSession(props.sessionFile);
-
-        // Track if there are incomplete conversations
+// Watchers
+watch(() => props.sessionFile, async (newFile, oldFile) => {
+    if (newFile !== oldFile) {
+        stopPolling();
         incompleteMessageFound.value = false;
-
-        if (!isPolling) {
-            // Initial load - clear messages and load all
-            messages.value = [];
-
-            // Process each conversation
-            for (const conversation of sessionData) {
-                // Check if conversation is incomplete
-                if (!conversation.isComplete) {
-                    incompleteMessageFound.value = true;
-                }
-
-                // Add user message
-                messages.value.push({
-                    id: Date.now() + Math.random(),
-                    content: conversation.userMessage || '',
-                    role: 'user',
-                    timestamp: new Date(conversation.timestamp),
-                });
-
-                if (conversation.rawJsonResponses?.length) {
-                    for (let i = 0; i < conversation.rawJsonResponses.length; i++) {
-                        const rawResponse = conversation.rawJsonResponses[i];
-                        const content = extractTextFromResponse(rawResponse);
-
-                        // Add all responses, even if they don't have traditional text content
-                        // This ensures we see system messages, tool usage, results, etc.
-                        messages.value.push({
-                            id: Date.now() + Math.random() + i,
-                            content: content || `[${rawResponse.type || 'unknown'} response]`,
-                            role: 'assistant',
-                            timestamp: new Date(conversation.timestamp),
-                            rawResponses: [rawResponse],
-                        });
-                    }
-                }
-            }
-        } else {
-            // Polling - only update the last conversation if it was incomplete
-            if (sessionData.length > 0) {
-                const lastConversation = sessionData[sessionData.length - 1];
-
-                // Check if the last conversation is complete now
-                if (!lastConversation.isComplete) {
-                    incompleteMessageFound.value = true;
-                }
-
-                // Find the last assistant message index
-                let lastAssistantIndex = -1;
-                for (let i = messages.value.length - 1; i >= 0; i--) {
-                    if (messages.value[i].role === 'assistant') {
-                        lastAssistantIndex = i;
-                        break;
-                    }
-                }
-
-                // Update the last assistant message(s) if the conversation has more responses
-                if (lastAssistantIndex >= 0 && lastConversation.rawJsonResponses?.length) {
-                    // Count existing assistant messages for this conversation
-                    let existingResponseCount = 0;
-                    for (let i = lastAssistantIndex; i >= 0 && messages.value[i].role === 'assistant'; i--) {
-                        existingResponseCount++;
-                    }
-
-                    // Add new responses if there are more than we already have
-                    if (lastConversation.rawJsonResponses.length > existingResponseCount) {
-                        for (let i = existingResponseCount; i < lastConversation.rawJsonResponses.length; i++) {
-                            const rawResponse = lastConversation.rawJsonResponses[i];
-                            const content = extractTextFromResponse(rawResponse);
-
-                            messages.value.push({
-                                id: Date.now() + Math.random() + i,
-                                content: content || `[${rawResponse.type || 'unknown'} response]`,
-                                role: 'assistant',
-                                timestamp: new Date(lastConversation.timestamp),
-                                rawResponses: [rawResponse],
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        // Set session info
-        sessionFilename.value = props.sessionFile;
-        if (sessionData.length > 0) {
-            // Find the actual Claude session ID from the raw responses
-            const lastConversation = sessionData[sessionData.length - 1];
-            if (lastConversation.rawJsonResponses && lastConversation.rawJsonResponses.length > 0) {
-                for (const response of lastConversation.rawJsonResponses) {
-                    if (response.type === 'system' && response.subtype === 'init' && response.session_id) {
-                        sessionId.value = response.session_id;
-                        break;
-                    }
-                }
-            }
-
-            // Set repository from session data if available, but only if not already set from props
-            // Check all conversations to find one with a repository path
-            if (!selectedRepository.value) {
-                for (const conversation of sessionData) {
-                    if (conversation.repositoryPath) {
-                        // Extract repository name from path
-                        const pathParts = conversation.repositoryPath.split('/');
-                        const repoName = pathParts[pathParts.length - 1];
-                        selectedRepository.value = repoName;
-                        break; // Use the first repository found
-                    }
-                }
-            }
-        }
-
-        // Wait for DOM to update with all messages before scrolling
-        await nextTick();
-        // Add a delay to ensure all messages are fully rendered
-        setTimeout(async () => {
-            await scrollToBottom();
-            // Try scrolling again after another delay
-            setTimeout(() => {
-                scrollToBottom();
-            }, 200);
-        }, 150);
-
-        // Start polling if there are incomplete messages
-        if (incompleteMessageFound.value && !pollingInterval.value) {
-            startPolling();
-        } else if (!incompleteMessageFound.value && pollingInterval.value) {
-            // Stop polling if all messages are complete
-            stopPolling();
-        }
-    } catch (error) {
-        console.error('Error loading session messages:', error);
-    }
-};
-
-const startPolling = () => {
-    if (pollingInterval.value) return;
-
-    console.log('Starting polling for session updates...');
-    pollingInterval.value = window.setInterval(() => {
-        loadSessionMessages(true);
-    }, 2000); // Poll every 2 seconds
-};
-
-const stopPolling = () => {
-    if (pollingInterval.value) {
-        console.log('Stopping polling for session updates...');
-        clearInterval(pollingInterval.value);
-        pollingInterval.value = null;
-    }
-};
-
-// Watch for changes in sessionFile prop
-watch(
-    () => props.sessionFile,
-    async (newFile, oldFile) => {
-        if (newFile !== oldFile) {
-            // Stop any existing polling
-            stopPolling();
-            // Reset tracking variables
-            lastMessageCount.value = 0;
-            incompleteMessageFound.value = false;
-            // Clear existing messages when switching sessions or when no session is specified
-            messages.value = [];
-
-            if (newFile) {
-                await loadSessionMessages();
-            } else {
-                // No session file specified - reset session state
-                sessionFilename.value = null;
-                sessionId.value = null;
-            }
-        }
-    },
-);
-
-// Watch for changes in repository prop
-watch(
-    () => props.repository,
-    (newRepo) => {
-        if (newRepo) {
-            selectedRepository.value = newRepo;
-        } else {
-            // No repository specified - clear the selection
-            selectedRepository.value = null;
-        }
-    },
-    { immediate: true },
-);
-
-// Track polling state
-let pollInterval: NodeJS.Timeout | null = null;
-
-// Load messages from database for job-based conversations
-const loadConversationMessages = async () => {
-    if (!props.conversationId) return;
-
-    try {
-        const response = await fetch(`/api/conversations/${props.conversationId}/messages`, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            }
-        });
-        const data = await response.json();
-
-        console.log('Loading conversation messages:', data);
-
         messages.value = [];
-        let hasStreamingMessage = false;
-
-        for (const msg of data.messages) {
-            if (msg.role === 'user') {
-                const userMessage = addUserMessage(msg.content || '');
-                userMessage.timestamp = new Date(msg.created_at);
-            } else if (msg.role === 'assistant') {
-                const assistantMessage = addAssistantMessage();
-                // Directly set the content instead of using appendToMessage
-                // since we don't have raw responses from the database
-                if (msg.content) {
-                    assistantMessage.content = msg.content;
-                }
-                assistantMessage.timestamp = new Date(msg.created_at);
-
-                if (msg.is_streaming) {
-                    hasStreamingMessage = true;
-                }
-            }
+        
+        if (newFile) {
+            await loadSessionMessages();
+        } else {
+            sessionFilename.value = null;
+            sessionId.value = null;
         }
-
-        console.log('Messages after loading:', messages.value);
-        console.log('Filtered messages:', filteredMessages.value);
-
-        // Start polling if there are streaming messages
-        if (hasStreamingMessage) {
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(loadConversationMessages, 1000);
-        } else if (data.messages.length > 0) {
-            // Poll less frequently for updates
-            if (pollInterval) clearInterval(pollInterval);
-            pollInterval = setInterval(loadConversationMessages, 5000);
-        }
-
-        await scrollToBottom();
-    } catch (error) {
-        console.error('Error loading conversation messages:', error);
     }
-};
+});
 
+watch(() => props.repository, (newRepo) => {
+    selectedRepository.value = newRepo || null;
+}, { immediate: true });
+
+// Lifecycle
 onMounted(async () => {
-    // Fetch repositories first to ensure they're available
     await fetchRepositories();
-
-    // Initialize from props if we have a conversation
-    if (props.conversationId) {
-        conversationId.value = props.conversationId;
-    }
-
-    if (props.sessionId) {
-        sessionId.value = props.sessionId;
-    }
-
+    
+    if (props.conversationId) conversationId.value = props.conversationId;
+    if (props.sessionId) sessionId.value = props.sessionId;
+    
     if (props.sessionFile) {
-        // Load from session file
         await loadSessionMessages();
     } else if (props.conversationId) {
-        // Load from database for job-based conversations
         await loadConversationMessages();
     } else {
-        // New conversation - clear everything
         messages.value = [];
         sessionFilename.value = null;
         sessionId.value = null;
-        // Only focus on initial mount for new sessions
         focusInput(false);
     }
 });
 
 onUnmounted(() => {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-    }
+    stopPolling();
 });
 </script>
 
@@ -537,7 +434,7 @@ onUnmounted(() => {
                         :format-time="formatTime"
                         :show-raw-responses="false"
                     />
-
+                    
                     <div v-if="isLoading" class="flex justify-start">
                         <div class="max-w-[70%] rounded-2xl bg-white px-4 py-2 shadow-sm dark:bg-gray-800">
                             <div class="flex space-x-1">
@@ -549,7 +446,7 @@ onUnmounted(() => {
                     </div>
                 </div>
             </ScrollArea>
-
+            
             <!-- Input Area -->
             <div class="border-t bg-white p-4 dark:bg-gray-800">
                 <div>
