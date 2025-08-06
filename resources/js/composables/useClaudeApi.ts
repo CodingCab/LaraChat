@@ -5,7 +5,7 @@ import { ref } from 'vue';
 export function useClaudeApi() {
     const isLoading = ref(false);
 
-    const sendMessageToApi = async (request: ClaudeApiRequest, onChunk: (text: string, rawResponse: any) => void): Promise<void> => {
+    const sendMessageToApi = async (request: ClaudeApiRequest, onChunk: (text: string, rawResponse: any) => void): Promise<number | null> => {
         const response = await fetch('/api/claude', {
             method: 'POST',
             headers: {
@@ -22,6 +22,10 @@ export function useClaudeApi() {
         if (!response.body) {
             throw new Error('No response body');
         }
+
+        // Extract conversation ID and filename from response headers if present
+        const conversationId = response.headers.get('X-Conversation-Id');
+        const sessionFilename = response.headers.get('X-Session-Filename');
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -62,6 +66,12 @@ export function useClaudeApi() {
                 console.error('Error parsing final buffer:', e);
             }
         }
+
+        // Return the conversation ID and filename if they were created
+        return {
+            conversationId: conversationId ? parseInt(conversationId) : null,
+            sessionFilename: sessionFilename || null
+        };
     };
 
     const loadSession = async (sessionFile: string): Promise<SessionConversation[]> => {

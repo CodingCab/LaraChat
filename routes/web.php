@@ -22,5 +22,15 @@ Route::get('claude/{session}', function ($session) {
     ]);
 })->middleware(['auth', 'verified'])->name('claude.session');
 
+Route::get('claude/conversation/{conversation}', function ($conversation) {
+    $conv = \App\Models\Conversation::findOrFail($conversation);
+    return Inertia::render('Claude', [
+        'conversationId' => $conv->id,
+        'repository' => $conv->repository,
+        'sessionId' => $conv->claude_session_id,
+        'sessionFile' => $conv->filename
+    ]);
+})->middleware(['auth', 'verified'])->name('claude.conversation');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

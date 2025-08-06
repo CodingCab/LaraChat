@@ -17,15 +17,17 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useClaudeSessions } from '@/composables/useClaudeSessions';
+import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { AlertCircle, BookOpen, CheckCircle, FileText, Folder, GitBranch, Loader2, MessageSquare, Plus } from 'lucide-vue-next';
+import { AlertCircle, BookOpen, CheckCircle, FileText, Folder, GitBranch, Loader2, MessageSquare, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const { claudeSessions, fetchSessions } = useClaudeSessions();
+const { conversations, fetchConversations } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading, copyToHot } = useRepositories();
 
 const showCloneDialog = ref(false);
@@ -57,6 +59,7 @@ const footerNavItems: NavItem[] = [
 onMounted(async () => {
     await fetchSessions();
     await fetchRepositories();
+    await fetchConversations();
 });
 
 const handleCloneRepository = async () => {
@@ -160,6 +163,30 @@ const handleCopyToHot = async (repositoryId: number) => {
                             >
                                 <AlertCircle class="h-3.5 w-3.5 text-yellow-500" />
                             </div>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup class="px-2 py-0" v-if="conversations.length > 0">
+                <SidebarGroupLabel>Conversations</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id">
+                        <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
+                            <Link
+                                :href="`/claude/conversation/${conversation.id}`"
+                                :preserve-scroll="true"
+                                :preserve-state="true"
+                            >
+                                <MessageSquarePlus />
+                                <div class="min-w-0 flex-1">
+                                    <span class="block truncate">{{ conversation.title }}</span>
+                                    <div v-if="conversation.repository" class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                        <GitBranch class="h-3 w-3 shrink-0" />
+                                        <span class="truncate">{{ conversation.repository }}</span>
+                                    </div>
+                                </div>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

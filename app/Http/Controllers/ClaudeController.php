@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Conversation;
 use App\Services\ClaudeService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class ClaudeController extends Controller
 {
@@ -35,15 +37,71 @@ class ClaudeController extends Controller
             'sessionId' => 'nullable|string',
             'sessionFilename' => 'nullable|string',
             'repositoryPath' => 'nullable|string',
+            'conversationId' => 'nullable|integer|exists:conversations,id',
         ]);
         
-        return ClaudeService::stream(
+        $sessionId = $request->input('sessionId');
+        $conversationId = $request->input('conversationId');
+        
+        // Create conversation record if this is the first message (no conversationId provided)
+        $sessionFilename = $request->input('sessionFilename');
+        if (!$conversationId && Auth::check()) {
+            // Extract title from the first user message (first 100 chars)
+            $title = substr($request->input('prompt'), 0, 100);
+            if (strlen($request->input('prompt')) > 100) {
+                $title .= '...';
+            }
+            
+            // Extract repository name from path if available
+            $repositoryName = null;
+            if ($request->input('repositoryPath')) {
+                $pathParts = explode('/', $request->input('repositoryPath'));
+                $repositoryName = end($pathParts);
+            }
+            
+            // Generate filename if not provided
+            if (!$sessionFilename) {
+                $timestamp = date('Y-m-d\TH-i-s');
+                $sessionFilename = $timestamp . '-sessionId-' . ($sessionId ?: uniqid()) . '.json';
+            }
+            
+            // Create empty session file
+            $directory = 'claude-sessions';
+            if (!Storage::exists($directory)) {
+                Storage::makeDirectory($directory);
+            }
+            Storage::put($directory . '/' . $sessionFilename, json_encode([], JSON_PRETTY_PRINT));
+            
+            $conversation = Conversation::create([
+                'user_id' => Auth::id(),
+                'title' => $title,
+                'repository' => $repositoryName,
+                'project_directory' => $request->input('repositoryPath'),
+                'claude_session_id' => $sessionId,
+                'filename' => $sessionFilename,
+            ]);
+            
+            $conversationId = $conversation->id;
+        }
+        
+        // Stream the response and include conversation ID
+        $response = ClaudeService::stream(
             $request->input('prompt'), 
             $request->input('options', '--permission-mode bypassPermissions'),
-            $request->input('sessionId'),
-            $request->input('sessionFilename'),
+            $sessionId,
+            $sessionFilename ?: $request->input('sessionFilename'),
             $request->input('repositoryPath')
         );
+        
+        // Add conversation ID and filename to the response headers if created
+        if ($conversationId) {
+            $response->headers->set('X-Conversation-Id', (string)$conversationId);
+        }
+        if ($sessionFilename) {
+            $response->headers->set('X-Session-Filename', $sessionFilename);
+        }
+        
+        return $response;
     }
     
     public function saveResponse(Request $request)
@@ -231,5 +289,14 @@ class ClaudeController extends Controller
             'file_size' => Storage::size($path),
             'last_modified' => Storage::lastModified($path),
         ]);
+    }
+    
+    public function getConversations()
+    {
+        $conversations = Conversation::where('user_id', Auth::id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        
+        return response()->json($conversations);
     }
 }

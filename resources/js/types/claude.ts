@@ -17,7 +17,8 @@ export interface SessionConversation {
 
 export interface ClaudeApiRequest {
     prompt: string;
-    sessionId: string;
+    sessionId?: string;
     sessionFilename: string;
     repositoryPath?: string;
+    conversationId?: number;
 }

@@ -11,6 +11,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/claude/sessions', [ClaudeController::class, 'getSessions']);
     Route::get('/claude/sessions/{filename}', [ClaudeController::class, 'getSessionMessages']);
     Route::get('/claude/debug/{filename}', [ClaudeController::class, 'debugSession']);
+    Route::get('/claude/conversations', [ClaudeController::class, 'getConversations']);
 
     Route::get('/repositories', [RepositoryController::class, 'index']);
     Route::post('/repositories', [RepositoryController::class, 'store']);

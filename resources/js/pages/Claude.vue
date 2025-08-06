@@ -7,6 +7,7 @@ import { useChatMessages } from '@/composables/useChatMessages';
 import { useChatUI } from '@/composables/useChatUI';
 import { useClaudeApi } from '@/composables/useClaudeApi';
 import { useClaudeSessions } from '@/composables/useClaudeSessions';
+import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -18,6 +19,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 const props = defineProps<{
     sessionFile?: string;
     repository?: string;
+    conversationId?: number;
+    sessionId?: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
@@ -27,11 +30,13 @@ const { messagesContainer, textareaRef, scrollToBottom, adjustTextareaHeight, re
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
+const { fetchConversations } = useConversations();
 
 // Local state
 const inputMessage = ref('');
-const sessionFilename = ref<string | null>(null);
-const sessionId = ref<string | null>(null);
+const sessionFilename = ref<string | null>(props.sessionFile || null);
+const sessionId = ref<string | null>(props.sessionId || null);
+const conversationId = ref<number | null>(props.conversationId || null);
 const hideSystemMessages = ref(true);
 const pollingInterval = ref<number | null>(null);
 const lastMessageCount = ref(0);
@@ -135,12 +140,13 @@ const sendMessage = async () => {
     }
 
     try {
-        await sendMessageToApi(
+        const result = await sendMessageToApi(
             {
                 prompt: messageToSend,
                 sessionId: sessionId.value || undefined, // Don't pass null/empty session ID
                 sessionFilename: sessionFilename.value!,
                 repositoryPath: selectedRepositoryData.value?.local_path,
+                conversationId: conversationId.value || undefined,
             },
             (text, rawResponse) => {
                 // Extract session ID from init response
@@ -167,6 +173,20 @@ const sendMessage = async () => {
                 scrollToBottom();
             },
         );
+
+        // Store the conversation ID and filename if they were created
+        if (result && result.conversationId && !conversationId.value) {
+            conversationId.value = result.conversationId;
+            console.log('Conversation created with ID:', conversationId.value);
+            // Refresh conversations list
+            setTimeout(() => {
+                fetchConversations();
+            }, 500);
+        }
+        if (result && result.sessionFilename && !sessionFilename.value) {
+            sessionFilename.value = result.sessionFilename;
+            console.log('Session filename created:', sessionFilename.value);
+        }
     } catch (error) {
         console.error('Error sending message:', error);
         // Create an error message if no assistant message exists
@@ -177,11 +197,9 @@ const sendMessage = async () => {
         await scrollToBottom();
         // Removed auto-focus after sending message to allow user to select/copy text
 
-        // Redirect to session URL if this is a new session
-        if (!props.sessionFile && sessionFilename.value) {
-            const url = selectedRepository.value
-                ? `/claude/${sessionFilename.value}?repository=${encodeURIComponent(selectedRepository.value)}`
-                : `/claude/${sessionFilename.value}`;
+        // Redirect to conversation URL if this is a new conversation
+        if (!props.sessionFile && !props.conversationId && conversationId.value) {
+            const url = `/claude/conversation/${conversationId.value}`;
             router.visit(url);
         }
 
@@ -404,13 +422,24 @@ onMounted(async () => {
     // Fetch repositories first to ensure they're available
     await fetchRepositories();
 
+    // Initialize from props if we have a conversation
+    if (props.conversationId) {
+        conversationId.value = props.conversationId;
+    }
+    if (props.sessionId) {
+        sessionId.value = props.sessionId;
+    }
+
     if (props.sessionFile) {
         await loadSessionMessages();
     } else {
         // No session file - ensure messages are cleared
         messages.value = [];
-        sessionFilename.value = null;
-        sessionId.value = null;
+        if (!props.conversationId) {
+            // Only reset these if we're not loading a conversation
+            sessionFilename.value = null;
+            sessionId.value = null;
+        }
         // Only focus on initial mount for new sessions
         focusInput(false);
     }
