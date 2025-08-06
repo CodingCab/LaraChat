@@ -30,16 +30,12 @@ export function useChatUI() {
 
             // If we found a scrollable element, scroll it
             if (viewport) {
-                console.log('Scrolling element found:', viewport);
-                console.log('ScrollHeight:', viewport.scrollHeight, 'ScrollTop:', viewport.scrollTop);
                 viewport.scrollTop = viewport.scrollHeight;
 
                 // Force a second scroll after a delay in case content is still loading
                 setTimeout(() => {
                     viewport.scrollTop = viewport.scrollHeight;
                 }, 50);
-            } else {
-                console.log('No scrollable element found');
             }
         }
     };

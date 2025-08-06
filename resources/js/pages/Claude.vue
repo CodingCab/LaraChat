@@ -67,10 +67,10 @@ const selectedRepositoryData = computed(() => {
 
 const filteredMessages = computed(() => {
     if (!hideSystemMessages.value) return messages.value;
-    
+
     return messages.value.filter((message) => {
         if (message.role === 'user') return true;
-        
+
         if (message.rawResponses?.length > 0) {
             return message.rawResponses.some((response) => {
                 if (response.type === 'assistant' && response.message?.content) {
@@ -136,7 +136,21 @@ const stopPolling = () => {
 // Message handling
 const processConversationResponses = (conversation: any, isPolling = false) => {
     const messagesList = [];
-    
+
+    // Handle initial session format with role: 'user'
+    if (conversation.role === 'user') {
+        if (!isPolling || messages.value.length === 0) {
+            messagesList.push({
+                id: Date.now() + Math.random(),
+                content: conversation.userMessage || '',
+                role: 'user',
+                timestamp: new Date(conversation.timestamp),
+            });
+        }
+        return messagesList;
+    }
+
+    // Handle normal conversation format
     if (!isPolling || messages.value.length === 0) {
         messagesList.push({
             id: Date.now() + Math.random(),
@@ -145,9 +159,24 @@ const processConversationResponses = (conversation: any, isPolling = false) => {
             timestamp: new Date(conversation.timestamp),
         });
     }
-    
+
     if (conversation.rawJsonResponses?.length) {
-        conversation.rawJsonResponses.forEach((rawResponse: any, i: number) => {
+        // Handle rawJsonResponses as an array of strings (JSON strings that need parsing)
+        conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
+            let rawResponse: any;
+
+            // Parse if it's a string, otherwise use as-is
+            if (typeof rawResponseStr === 'string') {
+                try {
+                    rawResponse = JSON.parse(rawResponseStr);
+                } catch (e) {
+                    console.error('Failed to parse raw response:', e);
+                    rawResponse = { type: 'error', content: rawResponseStr };
+                }
+            } else {
+                rawResponse = rawResponseStr;
+            }
+
             const content = extractTextFromResponse(rawResponse);
             messagesList.push({
                 id: Date.now() + Math.random() + i,
@@ -158,33 +187,40 @@ const processConversationResponses = (conversation: any, isPolling = false) => {
             });
         });
     }
-    
+
     return messagesList;
 };
 
 const loadSessionMessages = async (isPolling = false) => {
     if (!props.sessionFile) return;
-    
+
     try {
         const sessionData = await loadSession(props.sessionFile);
+        console.log('Session data loaded:', sessionData);
         incompleteMessageFound.value = false;
-        
+
+        isPolling = false;
+
         if (!isPolling) {
+            console.log('Is not polling, processing session data...');
             messages.value = [];
-            
+
             for (const conversation of sessionData) {
+                console.log('Processing conversation:', conversation);
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
-                messages.value.push(...processConversationResponses(conversation));
+                const processedMessages = processConversationResponses(conversation);
+                console.log('Processed messages:', processedMessages);
+                messages.value.push(...processedMessages);
             }
-            
+
             // Extract session metadata
             if (sessionData.length > 0) {
                 const lastConversation = sessionData[sessionData.length - 1];
                 const extractedSessionId = extractSessionId(lastConversation.rawJsonResponses || []);
                 if (extractedSessionId) sessionId.value = extractedSessionId;
-                
+
                 if (!selectedRepository.value) {
                     for (const conversation of sessionData) {
                         if (conversation.repositoryPath) {
@@ -195,16 +231,17 @@ const loadSessionMessages = async (isPolling = false) => {
                 }
             }
         } else {
+            console.log('Polling mode, updating messages...');
             // Handle polling updates for incomplete conversations
             if (sessionData.length > 0) {
                 const lastConversation = sessionData[sessionData.length - 1];
                 if (!lastConversation.isComplete) {
                     incompleteMessageFound.value = true;
-                    
+
                     // Update only if we have new responses
                     const existingResponseCount = messages.value.filter(m => m.role === 'assistant').length;
                     const newResponses = lastConversation.rawJsonResponses?.slice(existingResponseCount) || [];
-                    
+
                     newResponses.forEach((rawResponse: any, i: number) => {
                         const content = extractTextFromResponse(rawResponse);
                         messages.value.push({
@@ -218,10 +255,12 @@ const loadSessionMessages = async (isPolling = false) => {
                 }
             }
         }
-        
+
         sessionFilename.value = props.sessionFile;
+        console.log('Final messages.value:', messages.value);
+        console.log('Final filteredMessages.value:', filteredMessages.value);
         await delayedScroll();
-        
+
         // Manage polling based on completion status
         if (incompleteMessageFound.value && !pollingInterval.value) {
             startPolling();
@@ -235,7 +274,7 @@ const loadSessionMessages = async (isPolling = false) => {
 
 const loadConversationMessages = async () => {
     if (!props.conversationId) return;
-    
+
     try {
         const response = await fetch(`/api/conversations/${props.conversationId}/messages`, {
             headers: {
@@ -243,13 +282,13 @@ const loadConversationMessages = async () => {
             }
         });
         const data = await response.json();
-        
+
         console.log('Loading conversation messages:', data);
-        
+
         // Clear and rebuild messages array
         const newMessages = [];
         let hasStreamingMessage = false;
-        
+
         for (const msg of data.messages) {
             if (msg.role === 'user') {
                 newMessages.push({
@@ -269,13 +308,13 @@ const loadConversationMessages = async () => {
                 if (msg.is_streaming) hasStreamingMessage = true;
             }
         }
-        
+
         // Update messages array
         messages.value = newMessages;
-        
+
         console.log('Messages loaded:', messages.value);
         console.log('Filtered messages:', filteredMessages.value);
-        
+
         // Adjust polling frequency based on streaming status
         if (hasStreamingMessage) {
             startPolling(POLLING_INTERVAL_MS);
@@ -295,7 +334,7 @@ const loadConversationMessages = async () => {
                 startPolling(POLLING_INTERVAL_SLOW_MS);
             }
         }
-        
+
         await nextTick();
         await scrollToBottom();
     } catch (error) {
@@ -305,18 +344,18 @@ const loadConversationMessages = async () => {
 
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || isLoading.value) return;
-    
+
     const messageToSend = inputMessage.value;
     addUserMessage(messageToSend);
     inputMessage.value = '';
     resetTextareaHeight();
     isLoading.value = true;
     await scrollToBottom();
-    
+
     // Initialize session if needed
     if (!sessionFilename.value) {
         sessionFilename.value = props.sessionFile || generateSessionFilename();
-        
+
         // Add to sessions list immediately for new sessions
         if (!props.sessionFile) {
             const existingSession = claudeSessions.value.find(s => s.filename === sessionFilename.value);
@@ -332,7 +371,7 @@ const sendMessage = async () => {
             }
         }
     }
-    
+
     try {
         const result = await sendMessageToApi(
             {
@@ -347,22 +386,22 @@ const sendMessage = async () => {
                 if (rawResponse?.type === 'system' && rawResponse.subtype === 'init' && rawResponse.session_id) {
                     sessionId.value = rawResponse.session_id;
                 }
-                
+
                 // Filter system messages if needed
                 if (hideSystemMessages.value && rawResponse) {
-                    const hasTextContent = 
+                    const hasTextContent =
                         (rawResponse.type === 'content' && rawResponse.content) ||
                         (rawResponse.type === 'assistant' && rawResponse.message?.content?.some((item: any) => item.type === 'text'));
-                    
+
                     if (!hasTextContent && rawResponse.type !== 'content') return;
                 }
-                
+
                 const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
                 scrollToBottom();
             },
         );
-        
+
         // Handle result
         if (result?.conversationId && !conversationId.value) {
             conversationId.value = result.conversationId;
@@ -378,12 +417,12 @@ const sendMessage = async () => {
     } finally {
         isLoading.value = false;
         await scrollToBottom();
-        
+
         // Handle redirects and refresh
         if (!props.sessionFile && !props.conversationId && conversationId.value) {
             router.visit(`/claude/conversation/${conversationId.value}`);
         }
-        
+
         if (!props.sessionFile) {
             setTimeout(() => refreshSessions(), SESSION_REFRESH_DELAY_MS);
         }
@@ -403,7 +442,7 @@ watch(() => props.sessionFile, async (newFile, oldFile) => {
         stopPolling();
         incompleteMessageFound.value = false;
         messages.value = [];
-        
+
         if (newFile) {
             await loadSessionMessages();
         } else {
@@ -419,13 +458,26 @@ watch(() => props.repository, (newRepo) => {
 
 // Lifecycle
 onMounted(async () => {
+    console.log('Claude.vue mounted with props:', {
+        sessionFile: props.sessionFile,
+        conversationId: props.conversationId,
+        sessionId: props.sessionId,
+        repository: props.repository
+    });
+
     await fetchRepositories();
-    
+
     if (props.conversationId) conversationId.value = props.conversationId;
     if (props.sessionId) sessionId.value = props.sessionId;
-    
+
     if (props.sessionFile) {
+        console.log('Loading session file:', props.sessionFile);
         await loadSessionMessages();
+        // If no messages were loaded from session file, also check database
+        if (messages.value.length === 0 && props.conversationId) {
+            console.log('No messages from session file, loading from database');
+            await loadConversationMessages();
+        }
     } else if (props.conversationId) {
         // Load messages from database (for job-based conversations from quick chat)
         await loadConversationMessages();
@@ -470,7 +522,7 @@ onUnmounted(() => {
                         :format-time="formatTime"
                         :show-raw-responses="false"
                     />
-                    
+
                     <div v-if="isLoading" class="flex justify-start">
                         <div class="max-w-[70%] rounded-2xl bg-white px-4 py-2 shadow-sm dark:bg-gray-800">
                             <div class="flex space-x-1">
@@ -482,7 +534,7 @@ onUnmounted(() => {
                     </div>
                 </div>
             </ScrollArea>
-            
+
             <!-- Input Area -->
             <div class="border-t bg-white p-4 dark:bg-gray-800">
                 <div>
