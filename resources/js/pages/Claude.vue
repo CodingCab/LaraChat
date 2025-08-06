@@ -244,28 +244,59 @@ const loadConversationMessages = async () => {
         });
         const data = await response.json();
         
-        messages.value = [];
+        console.log('Loading conversation messages:', data);
+        
+        // Clear and rebuild messages array
+        const newMessages = [];
         let hasStreamingMessage = false;
         
         for (const msg of data.messages) {
             if (msg.role === 'user') {
-                const userMessage = addUserMessage(msg.content || '');
-                userMessage.timestamp = new Date(msg.created_at);
+                newMessages.push({
+                    id: msg.id || Date.now() + Math.random(),
+                    content: msg.content || '',
+                    role: 'user',
+                    timestamp: new Date(msg.created_at),
+                });
             } else if (msg.role === 'assistant') {
-                const assistantMessage = addAssistantMessage();
-                if (msg.content) assistantMessage.content = msg.content;
-                assistantMessage.timestamp = new Date(msg.created_at);
+                newMessages.push({
+                    id: msg.id || Date.now() + Math.random(),
+                    content: msg.content || '',
+                    role: 'assistant',
+                    timestamp: new Date(msg.created_at),
+                    rawResponses: [],
+                });
                 if (msg.is_streaming) hasStreamingMessage = true;
             }
         }
+        
+        // Update messages array
+        messages.value = newMessages;
+        
+        console.log('Messages loaded:', messages.value);
+        console.log('Filtered messages:', filteredMessages.value);
         
         // Adjust polling frequency based on streaming status
         if (hasStreamingMessage) {
             startPolling(POLLING_INTERVAL_MS);
         } else if (data.messages.length > 0) {
-            startPolling(POLLING_INTERVAL_SLOW_MS);
+            // Only continue slow polling if conversation might still be active
+            // Stop after messages are complete
+            const lastMessage = data.messages[data.messages.length - 1];
+            if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
+                // Assistant has responded, we can stop polling eventually
+                if (!pollingInterval.value) {
+                    // Do one more poll cycle to ensure we got everything
+                    startPolling(POLLING_INTERVAL_SLOW_MS);
+                    setTimeout(() => stopPolling(), POLLING_INTERVAL_SLOW_MS * 2);
+                }
+            } else {
+                // Still waiting for response
+                startPolling(POLLING_INTERVAL_SLOW_MS);
+            }
         }
         
+        await nextTick();
         await scrollToBottom();
     } catch (error) {
         console.error('Error loading conversation messages:', error);
@@ -396,7 +427,12 @@ onMounted(async () => {
     if (props.sessionFile) {
         await loadSessionMessages();
     } else if (props.conversationId) {
+        // Load messages from database (for job-based conversations from quick chat)
         await loadConversationMessages();
+        // Start polling immediately since message might still be processing
+        if (!pollingInterval.value) {
+            startPolling(POLLING_INTERVAL_MS);
+        }
     } else {
         messages.value = [];
         sessionFilename.value = null;
