@@ -5,6 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Class Conversation
+ *
+ * @property int $id
+ * @property int $user_id
+ * @property string $title
+ * @property string $repository
+ * @property string $project_directory
+ * @property string|null $claude_session_id
+ * @property string|null $filename
+ */
 class Conversation extends Model
 {
     protected $fillable = [

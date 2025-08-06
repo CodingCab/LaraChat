@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\RepositoryDashboardController;
 use App\Http\Controllers\ClaudeController;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +21,7 @@ Route::get('claude', function () {
     ]);
 })->middleware(['auth', 'verified'])->name('claude');
 
-Route::get('claude/new', [ClaudeController::class, 'createConversation'])
+Route::get('claude/new', [ConversationsController::class, 'store'])
     ->middleware(['auth', 'verified'])
     ->name('claude.new');
 
