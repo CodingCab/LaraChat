@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/vue3';
-import { GitBranch, FileCode, FolderOpen, Clock, Activity, MessageSquare, Copy, Terminal } from 'lucide-vue-next';
+import { GitBranch, FileCode, FolderOpen, Clock, Activity, MessageSquare, Copy, Terminal, Send } from 'lucide-vue-next';
 import { onMounted, ref, computed } from 'vue';
 import axios from 'axios';
 
@@ -41,6 +42,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const fileTree = ref<any[]>([]);
 const loadingTree = ref(false);
+const messageInput = ref('');
 
 const fetchFileTree = async () => {
     loadingTree.value = true;
@@ -69,6 +71,12 @@ const startChatSession = () => {
 
 const openConversation = (conversationId: number) => {
     router.visit(`/claude/conversation/${conversationId}`);
+};
+
+const startChatWithMessage = () => {
+    if (messageInput.value.trim()) {
+        router.visit(`/claude/new?message=${encodeURIComponent(messageInput.value.trim())}`);
+    }
 };
 
 onMounted(() => {
@@ -202,6 +210,27 @@ const formattedDate = computed(() => {
                                         {{ repository.has_hot_folder ? 'Available for AI assistance' : 'Need to copy to hot folder' }}
                                     </p>
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Quick Chat</CardTitle>
+                            <CardDescription>Start a new chat session with Claude</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div class="flex gap-2">
+                                <Input 
+                                    v-model="messageInput"
+                                    placeholder="Type your message here..."
+                                    @keyup.enter="startChatWithMessage"
+                                    class="flex-1"
+                                />
+                                <Button @click="startChatWithMessage" :disabled="!messageInput.trim()">
+                                    <Send class="mr-2 h-4 w-4" />
+                                    Start Chat
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
