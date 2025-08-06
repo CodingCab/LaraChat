@@ -21,7 +21,6 @@ const props = defineProps<{
     repository?: string;
     conversationId?: number;
     sessionId?: string;
-    initialMessage?: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
@@ -419,6 +418,64 @@ watch(
     { immediate: true },
 );
 
+// Track polling state
+let pollInterval: NodeJS.Timeout | null = null;
+
+// Load messages from database for job-based conversations
+const loadConversationMessages = async () => {
+    if (!props.conversationId) return;
+
+    try {
+        const response = await fetch(`/api/conversations/${props.conversationId}/messages`, {
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            }
+        });
+        const data = await response.json();
+
+        console.log('Loading conversation messages:', data);
+
+        messages.value = [];
+        let hasStreamingMessage = false;
+
+        for (const msg of data.messages) {
+            if (msg.role === 'user') {
+                const userMessage = addUserMessage(msg.content || '');
+                userMessage.timestamp = new Date(msg.created_at);
+            } else if (msg.role === 'assistant') {
+                const assistantMessage = addAssistantMessage();
+                // Directly set the content instead of using appendToMessage
+                // since we don't have raw responses from the database
+                if (msg.content) {
+                    assistantMessage.content = msg.content;
+                }
+                assistantMessage.timestamp = new Date(msg.created_at);
+
+                if (msg.is_streaming) {
+                    hasStreamingMessage = true;
+                }
+            }
+        }
+
+        console.log('Messages after loading:', messages.value);
+        console.log('Filtered messages:', filteredMessages.value);
+
+        // Start polling if there are streaming messages
+        if (hasStreamingMessage) {
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(loadConversationMessages, 1000);
+        } else if (data.messages.length > 0) {
+            // Poll less frequently for updates
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(loadConversationMessages, 5000);
+        }
+
+        await scrollToBottom();
+    } catch (error) {
+        console.error('Error loading conversation messages:', error);
+    }
+};
+
 onMounted(async () => {
     // Fetch repositories first to ensure they're available
     await fetchRepositories();
@@ -427,34 +484,32 @@ onMounted(async () => {
     if (props.conversationId) {
         conversationId.value = props.conversationId;
     }
+
     if (props.sessionId) {
         sessionId.value = props.sessionId;
     }
 
     if (props.sessionFile) {
+        // Load from session file
         await loadSessionMessages();
+    } else if (props.conversationId) {
+        // Load from database for job-based conversations
+        await loadConversationMessages();
     } else {
-        // No session file - ensure messages are cleared
+        // New conversation - clear everything
         messages.value = [];
-        if (!props.conversationId) {
-            // Only reset these if we're not loading a conversation
-            sessionFilename.value = null;
-            sessionId.value = null;
-        }
+        sessionFilename.value = null;
+        sessionId.value = null;
         // Only focus on initial mount for new sessions
         focusInput(false);
-    }
-
-    // If we have an initial message, send it automatically
-    if (props.initialMessage) {
-        messageInput.value = props.initialMessage;
-        await nextTick();
-        sendMessage();
     }
 });
 
 onUnmounted(() => {
-    stopPolling();
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
 });
 </script>
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\StreamMessageJob;
+use App\Jobs\SendClaudeMessageJob;
 use App\Models\Conversation;
 use App\Services\ClaudeService;
 use Exception;
@@ -77,8 +77,8 @@ class ConversationsController extends Controller
             'filename' => $sessionFilename,
         ]);
 
-        // Store the message in session to handle it on the conversation page
-        session()->flash('initial_message', $message);
+        // Dispatch job to send the message
+        SendClaudeMessageJob::dispatch($conversation, $message);
 
         // Redirect to the conversation page
         return redirect()->route('claude.conversation', $conversation->id);
