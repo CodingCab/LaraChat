@@ -243,7 +243,7 @@ const loadSessionMessages = async (isPolling = false) => {
                 // Add user message
                 messages.value.push({
                     id: Date.now() + Math.random(),
-                    content: conversation.userMessage,
+                    content: conversation.userMessage || '',
                     role: 'user',
                     timestamp: new Date(conversation.timestamp),
                 });

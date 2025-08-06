@@ -20,7 +20,11 @@ export function escapeHtml(text: string): string {
     return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-export function parseMessageContent(content: string): string {
+export function parseMessageContent(content: string | undefined): string {
+    // Handle undefined or null content
+    if (!content) {
+        return '';
+    }
     // First escape HTML to prevent XSS
     const escapedContent = escapeHtml(content);
     // Then convert URLs to links
