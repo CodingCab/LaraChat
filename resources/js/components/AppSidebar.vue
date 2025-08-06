@@ -178,9 +178,13 @@ const handleCopyToHot = async (repositoryId: number) => {
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
                                     <span class="block truncate">{{ conversation.title }}</span>
-                                    <div v-if="conversation.repository" class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                        <GitBranch class="h-3 w-3 shrink-0" />
-                                        <span class="truncate">{{ conversation.repository }}</span>
+                                    <div class="mt-0.5 flex items-center justify-between gap-1 text-xs text-muted-foreground">
+                                        <div v-if="conversation.repository" class="flex items-center gap-1 min-w-0">
+                                            <GitBranch class="h-3 w-3 shrink-0" />
+                                            <span class="truncate">{{ conversation.repository }}</span>
+                                        </div>
+                                        <span v-else></span>
+                                        <span v-if="conversation.project_directory" class="truncate text-right">{{ conversation.project_directory }}</span>
                                     </div>
                                 </div>
                             </Link>

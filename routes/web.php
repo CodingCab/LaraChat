@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\RepositoryDashboardController;
+use App\Http\Controllers\ClaudeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,6 +19,10 @@ Route::get('claude', function () {
         'repository' => request()->query('repository')
     ]);
 })->middleware(['auth', 'verified'])->name('claude');
+
+Route::get('claude/new', [ClaudeController::class, 'createConversation'])
+    ->middleware(['auth', 'verified'])
+    ->name('claude.new');
 
 Route::get('claude/{session}', function ($session) {
     return Inertia::render('Claude', [
