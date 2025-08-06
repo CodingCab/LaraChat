@@ -16,17 +16,15 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useClaudeSessions } from '@/composables/useClaudeSessions';
 import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { AlertCircle, BookOpen, CheckCircle, FileText, Folder, GitBranch, Loader2, MessageSquare, MessageSquarePlus, Plus } from 'lucide-vue-next';
+import { AlertCircle, BookOpen, CheckCircle, Folder, GitBranch, Loader2, MessageSquare, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const { claudeSessions, fetchSessions } = useClaudeSessions();
 const { conversations, fetchConversations } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading, copyToHot } = useRepositories();
 
@@ -57,7 +55,6 @@ const footerNavItems: NavItem[] = [
 ];
 
 onMounted(async () => {
-    await fetchSessions();
     await fetchRepositories();
     await fetchConversations();
 });
@@ -192,35 +189,6 @@ const handleCopyToHot = async (repositoryId: number) => {
                 </SidebarMenu>
             </SidebarGroup>
 
-            <SidebarGroup class="px-2 py-0" v-if="claudeSessions.length > 0">
-                <SidebarGroupLabel>Claude Sessions</SidebarGroupLabel>
-                <SidebarMenu>
-                    <SidebarMenuItem v-for="session in claudeSessions" :key="session.filename">
-                        <SidebarMenuButton as-child :is-active="page.url === `/claude/${session.filename}`" :tooltip="session.userMessage">
-                            <Link
-                                :href="
-                                    session.repository
-                                        ? `/claude/${session.filename}?repository=${encodeURIComponent(session.repository)}`
-                                        : `/claude/${session.filename}`
-                                "
-                                :preserve-scroll="true"
-                                :preserve-state="true"
-                            >
-                                <FileText />
-                                <div class="min-w-0 flex-1">
-                                    <span class="block truncate">{{
-                                        session.userMessage.length > 30 ? session.userMessage.substring(0, 30) + '...' : session.userMessage
-                                    }}</span>
-                                    <div v-if="session.repository" class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                                        <GitBranch class="h-3 w-3 shrink-0" />
-                                        <span class="truncate">{{ session.repository }}</span>
-                                    </div>
-                                </div>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarGroup>
         </SidebarContent>
 
         <SidebarFooter>
