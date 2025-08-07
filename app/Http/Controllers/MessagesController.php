@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Conversation;
-use App\Models\Message;
 use Illuminate\Http\Request;
 
 class MessagesController extends Controller

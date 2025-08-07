@@ -6,8 +6,6 @@ use App\Jobs\CopyRepositoryToHot;
 use App\Models\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class RepositoryController extends Controller
 {
@@ -19,7 +17,7 @@ class RepositoryController extends Controller
         // Check hot folder status for each repository and ensure slug is included
         $repositories->transform(function ($repository) {
             $repoName = $this->extractRepoName($repository->url);
-            $hotPattern = storage_path('app/private/repositories/hot/' . $repoName . '/' . $repoName . '_*');
+            $hotPattern = storage_path('app/private/repositories/hot/' . $repoName);
             $hotFolders = glob($hotPattern);
             $repository->has_hot_folder = !empty($hotFolders);
             // Ensure slug is included in the response
