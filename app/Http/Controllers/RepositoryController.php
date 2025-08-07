@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\CopyRepositoryToHot;
 use App\Models\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
@@ -108,8 +107,6 @@ class RepositoryController extends Controller
 
     public function destroy(Repository $repository)
     {
-
-        // Delete local repository
         $fullPath = storage_path('app/private/' . $repository->local_path);
         if (file_exists($fullPath)) {
             Process::run("rm -rf {$fullPath}");
@@ -125,7 +122,6 @@ class RepositoryController extends Controller
 
     public function pull(Repository $repository)
     {
-
         $fullPath = storage_path('app/private/' . $repository->local_path);
 
         // Pull latest changes
@@ -149,7 +145,6 @@ class RepositoryController extends Controller
 
     public function copyToHot(Repository $repository)
     {
-
         // Check if hot folder already exists
         $repoName = $this->extractRepoName($repository->url);
         $hotPattern = storage_path('app/private/repositories/hot/' . $repoName . '/' . $repoName . '_*');
@@ -160,9 +155,6 @@ class RepositoryController extends Controller
                 'has_hot_folder' => true
             ]);
         }
-
-        // Dispatch job to copy repository to hot folder
-        CopyRepositoryToHot::dispatchAfterResponse($repository);
 
         return response()->json([
             'message' => 'Repository copy job dispatched',
