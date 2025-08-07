@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return redirect('/claude');
 })->name('home');
 
 Route::get('repository/{repository:slug}', [RepositoryDashboardController::class, 'show'])
