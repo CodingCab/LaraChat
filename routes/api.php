@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/claude', [ClaudeController::class, 'store']);
-    Route::post('/claude/save-response', [ClaudeController::class, 'saveResponse']);
+    // TODO:: remove /claude/save-response endpoint
+//    Route::post('/claude/save-response', [ClaudeController::class, 'saveResponse']);
     Route::get('/claude/sessions', [ClaudeController::class, 'getSessions']);
     Route::get('/claude/sessions/{filename}', [ClaudeController::class, 'getSessionMessages']);
-    Route::get('/claude/debug/{filename}', [ClaudeController::class, 'debugSession']);
     Route::get('/claude/conversations', [ConversationsController::class, 'index']); // TODO: deprecated, replace usage with /conversations
 
     Route::get('/repositories', [RepositoryController::class, 'index']);
@@ -22,7 +22,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/repositories/{repository}/copy-to-hot', [RepositoryController::class, 'copyToHot']);
 
     Route::get('/conversations', [ConversationsController::class, 'index']);
-    
+
     // Messages API
     Route::get('/conversations/{conversation}/messages', [MessagesController::class, 'index']);
     Route::post('/conversations/{conversation}/messages', [MessagesController::class, 'store']);

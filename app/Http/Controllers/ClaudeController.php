@@ -43,47 +43,6 @@ class ClaudeController extends Controller
         $conversationId = $request->input('conversationId');
         $sessionFilename = $request->input('sessionFilename');
 
-//        // Create conversation record if this is the first message (no conversationId provided)
-//        if (!$conversationId && Auth::check()) {
-//            // Extract title from the first user message (first 100 chars)
-//            $title = substr($request->input('prompt'), 0, 100);
-//            if (strlen($request->input('prompt')) > 100) {
-//                $title .= '...';
-//            }
-//
-//            // Extract repository name from path if available
-//            $repositoryName = null;
-//            if ($request->input('repositoryPath')) {
-//                $pathParts = explode('/', $request->input('repositoryPath'));
-//                $repositoryName = end($pathParts);
-//            }
-//
-//            // Generate filename if not provided
-//            if (!$sessionFilename) {
-//                $timestamp = date('Y-m-d\TH-i-s');
-//                $sessionFilename = $timestamp . '-sessionId-' . ($sessionId ?: uniqid()) . '.json';
-//            }
-//
-//            // Create empty session file
-//            $directory = 'claude-sessions';
-//            if (!Storage::exists($directory)) {
-//                Storage::makeDirectory($directory);
-//            }
-//            Storage::put($directory . '/' . $sessionFilename, json_encode([], JSON_PRETTY_PRINT));
-//
-//            $conversation = Conversation::create([
-//                'user_id' => Auth::id(),
-//                'title' => $title,
-//                'repository' => $repositoryName,
-//                'project_directory' => $request->input('repositoryPath'),
-//                'claude_session_id' => $sessionId,
-//                'filename' => $sessionFilename,
-//            ]);
-//
-//            $conversationId = $conversation->id;
-//        }
-
-
         /** @var Conversation $conversation */
         $conversation = Conversation::findOrFail($conversationId);
 
@@ -274,34 +233,5 @@ class ClaudeController extends Controller
         ]);
 
         return response()->json($messages);
-    }
-
-    public function debugSession($filename)
-    {
-        $directory = 'claude-sessions';
-        $path = $directory . '/' . $filename;
-
-        if (!Storage::exists($path)) {
-            return response()->json(['error' => 'Session file not found'], 404);
-        }
-
-        $rawContent = Storage::get($path);
-        $decoded = json_decode($rawContent, true);
-
-        return response()->json([
-            'raw_content' => $rawContent,
-            'decoded' => $decoded,
-            'file_size' => Storage::size($path),
-            'last_modified' => Storage::lastModified($path),
-        ]);
-    }
-
-    public function getConversations()
-    {
-        $conversations = Conversation::where('user_id', Auth::id())
-            ->orderBy('updated_at', 'desc')
-            ->get();
-
-        return response()->json($conversations);
     }
 }
