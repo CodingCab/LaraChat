@@ -5,14 +5,11 @@ namespace App\Http\Controllers;
 use App\Jobs\SendClaudeMessageJob;
 use App\Models\Conversation;
 use App\Services\ClaudeService;
-use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
-use Ramsey\Uuid\Uuid;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ConversationsController extends Controller
 {
@@ -32,21 +29,16 @@ class ConversationsController extends Controller
             'repository' => 'nullable|string',
         ]);
 
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
+        $msg = $request->input('message');
 
-        // Extract title from the message (first 100 chars)
-        $message = $request->input('message');
-        $title = substr($message, 0, 100);
-        if (strlen($message) > 100) {
-            $title .= '...';
-        }
-
-        // Generate filename (but not session ID - Claude will generate that)
-        $timestamp = date('Y-m-d\TH-i-s');
-        $tempId = uniqid();
-        $sessionFilename = $timestamp . '-session-' . $tempId . '.json';
+        $conversation = Conversation::query()->create([
+            'user_id' => Auth::id(),
+            'project_directory' => uniqid(),
+            'repository' => $request->input('repository'),
+            'claude_session_id' => null, // Let Claude generate this
+            'filename' => date('Y-m-d\TH-i-s') . '-session-' . uniqid() . '.json',
+            'title' => substr($msg, 0, 100) . (strlen($msg) > 100 ? '...' : ''),
+        ]);
 
         // Create empty session file with initial message structure
         $directory = 'claude-sessions';
@@ -59,29 +51,17 @@ class ConversationsController extends Controller
             [
                 "sessionId" => null,
                 'role' => 'user',
-                'userMessage' => $message,
+                'userMessage' => $msg,
                 'timestamp' => now()->toIso8601String(),
                 "isComplete" => false,
                 "repositoryPath" => null,
             ]
         ];
 
-        Storage::put($directory . '/' . $sessionFilename, json_encode($sessionData, JSON_PRETTY_PRINT));
+        Storage::put($directory . '/' . $conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
 
-        // Create conversation record (without session ID - Claude will generate it)
-        $conversation = Conversation::create([
-            'user_id' => Auth::id(),
-            'title' => $title,
-            'repository' => $request->input('repository'),
-            'project_directory' => uniqid(),
-            'claude_session_id' => null, // Let Claude generate this
-            'filename' => $sessionFilename,
-        ]);
+        SendClaudeMessageJob::dispatch($conversation, $msg);
 
-        // Dispatch job to send the message
-        SendClaudeMessageJob::dispatch($conversation, $message);
-
-        // Redirect to the conversation page
         return redirect()->route('claude.conversation', $conversation->id);
     }
 }

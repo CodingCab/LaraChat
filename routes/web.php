@@ -14,7 +14,6 @@ Route::get('repository/{repository:slug}', [RepositoryDashboardController::class
     ->middleware(['auth', 'verified'])
     ->name('repository.dashboard');
 
-
 Route::get('claude', function () {
     return Inertia::render('Claude', [
         'repository' => request()->query('repository')

@@ -12,6 +12,7 @@ use Symfony\Component\Process\Process;
 class ClaudeService
 {
     private static $runningProcesses = [];
+
     public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null)
     {
         // Generate a unique process ID for this request

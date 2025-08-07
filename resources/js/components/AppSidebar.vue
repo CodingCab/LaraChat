@@ -176,9 +176,15 @@ const handleCopyToHot = async (repositoryId: number) => {
                                             <span class="truncate">{{ conversation.repository }}</span>
                                         </div>
                                         <span v-else></span>
-                                        <span v-if="conversation.project_directory" class="truncate text-right">{{
-                                            conversation.project_directory
-                                        }}</span>
+                                        <a
+                                            v-if="conversation.project_directory"
+                                            :href="`http://${conversation.project_directory}.test`"
+                                            target="_blank"
+                                            class="truncate text-right hover:underline"
+                                            @click.stop
+                                        >
+                                            {{ conversation.project_directory }}
+                                        </a>
                                     </div>
                                 </div>
                             </Link>

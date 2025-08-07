@@ -24,10 +24,10 @@ class SendClaudeMessageJob implements ShouldQueue
     protected $messageContent;
     protected $message;
 
-    public function __construct(Conversation $conversation, string $messageContent)
+    public function __construct(Conversation $conversation, string $message)
     {
         $this->conversation = $conversation;
-        $this->messageContent = $messageContent;
+        $this->messageContent = $message;
     }
 
     public function handle(): void
@@ -44,44 +44,13 @@ class SendClaudeMessageJob implements ShouldQueue
 
         PrepareProjectDirectoryJob::dispatch($this->conversation);
 
-        // Create user message record
-        $userMessage = Message::create([
-            'conversation_id' => $this->conversation->id,
-            'role' => 'user',
-            'content' => $this->messageContent,
-        ]);
-
-        // Create assistant message placeholder
-        $assistantMessage = Message::create([
-            'conversation_id' => $this->conversation->id,
-            'role' => 'assistant',
-            'content' => '',
-            'is_streaming' => true,
-        ]);
-
-        // Try to send message, retry without session if it fails
-        $attempts = 0;
-        $maxAttempts = 2;
-        $success = false;
-
-        while ($attempts < $maxAttempts && !$success) {
-            $attempts++;
-
-            try {
-                $success = $this->sendToClaude($assistantMessage, $attempts === 2);
-            } catch (\Exception $e) {
-                if ($attempts === 1 && strpos($e->getMessage(), 'No conversation found') !== false) {
-                    Log::warning('Session not found, retrying without session ID', [
-                        'conversation_id' => $this->conversation->id,
-                        'invalid_session_id' => $this->conversation->claude_session_id
-                    ]);
-                    // Clear the invalid session ID for the retry
-                    $this->conversation->update(['claude_session_id' => null]);
-                    continue;
-                }
-                throw $e;
-            }
-        }
+        ClaudeService::stream(
+            $this->messageContent,
+            '--permission-mode bypassPermissions',
+            $this->conversation->claude_session_id,
+            $this->conversation->filename,
+            $this->conversation->project_directory
+        );
     }
 
     protected function sendToClaude($assistantMessage, $forceNewSession = false): bool
