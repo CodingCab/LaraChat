@@ -12,6 +12,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Ramsey\Uuid\Uuid;
 
 class ConversationsController extends Controller
 {
@@ -72,7 +73,7 @@ class ConversationsController extends Controller
             'user_id' => Auth::id(),
             'title' => $title,
             'repository' => $request->input('repository'),
-            'project_directory' => null,
+            'project_directory' => uniqid(),
             'claude_session_id' => null, // Let Claude generate this
             'filename' => $sessionFilename,
         ]);

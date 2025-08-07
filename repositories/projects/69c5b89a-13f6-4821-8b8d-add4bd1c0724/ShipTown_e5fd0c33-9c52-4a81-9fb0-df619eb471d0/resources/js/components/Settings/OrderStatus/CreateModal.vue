@@ -1,0 +1,153 @@
+<template>
+    <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div ref="loadingContainer2" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ $t('Create Order Status') }}</h5>
+                </div>
+                <div class="modal-body">
+                    <ValidationObserver ref="form">
+                        <form class="form" @submit.prevent="submit" ref="loadingContainer">
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label" for="name">{{ $t('Name') }}</label>
+                                <div class="col-sm-9">
+                                    <ValidationProvider vid="name" name="name" v-slot="{ errors }">
+                                        <input v-model="name" :class="{
+                                            'form-control': true,
+                                            'is-invalid': errors.length > 0,
+                                        }" id="name" required>
+                                        <div class="invalid-feedback">
+                                            {{ errors[0] }}
+                                        </div>
+                                    </ValidationProvider>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label" for="code">{{ $t('Code') }}</label>
+                                <div class="col-sm-9">
+                                    <ValidationProvider vid="code" name="code" v-slot="{ errors }">
+                                        <input v-model="code" :class="{
+                                            'form-control': true,
+                                            'is-invalid': errors.length > 0,
+                                        }" id="code" required>
+                                        <div class="invalid-feedback">
+                                            {{ errors[0] }}
+                                        </div>
+                                    </ValidationProvider>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label" for="order_active">{{ $t('Order Active') }}</label>
+                                <div class="col-sm-9">
+                                    <ValidationProvider vid="order_active" name="order_active" v-slot="{ errors }">
+                                        <div class="custom-control custom-switch mt-2" :class="{'is-invalid' : errors.length}">
+                                            <input type="checkbox"
+                                                id="create-order_active"
+                                                class="custom-control-input"
+                                                v-model="orderActive"
+                                                required>
+                                            <label class="custom-control-label" for="create-order_active"></label>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            {{ errors[0] }}
+                                        </div>
+                                    </ValidationProvider>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label class="col-sm-3 col-form-label" for="sync_ecommerce">{{ $t('Sync Ecommerce') }}</label>
+                                <div class="col-sm-9">
+                                    <ValidationProvider vid="sync_ecommerce" name="sync_ecommerce" v-slot="{ errors }">
+                                        <div class="custom-control custom-switch mt-2" :class="{'is-invalid' : errors.length}">
+                                            <input type="checkbox"
+                                                id="create-sync_ecommerce"
+                                                class="custom-control-input"
+                                                v-model="syncEcommerce"
+                                                required>
+                                            <label class="custom-control-label" for="create-sync_ecommerce"></label>
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            {{ errors[0] }}
+                                        </div>
+                                    </ValidationProvider>
+                                </div>
+                            </div>
+                        </form>
+                    </ValidationObserver>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @click="closeModal" class="btn btn-secondary">{{ $t('Cancel') }}</button>
+                    <button type="button" @click="submit" class="btn btn-primary">{{ $t('Save') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import { ValidationObserver, ValidationProvider } from "vee-validate";
+
+import Loading from "../../../mixins/loading-overlay";
+import api from "../../../mixins/api";
+
+export default {
+    name: "CreateModal",
+
+    mixins: [api, Loading],
+
+    components: {
+        ValidationObserver, ValidationProvider
+    },
+
+    data() {
+        return {
+            name: '',
+            code: '',
+            orderActive: false,
+            syncEcommerce: false,
+        }
+    },
+
+    methods: {
+
+        submit() {
+            this.showLoading();
+            this.apiPostOrderStatus({
+                    name: this.name,
+                    code: this.code,
+                    order_active: this.orderActive,
+                    sync_ecommerce: this.syncEcommerce,
+                })
+                .then(({ data }) => {
+                    this.$snotify.success(this.$t('Order status created.'));
+                    this.closeModal();
+                    this.resetForm()
+                    this.$emit('onCreated', data.data);
+                })
+                .catch((error) => {
+                    if (error.response) {
+                        if (error.response.status === 422) {
+                            this.$refs.form.setErrors(error.response.data.errors);
+                        }
+                    }
+                })
+                .finally(this.hideLoading);
+        },
+
+        resetForm(){
+            this.name = '';
+            this.code = '';
+            this.reservesStock = false;
+            this.orderActive = false;
+            this.syncEcommerce = false;
+        },
+
+        closeModal() {
+            $(this.$el).modal('hide');
+        }
+    },
+}
+</script>

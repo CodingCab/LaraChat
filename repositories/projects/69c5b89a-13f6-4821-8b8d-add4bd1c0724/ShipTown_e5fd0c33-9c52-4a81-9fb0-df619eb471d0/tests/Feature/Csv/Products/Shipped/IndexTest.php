@@ -1,0 +1,56 @@
+<?php
+
+namespace Tests\Feature\Csv\Products\Shipped;
+use PHPUnit\Framework\Attributes\Test;
+
+use App\User;
+use Tests\TestCase;
+
+class IndexTest extends TestCase
+{
+    protected string $uri = 'csv/products/shipped';
+
+    protected User $user;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->user = User::factory()->create();
+    }
+
+    #[Test]
+    public function test_if_uri_set(): void
+    {
+        $this->assertNotEmpty($this->uri);
+    }
+
+    #[Test]
+    public function test_guest_call(): void
+    {
+        $response = $this->get($this->uri);
+
+        $response->assertRedirect('/login');
+    }
+
+    #[Test]
+    public function test_user_call(): void
+    {
+        $this->actingAs($this->user, 'web');
+
+        $response = $this->get($this->uri);
+
+        $response->assertSuccessful();
+    }
+
+    #[Test]
+    public function test_admin_call(): void
+    {
+        $this->user->assignRole('admin');
+
+        $this->actingAs($this->user, 'web');
+
+        $response = $this->get($this->uri);
+
+        $response->assertSuccessful();
+    }
+}

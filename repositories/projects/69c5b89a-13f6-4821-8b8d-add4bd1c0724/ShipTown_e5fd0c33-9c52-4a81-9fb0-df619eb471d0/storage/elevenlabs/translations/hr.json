@@ -1,0 +1,14 @@
+{
+    "1 2 3 Testing": "",
+    "As you can see, change has to be given to customer. Receipt has been printed and you can now hand it over to the customer, click \"close\" button to start a new transaction": "Kao što vidite, kupcu treba dati ostatak. Račun je otisnut i sada ga možete predati kupcu, kliknite na gumb \"zatvori\" za započinjanje nove transakcije.",
+    "Hello from ShipTown! This is a test of the screen recording feature.": "Pozdrav iz ShipTown-a! Ovo je test funkcije snimanja ekrana.",
+    "Lets visit myshiptown.com and log in": "Posjetimo myshiptown.com i prijavimo se.",
+    "Our Point of Sale system supports multiple payment types, such as cash or card. To accept customers payment, click PAY button on the right side of the screen": "Naš sustav prodajnog mjesta podržava više vrsta plaćanja, kao što su gotovina ili kartica. Da biste prihvatili plaćanje od kupca, kliknite gumb PLAĆAJ na desnoj strani ekrana.",
+    "Our Point of Sale system supports multiple payment types, such as cash or card. You can choose the payment type when you click PAY button on the right side of the screen": "Naš sustav prodajnog mjesta podržava više vrsta plaćanja, kao što su gotovina ili kartica. Možete odabrati vrstu plaćanja kada kliknete gumb PLAĆAJ na desnoj strani ekrana.",
+    "Product has been added to the transaction. Scanning product again will increase the quantity": "Proizvod je dodan u transakciju. Ponovno skeniranje proizvoda će povećati količinu.",
+    "Receipt has been printed and you can now hand it over to the customer together with the change. Click \"close\" button to serve next customer": "Račun je otisnut i sada ga možete predati kupcu zajedno s ostatkom. Kliknite gumb \"zatvori\" da biste poslužili sljedećeg kupca.",
+    "Visit myshiptown.com to find out more!": "Posjetite myshiptown.com za više informacija!",
+    "You also have options cancel current transaction or to put transaction on hold if needed. In the next lesson I will show more advanced features of our Point Of Sale": "Također imate mogućnosti otkazivanja trenutne transakcije ili stavljanja transakcije na čekanje ako je potrebno. U sljedećoj lekciji ću pokazati naprednije značajke našeg sustava prodajnog mjesta.",
+    "You can see the payment amount input field, where you can enter the payment amount. For this example, we will enter the payment amount of 50": "Možete vidjeti polje za unos iznosa plaćanja, gdje možete unijeti iznos plaćanja. U ovom primjeru, unijet ćemo iznos plaćanja od 50.",
+    "You can see the product has been added to the transaction. Scanning product barcode again will increase the quantity of the product in the transaction": "Možete vidjeti da je proizvod dodan u transakciju. Ponovno skeniranje barkoda proizvoda povećat će količinu proizvoda u transakciji."
+}

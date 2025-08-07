@@ -1,0 +1,16 @@
+<?php
+
+namespace {{ namespace }};
+
+use App;
+use App\Abstracts\JobTestAbstract;
+
+class {{ class }} extends JobTestAbstract
+{
+    public function test_job()
+   {
+        {{testedClass}}::dispatchSync();
+
+        $this->assertTrue(true, 'Job did not throw any exceptions');
+    }
+}

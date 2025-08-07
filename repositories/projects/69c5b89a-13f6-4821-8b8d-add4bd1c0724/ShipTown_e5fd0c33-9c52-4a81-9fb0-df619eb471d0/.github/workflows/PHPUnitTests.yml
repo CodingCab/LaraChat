@@ -1,0 +1,89 @@
+name: PHP 8.3 - Feature Tests
+on: [push]
+
+env:
+  APP_URL: "http://127.0.0.1:8000"
+  APP_ENV: local
+  DB_DATABASE: products_management_phpunit
+  DB_USERNAME: root
+  DB_PASSWORD: root
+  TEST_MODULES_PRINTNODE_API_KEY: ${{ secrets.TEST_MODULES_PRINTNODE_API_KEY }}
+  TEST_MODULES_PRINTNODE_PRINTER_ID: ${{ secrets.TEST_MODULES_PRINTNODE_PRINTER_ID }}
+  TEST_API2CART_STORE_KEY: ${{ secrets.TEST_API2CART_STORE_KEY }}
+  API2CART_API_KEY: ${{ secrets.API2CART_API_KEY }}
+  TEST_FAKTUROWO_API_KEY: ${{ secrets.TEST_FAKTUROWO_API_KEY }}
+  TEST_SLACK_INCOMING_WEBHOOK_URL: ${{ secrets.TEST_SLACK_INCOMING_WEBHOOK_URL }}
+  TEST_MODULES_MAGENTO2MSI_BASE_URL: ${{ secrets.TEST_MODULES_MAGENTO2MSI_BASE_URL }}
+  TEST_MODULES_MAGENTO2MSI_CONSUMER_KEY: ${{ secrets.TEST_MODULES_MAGENTO2MSI_CONSUMER_KEY }}
+  TEST_MODULES_MAGENTO2MSI_CONSUMER_SECRET: ${{ secrets.TEST_MODULES_MAGENTO2MSI_CONSUMER_SECRET }}
+  TEST_MODULES_MAGENTO2MSI_ACCESS_TOKEN: ${{ secrets.TEST_MODULES_MAGENTO2MSI_ACCESS_TOKEN }}
+  TEST_MODULES_MAGENTO2MSI_ACCESS_SECRET: ${{ secrets.TEST_MODULES_MAGENTO2MSI_ACCESS_SECRET }}
+  TEST_MODULES_MAGENTO2MSI_MAGENTO_SOURCE_CODE: ${{ secrets.TEST_MODULES_MAGENTO2MSI_MAGENTO_SOURCE_CODE }}
+  TEST_MODULES_MAGENTO2MSI_STORE_ID: ${{ secrets.TEST_MODULES_MAGENTO2MSI_STORE_ID }}
+  TEST_MODULES_SHOPIFY_STORE_URL: ${{ secrets.TEST_MODULES_SHOPIFY_STORE_URL }}
+  TEST_MODULES_SHOPIFY_ACCESS_TOKEN: ${{ secrets.TEST_MODULES_SHOPIFY_ACCESS_TOKEN }}
+  TEST_MODULES_SHOPIFY_API_KEY: ${{ secrets.TEST_MODULES_SHOPIFY_API_KEY }}
+  TEST_MODULES_SHOPIFY_API_PASSWORD: ${{ secrets.TEST_MODULES_SHOPIFY_API_PASSWORD }}
+  TEST_DPD_TOKEN: ${{ secrets.TEST_DPD_TOKEN }}
+  TEST_DPD_USER: ${{ secrets.TEST_DPD_USER }}
+  TEST_DPD_PASSWORD: ${{ secrets.TEST_DPD_PASSWORD }}
+  TEST_DPDUK_USERNAME: ${{ secrets.TEST_DPDUK_USERNAME }}
+  TEST_DPDUK_PASSWORD: ${{ secrets.TEST_DPDUK_PASSWORD }}
+  TEST_DPDUK_ACCNUMBER: ${{ secrets.TEST_DPDUK_ACCNUMBER }}
+  TEST_MODULES_INPOSTPL_API_KEY: ${{ secrets.TEST_MODULES_INPOSTPL_API_KEY }}
+  TEST_BOXTOP_KEY: ${{ secrets.TEST_BOXTOP_KEY }}
+  TEST_BOXTOP_CUSTACCNUM: ${{ secrets.TEST_BOXTOP_CUSTACCNUM }}
+  TEST_BOXTOP_SITE_CODE: ${{ secrets.TEST_BOXTOP_SITE_CODE }}
+  TEST_BOXTOP_BRANCH_ID: ${{ secrets.TEST_BOXTOP_BRANCH_ID }}
+  TEST_RMSAPI_WAREHOUSE_CODE: ${{ secrets.TEST_RMSAPI_WAREHOUSE_CODE }}
+  TEST_RMSAPI_URL: ${{ secrets.TEST_RMSAPI_URL }}
+  TEST_RMSAPI_USERNAME: ${{ secrets.TEST_RMSAPI_USERNAME }}
+  TEST_RMSAPI_PASSWORD: ${{ secrets.TEST_RMSAPI_PASSWORD }}
+  TEST_SNS_TOPIC_ARN: ${{ secrets.TEST_SNS_TOPIC_ARN }}
+
+jobs:
+  phpunit:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        batch:
+          - Tests\\Console\\
+          - Tests\\Coverage\\
+          - Tests\\Jobs\\
+          - Tests\\Models\\
+          - /^Tests\\Modules\\[A-E]/i
+          - /^Tests\\Modules\\[E-F]/i
+          - /^Tests\\Modules\\[I-Z]/i
+          - Tests\\Feature\\[A-E]/i
+          - Tests\\Feature\\[F-Z]/i
+          - Tests\\Services\\
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+      - name: Prepare The Environment
+        run: cp .env.example .env
+      - name: Create Database
+        run: |
+          sudo systemctl start mysql
+          mysql --user="root" --password="root" -e "CREATE DATABASE products_management_phpunit character set UTF8mb4 collate utf8mb4_bin;"
+      - name: Show mysql version 1
+        run: mysql --user="root" --password="root" -e "SELECT @@VERSION"
+      - name: Install Composer Dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+      - name: Generate Application Key
+        run: php artisan key:generate
+      - name: Migrate database
+        run: php artisan migrate:fresh --force
+      - name: Run PHPUnit Test Batch
+        run: php artisan test --order-by=defects --filter '${{ matrix.batch }}'
+        timeout-minutes: 10
+      - name: Upload Console Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: console
+          path: tests/Browser/console

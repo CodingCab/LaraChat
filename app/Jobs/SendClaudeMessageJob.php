@@ -4,12 +4,14 @@ namespace App\Jobs;
 
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Services\ClaudeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Process\Process;
@@ -30,10 +32,17 @@ class SendClaudeMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        // Ensure project directory exists
-        if ($this->conversation->project_directory && !is_dir($this->conversation->project_directory)) {
-            PrepareProjectDirectoryJob::dispatchSync($this->conversation);
+        $baseDirectory = storage_path('app/private/repositories/base/' . $this->conversation->repository);
+        $hotDirectory = storage_path('app/private/repositories/hot/' . $this->conversation->repository);
+        $projectDirectory = storage_path('app/private/repositories/projects/' . $this->conversation->project_directory);
+
+        if (File::exists($hotDirectory)) {
+            File::moveDirectory($hotDirectory, $projectDirectory);
+        } else {
+            File::copyDirectory($baseDirectory, $projectDirectory);
         }
+
+        PrepareProjectDirectoryJob::dispatch($this->conversation);
 
         // Create user message record
         $userMessage = Message::create([
@@ -54,10 +63,10 @@ class SendClaudeMessageJob implements ShouldQueue
         $attempts = 0;
         $maxAttempts = 2;
         $success = false;
-        
+
         while ($attempts < $maxAttempts && !$success) {
             $attempts++;
-            
+
             try {
                 $success = $this->sendToClaude($assistantMessage, $attempts === 2);
             } catch (\Exception $e) {
@@ -74,7 +83,7 @@ class SendClaudeMessageJob implements ShouldQueue
             }
         }
     }
-    
+
     protected function sendToClaude($assistantMessage, $forceNewSession = false): bool
     {
         try {
@@ -84,7 +93,7 @@ class SendClaudeMessageJob implements ShouldQueue
 
             // Use --resume for continuing an existing session
             // Only use resume if we have a valid UUID session ID from Claude
-            if (!$forceNewSession && 
+            if (!$forceNewSession &&
                 $this->conversation->claude_session_id &&
                 preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $this->conversation->claude_session_id)) {
                 // Check if this is a Claude-generated session ID (not our internal ID)
@@ -113,7 +122,7 @@ class SendClaudeMessageJob implements ShouldQueue
             // Set working directory if repository path is provided
             $workingDirectory = null;
             if ($this->conversation->project_directory) {
-                $workingDirectory = storage_path('app/private/' . $this->conversation->project_directory);
+                $workingDirectory = storage_path('app/private/repositories/projects/' . $this->conversation->project_directory);
 
                 if (!is_dir($workingDirectory)) {
                     Log::error('Repository directory does not exist', [
@@ -151,7 +160,7 @@ class SendClaudeMessageJob implements ShouldQueue
                                 if ($jsonData) {
                                     // Store raw JSON response
                                     $rawJsonResponses[] = $jsonData;
-                                    
+
                                     // Check for session error in JSON response
                                     if (isset($jsonData['error']) && strpos($jsonData['error'], 'No conversation found with session ID') !== false) {
                                         $hasSessionError = true;
@@ -188,7 +197,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 } else {
                     Log::error('Claude process error output', ['error' => $buffer]);
                     $rawJsonResponses[] = ['error' => $buffer];
-                    
+
                     // Check if the error is about session not found
                     if (strpos($buffer, 'No conversation found with session ID') !== false) {
                         Log::warning('Session ID not found by Claude, will create new session', [
@@ -199,7 +208,7 @@ class SendClaudeMessageJob implements ShouldQueue
                     }
                 }
             });
-            
+
             // If we had a session error, throw exception to trigger retry
             if ($hasSessionError && !$forceNewSession) {
                 throw new \Exception('No conversation found with session ID: ' . $this->conversation->claude_session_id);
@@ -227,7 +236,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 'response_length' => strlen($fullResponse),
                 'json_responses_count' => count($rawJsonResponses),
             ]);
-            
+
             return true;
 
         } catch (\Exception $e) {

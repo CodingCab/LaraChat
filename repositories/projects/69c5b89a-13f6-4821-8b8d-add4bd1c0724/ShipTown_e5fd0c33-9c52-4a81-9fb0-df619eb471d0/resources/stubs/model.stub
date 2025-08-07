@@ -1,0 +1,27 @@
+<?php
+
+namespace {{namespace}};
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * Class Client
+ * @mixin Builder
+ */
+class {{class}} extends Model
+{
+    use SoftDeletes;
+
+    protected $table = '{{table}}';
+
+    protected $guarded = ['id'];
+
+    /**
+     * Validation rules for this model
+     */
+    static public $rules = [
+        'name' => 'required|min:3:max:255',
+    ];
+}

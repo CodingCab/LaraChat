@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -301,5 +303,62 @@ class ClaudeService
         }
 
         return false;
+    }
+
+    public static function moveDirectory(string $source, string $destination): void
+    {
+        if (!File::exists($source)) {
+            throw new \Exception("Source directory does not exist: {$source}");
+        }
+
+        File::ensureDirectoryExists(dirname($destination));
+
+        if (File::exists($destination)) {
+            File::deleteDirectory($destination);
+        }
+
+        $command = sprintf(
+            'mv %s %s 2>&1',
+            escapeshellarg($source),
+            escapeshellarg($destination)
+        );
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            $error = implode("\n", $output);
+            Log::error('PrepareProjectDirectoryJob: Failed to move directory', [
+                'source' => $source,
+                'destination' => $destination,
+                'error' => $error,
+            ]);
+            throw new \Exception("Failed to move directory: {$error}");
+        }
+    }
+    private static function copyDirectory(string $source, string $destination): void
+    {
+        if (!File::exists($source)) {
+            throw new \Exception("Source directory does not exist: {$source}");
+        }
+
+        File::ensureDirectoryExists($destination);
+
+        $command = sprintf(
+            'cp -r %s %s 2>&1',
+            escapeshellarg($source . '/.'),
+            escapeshellarg($destination)
+        );
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            $error = implode("\n", $output);
+            Log::error('PrepareProjectDirectoryJob: Failed to copy directory', [
+                'source' => $source,
+                'destination' => $destination,
+                'error' => $error,
+            ]);
+            throw new \Exception("Failed to copy directory: {$error}");
+        }
     }
 }

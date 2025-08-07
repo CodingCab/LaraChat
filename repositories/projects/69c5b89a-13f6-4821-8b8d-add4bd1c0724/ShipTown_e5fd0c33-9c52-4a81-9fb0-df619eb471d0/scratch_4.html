@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            background: #ffffff;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 23px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: normal;
+            line-height: 22px;
+            margin: 0 0 11px 0;
+        }
+
+        .link {
+            outline: none;
+            text-decoration: none;
+            color: black;
+            text-align: center;
+            min-width: 155px;
+            border: 1px solid black;
+            padding: 7px;
+            margin-top: 19px;
+            display: inline-block;
+        }
+
+        .link:hover {
+            background-color: #FFDE00;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            border: 1px solid #E0E0E0;
+            padding: 24px;
+        }
+
+        .footer-table {
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .contact-info img {
+            width: 30px;
+            margin-top: 7px;
+        }
+
+        .left, .right {
+            width: 190px;
+            display: inline-block;
+        }
+
+        .borderBottom {
+            border-bottom: 1px solid #AAAAAA;
+            padding: 19px 0;
+        }
+
+        .borderLR {
+            border-left: 1px solid #AAAAAA;
+            border-right: 1px solid #AAAAAA;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div>
+        <a href="https://www.korallo.pl/" target="_blank">
+            <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/logo_korallo_mail.jpg" alt="Korallo" />
+        </a>
+        <div style="float: right">
+            <a href="https://www.facebook.com/korallopl/" target="_blank">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona_FB_cz.jpg" />
+            </a>
+            <a href="https://instagram.com/korallo_pl/" target="_blank">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona_ln_cz.jpg" />
+            </a>
+            <a href="https://www.youtube.com/user/korallopl" target="_blank">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona_YT_cz.jpg" />
+            </a>
+        </div>
+    </div>
+
+    <br><br>
+
+    <!-- Begin Content -->
+    <!-- [ middle starts here] -->
+    <table>
+        <tr>
+            <td valign="top" style="font-family:Verdana, Arial, Helvetica, sans-serif; font-size:12px;">
+                <h1 style="font-size:22px; font-weight:normal; line-height:22px; margin:0 0 11px 0;">Cześć Artur!</h1>
+                <p style="font-size:12px; line-height:18px; margin:0;">Właśnie spakowaliśmy Twoje zamówienie nr {{ variables.order.order_number }} i przekazaliśmy je przedstawicielowi firmy kurierskiej {{ carrier }}<br>
+                    Twoje zamówienie jest już w pełni opłacone.
+                    <br><br>
+                    {{#variables.shipments}}<br>
+                        Numer przesyłki to: {{ shipping_number }}<br><br> Jej aktualny status sprawdzisz na stronie:<br> <a href="{{ tracking_url }}">{{ tracking_url }}</a><br><br>
+                    {{/variables.shipments}}
+
+                    <br><br>Kurier z przesyłką powinien pojawić się u Ciebie w ciągu najbliższych 2 dni roboczych.*<br>
+                <p style="font-size: 10px !important;">*W szczególnych przypadkach podany czas może ulec nieznacznej zmianie.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <table cellspacing="0" cellpadding="0" border="0" width="650px">
+                    <thead>
+                    <tr>
+                        <th align="left" width="325" bgcolor="#EAEAEA" style="font-size:13px; padding:5px 9px 6px 9px; line-height:1em;">Dane zamawiającego:</th>
+                        <th width="10"></th>
+
+                        <th align="left" width="325" bgcolor="#EAEAEA" style="font-size:13px; padding:5px 9px 6px 9px; line-height:1em;">Adres dostawy:</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td valign="top" style="font-size:12px; padding:7px 9px 9px 9px; border-left:1px solid #EAEAEA; border-bottom:1px solid #EAEAEA; border-right:1px solid #EAEAEA;">
+                            Artur Hanusek<br/>
+                            Robert Hanusek<br/>
+                            ul. Wojska Polskiego 33<br />
+
+
+
+                            43-180 Orzesze <br/>
+                            Polska<br/>
+                            T: 733221823
+                            <br/>NIP: 6351842331
+                        </td>
+                        <td>&nbsp;</td>
+
+                        <td valign="top" style="font-size:12px; padding:7px 9px 9px 9px; border-left:1px solid #EAEAEA; border-bottom:1px solid #EAEAEA; border-right:1px solid #EAEAEA;">
+                            Artur Hanusek<br/>
+
+                            ul. Wojska Polskiego 33<br />
+
+
+
+                            43-180 Orzesze <br/>
+                            Polska<br/>
+                            T: 733221823
+
+                        </td>
+
+                    </tr>
+                    </tbody>
+                </table>
+                <br/>
+                <table cellspacing="0" cellpadding="0" border="0" width="650px">
+                    <thead>
+                    <tr>
+                        <th align="left" width="325" bgcolor="#EAEAEA" style="font-size:13px; padding:5px 9px 6px 9px; line-height:1em;">Sposób zapłaty:</th>
+                        <th width="10"></th>
+
+                        <th align="left" width="325" bgcolor="#EAEAEA" style="font-size:13px; padding:5px 9px 6px 9px; line-height:1em;">Sposób dostawy:</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td valign="top" style="font-size:12px; padding:7px 9px 9px 9px; border-left:1px solid #EAEAEA; border-bottom:1px solid #EAEAEA; border-right:1px solid #EAEAEA;">
+                            Przelewy24
+                        </td>
+                        <td>&nbsp;</td>
+
+                        <td valign="top" style="font-size:12px; padding:7px 9px 9px 9px; border-left:1px solid #EAEAEA; border-bottom:1px solid #EAEAEA; border-right:1px solid #EAEAEA;">
+                            Wybrana dostawa - DPD EXPRESS- gwarancja wysyłki tego samego dnia dla zam złożonych do godz.13
+                        </td>
+
+                    </tr>
+                    </tbody>
+                </table>
+                <br/>
+
+
+                <p style="font-size:12px; margin:0 10px 10px 0"></p>
+            </td>
+        </tr>
+    </table>
+    <!-- End Content -->
+
+
+
+
+
+
+    <div class="footer-table">
+        <div class="borderBottom">Pozdrawiamy serdecznie, zespół Korallo</div>
+        <div class="borderBottom">
+            Po biżuteryjne inspiracje zapraszamy Cię na naszego bloga lub Facebooka <br/>
+            <a class="link left" href="https://www.korallo.pl/blog/">Akademia Biżuterii Korallo</a>
+            <a class="link right" href="https://www.facebook.com/korallopl/">FACEBOOK</a>
+        </div>
+        <div class="borderBottom">
+            Aby nic Ci nie umknęło, zapisz się na nasz newsletter<br/><br/>
+            <a class="link" href="https://www.korallo.pl/blog/zapisnewsletter/">NEWSLETTER</a>
+        </div>
+        <div><b>W razie pytań lub wątpliwości, zadzwoń lub napisz do nas</b></div>
+        <div class="contact-info">
+            <div style="display:inline-block; padding: 10px;">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona-tel-czb-2.jpg" /><br/>
+                <a href="tel:+48583522288">(+48) 58 35 222 88</a>
+            </div>
+            <div class="borderLR" style="display:inline-block; padding: 10px;">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona-kom-czb-2.jpg" /><br/>
+                <a href="tel:+48666041555">(+48) 666 041 555</a>
+            </div>
+            <div style="display:inline-block; padding: 10px;">
+                <img src="https://www.korallo.pl/skin/frontend/theme302k/default/images/ikona-email-czb-2.jpg" /><br/>
+                <a href="mailto:sklep@korallo.pl">sklep@korallo.pl</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

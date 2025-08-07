@@ -1,0 +1,26 @@
+<?php
+
+namespace DummyNamespace;
+
+use Tests\DuskTestCase;
+
+class DummyClass extends DuskTestCase
+{
+    private string $uri = '/{{uri}}';
+
+    public function testPage()
+    {
+        $this->visit('/');
+        // $this->startRecording('');
+
+        $this->visit($this->uri);
+
+        // $this->say('Hello World');
+        // $this->clickButton('#options-button');
+        // $this->pause(2);
+        // $this->clickEscape();
+
+        // $this->pause(2);
+        // $this->stopRecording();
+    }
+}

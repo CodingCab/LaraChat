@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<PreAdvice>
+    <Consignment>
+        <RecordID>32356</RecordID>
+        <CustomerAccount>101L10</CustomerAccount>
+        <Gazzed>1</Gazzed>
+        <ConsignmentCreationDateTime>2019-07-23T11:34:58</ConsignmentCreationDateTime>
+        <TotalParcels>1</TotalParcels>
+        <Relabel>0</Relabel>
+        <ServiceOption>5</ServiceOption>
+        <ServiceType>1</ServiceType>
+        <Weight>1</Weight>
+        <WorkstationId>10127-1</WorkstationId>
+        <ShipmentId>13364663-c921-4f4a-3894-619c7da92df9</ShipmentId>
+        <ReceiverType>Private</ReceiverType>
+        <ReceiverEORI>00</ReceiverEORI>
+        <SenderEORI>00</SenderEORI>
+        <ShipmentType>Merchandise</ShipmentType>
+        <ShipmentInvoiceCurrency>EUR</ShipmentInvoiceCurrency>
+        <ShipmentIncoterms>DAP</ShipmentIncoterms>
+        <ShipmentParcelsWeight>.5</ShipmentParcelsWeight>
+        <InvoiceNumber>00</InvoiceNumber>
+		<FreightCost>25.00</FreightCost>
+		<FreightCurrency>EUR</FreightCurrency>
+        <DeliveryAddress>
+            <Contact>David McGuinness</Contact>
+            <ContactTelephone>0868710140</ContactTelephone>
+            <ContactEmail>david.mcguinness@dpd.ie</ContactEmail>
+            <BusinessName>David McGuinness</BusinessName>
+            <AddressLine1>Bireggstrasse 13</AddressLine1>
+            <AddressLine2>6003 Luzern</AddressLine2>
+            <AddressLine3>Switzerland</AddressLine3>
+            <AddressLine4>Switzerland</AddressLine4>
+            <PostCode>6003</PostCode>
+            <CountryCode>CH</CountryCode>
+            <Method>Road</Method>
+        </DeliveryAddress>
+        <CollectionAddress>
+            <Contact>OSMOSIS SKINCARE</Contact>
+            <ContactTelephone>0868710140</ContactTelephone>
+            <ContactEmail>Testemail@dpd.ie</ContactEmail>
+            <BusinessName>API Test Limited</BusinessName>
+            <AddressLine1>Athlone Business Park</AddressLine1>
+            <AddressLine2>Dublin Road</AddressLine2>
+            <AddressLine3>Athlone</AddressLine3>
+            <AddressLine4>Co. Westmeath</AddressLine4>
+            <CountryCode>IE</CountryCode>
+        </CollectionAddress>
+        <BillingAddress>
+            <Contact>David McGuinness</Contact>
+            <ContactTelephone>0868710140</ContactTelephone>
+            <ContactEmail>david.mcguinness@dpd.ie</ContactEmail>
+            <BusinessName>David McGuinness</BusinessName>
+            <AddressLine1>Bireggstrasse 13</AddressLine1>
+            <AddressLine2>6003 Luzern</AddressLine2>
+            <AddressLine3>Switzerland</AddressLine3>
+            <AddressLine4>Switzerland</AddressLine4>
+            <PostCode>6003</PostCode>
+            <CountryCode>CH</CountryCode>
+            <Method>Road</Method>
+        </BillingAddress>
+        <CustomsLines>
+            <CustomsLine>
+                <CommodityCode>33049900</CommodityCode>
+                <CountryOfOrigin>372</CountryOfOrigin>
+                <Description>samples of make up</Description>
+                <Quantity>1</Quantity>
+                <TotalLineValue>20</TotalLineValue>
+                <Box44Lines>
+                    <Box44Line>
+                        <Box44Code>Y921</Box44Code>
+                    </Box44Line>
+                </Box44Lines>
+            </CustomsLine>
+        </CustomsLines>
+    </Consignment>
+</PreAdvice>

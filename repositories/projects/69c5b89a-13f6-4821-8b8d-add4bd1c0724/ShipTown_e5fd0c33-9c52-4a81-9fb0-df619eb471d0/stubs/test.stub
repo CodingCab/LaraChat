@@ -1,0 +1,15 @@
+<?php
+
+namespace {{ namespace }};
+
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class {{class}} extends TestCase
+{
+    #[Test]
+    public function test_if_works ()
+    {
+        $this->markTestIncomplete('This test has not been implemented yet.');
+    }
+}

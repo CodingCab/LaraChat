@@ -1,0 +1,44 @@
+<?php
+
+namespace {{namespace}};
+
+use App\User;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+class {{class}} extends TestCase
+{
+    private string $uri = '';
+
+    #[Test]
+    public function testIfCallReturnsOk()
+    {
+        $user = User::factory()->create();
+        $user->assignRole('admin');
+
+        $response = $this->actingAs($user)->postJson($this->uri, []);
+
+        ray($response->json());
+
+        $response->assertSuccessful();
+
+        $this->assertCount(1, $response->json('data'), 'No records returned');
+
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id'
+                ],
+            ],
+        ]);
+    }
+
+    #[Test]
+    public function testUserAccess()
+    {
+        $user = User::factory()->create();
+        $response = $this->actingAs($user,)->postJson($this->uri, []);
+
+        $response->assertForbidden();
+    }
+}

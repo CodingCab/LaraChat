@@ -1,0 +1,37 @@
+name: Test Failure Notification
+on:
+  workflow_run:
+    workflows: ["PHP 8.3 - Feature Tests", "PHP 8.3 - Dusk"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post comment about failure
+        uses: actions/github-script@v6
+        timeout-minutes: 10
+        with:
+          script: |
+            const pr = github.event.workflow_run.pull_requests[0];
+            const runId = github.event.workflow_run.id;
+            const url = github.event.workflow_run.html_url;
+            const message = `❌ CI tests failed in run [${runId}](${url}).`;
+            if (pr) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: message
+              });
+            } else {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: github.event.workflow_run.head_commit.id,
+                body: message
+              });
+            }
+

@@ -1,0 +1,28 @@
+<?php
+
+namespace Tests\Feature\Api\Modules\RmsApi\Connections\Connection;
+use PHPUnit\Framework\Attributes\Test;
+
+use App\Modules\Rmsapi\src\Models\RmsapiConnection;
+use App\User;
+use Tests\TestCase;
+
+class DestroyTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+        $this->actingAs($admin, 'api');
+    }
+
+    #[Test]
+    public function test_destroy_call_returns_ok(): void
+    {
+        $rmsApi = RmsapiConnection::factory()->create();
+
+        $response = $this->delete(route('api.modules.rms_api.connections.destroy', $rmsApi));
+        $response->assertStatus(200);
+    }
+}

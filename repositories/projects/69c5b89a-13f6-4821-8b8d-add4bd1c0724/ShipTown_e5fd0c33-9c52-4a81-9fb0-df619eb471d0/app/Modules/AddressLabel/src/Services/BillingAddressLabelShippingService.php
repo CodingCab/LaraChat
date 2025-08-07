@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Modules\AddressLabel\src\Services;
+
+use App\Abstracts\ShippingServiceAbstract;
+use App\Models\Order;
+use App\Models\ShippingLabel;
+use App\Models\ShippingService;
+use App\Services\OrderService;
+use Illuminate\Support\Collection;
+
+class BillingAddressLabelShippingService extends ShippingServiceAbstract
+{
+    public function ship(int $order_id, ?ShippingService $shippingService = null): Collection
+    {
+        /** @var Order $order */
+        $order = Order::findOrFail($order_id);
+
+        $pdfString = OrderService::getOrderPdf($order->order_number, 'billing_address_label');
+
+        // we create new shipping label and save it to database, so it can automatically be printed
+        $shippingLabel = new ShippingLabel;
+        $shippingLabel->order_id = $order->getKey();
+        $shippingLabel->user_id = auth()->guard('api')->id();
+        $shippingLabel->carrier = '';
+        $shippingLabel->service = 'billing_address_label';
+        $shippingLabel->shipping_number = $order->order_number;
+        $shippingLabel->content_type = ShippingLabel::CONTENT_TYPE_PDF;
+        $shippingLabel->base64_pdf_labels = base64_encode($pdfString);
+        $shippingLabel->save();
+
+        activity()
+            ->on($order)
+            ->by(auth()->user())
+            ->log('generated generic address label');
+
+        // we delete label after it was printed
+        $shippingLabel->delete();
+
+        return collect([$shippingLabel]);
+    }
+}
