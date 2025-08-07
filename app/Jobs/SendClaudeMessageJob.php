@@ -56,10 +56,22 @@ class SendClaudeMessageJob implements ShouldQueue
             $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
 
             // Use --resume for continuing an existing session
+            // Only use resume if we have a valid UUID session ID from Claude
             if ($this->conversation->claude_session_id &&
                 preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $this->conversation->claude_session_id)) {
+                // Check if this is a Claude-generated session ID (not our internal ID)
+                // Claude session IDs should have been extracted from a previous init response
+                Log::info('Attempting to resume session', [
+                    'session_id' => $this->conversation->claude_session_id,
+                    'conversation_id' => $this->conversation->id
+                ]);
                 $command[] = '--resume';
                 $command[] = $this->conversation->claude_session_id;
+            } else {
+                Log::info('Starting new Claude session', [
+                    'existing_session_id' => $this->conversation->claude_session_id,
+                    'conversation_id' => $this->conversation->id
+                ]);
             }
 
             // Add permissions mode
@@ -115,6 +127,9 @@ class SendClaudeMessageJob implements ShouldQueue
                                         $jsonData['subtype'] === 'init' &&
                                         isset($jsonData['session_id'])) {
                                         $sessionId = $jsonData['session_id'];
+                                        Log::info('Extracted new session ID from Claude', [
+                                            'session_id' => $sessionId
+                                        ]);
                                     }
 
                                     // Extract text content from the response
@@ -138,6 +153,16 @@ class SendClaudeMessageJob implements ShouldQueue
                 } else {
                     Log::error('Claude process error output', ['error' => $buffer]);
                     $rawJsonResponses[] = ['error' => $buffer];
+                    
+                    // Check if the error is about session not found
+                    if (strpos($buffer, 'No conversation found with session ID') !== false) {
+                        Log::warning('Session ID not found by Claude, will create new session', [
+                            'invalid_session_id' => $this->conversation->claude_session_id,
+                            'conversation_id' => $this->conversation->id
+                        ]);
+                        // Clear the invalid session ID so a new one will be created
+                        $sessionId = null;
+                    }
                 }
             });
 

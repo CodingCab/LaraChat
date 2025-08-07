@@ -42,10 +42,10 @@ class ConversationsController extends Controller
             $title .= '...';
         }
 
-        // Generate session ID and filename
-        $sessionId = uniqid();
+        // Generate filename (but not session ID - Claude will generate that)
         $timestamp = date('Y-m-d\TH-i-s');
-        $sessionFilename = $timestamp . '-sessionId-' . $sessionId . '.json';
+        $tempId = uniqid();
+        $sessionFilename = $timestamp . '-session-' . $tempId . '.json';
 
         // Create empty session file with initial message structure
         $directory = 'claude-sessions';
@@ -67,13 +67,13 @@ class ConversationsController extends Controller
 
         Storage::put($directory . '/' . $sessionFilename, json_encode($sessionData, JSON_PRETTY_PRINT));
 
-        // Create conversation record
+        // Create conversation record (without session ID - Claude will generate it)
         $conversation = Conversation::create([
             'user_id' => Auth::id(),
             'title' => $title,
             'repository' => $request->input('repository'),
             'project_directory' => null,
-            'claude_session_id' => $sessionId,
+            'claude_session_id' => null, // Let Claude generate this
             'filename' => $sessionFilename,
         ]);
 
