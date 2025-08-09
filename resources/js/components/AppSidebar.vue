@@ -21,11 +21,11 @@ import { useRepositories } from '@/composables/useRepositories';
 import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { AlertCircle, BookOpen, CheckCircle, Folder, GitBranch, Loader2, MessageSquare, MessageSquarePlus, Plus } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const { conversations, fetchConversations } = useConversations();
+const { conversations, fetchConversations, cleanup } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading, copyToHot } = useRepositories();
 
 const showCloneDialog = ref(false);
@@ -57,6 +57,10 @@ const footerNavItems: NavItem[] = [
 onMounted(async () => {
     await fetchRepositories();
     await fetchConversations();
+});
+
+onUnmounted(() => {
+    cleanup(); // Clean up the refresh interval when component unmounts
 });
 
 const handleCloneRepository = async () => {
