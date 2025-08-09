@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int $user_id
  * @property string $title
+ * @property string $message
  * @property string $repository
  * @property string $project_directory
  * @property string|null $claude_session_id
@@ -22,6 +23,7 @@ class Conversation extends Model
     protected $fillable = [
         'user_id',
         'title',
+        'message',
         'repository',
         'project_directory',
         'claude_session_id',

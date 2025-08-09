@@ -19,6 +19,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/repositories/{repository}/copy-to-hot', [RepositoryController::class, 'copyToHot']);
 
     Route::get('/conversations', [ConversationsController::class, 'index']);
+    Route::post('/conversations', [ConversationsController::class, 'store']);
+
     Route::get('/claude/conversations', [ConversationsController::class, 'index']); // TODO: deprecated, replace usage with /conversations
 
     // Messages API

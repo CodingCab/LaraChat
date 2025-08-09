@@ -1,13 +1,10 @@
 # AGENTS.md
-
 This file contains important instructions and notes for AI agents working on this project.
 
 ## Important Instructions
-
 1. **Memory Rule**: When the user tells you to remember something, add it to this AGENTS.md file.
 
 ## Notes and Reminders
-
 - Always read AGENTS.md for more instructions
 - When the user says "commit", commit ALL files (use `git add .` or add all modified and untracked files)
 - When the user says "push":
