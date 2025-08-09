@@ -315,6 +315,17 @@ const loadConversationMessages = async () => {
         console.log('Messages loaded:', messages.value);
         console.log('Filtered messages:', filteredMessages.value);
 
+        // Check if we're waiting for an assistant response
+        const hasUserMessage = newMessages.some(m => m.role === 'user');
+        const hasAssistantResponse = newMessages.some(m => m.role === 'assistant' && m.content);
+        
+        // Show loading if we have a user message but no assistant response yet
+        if (hasUserMessage && !hasAssistantResponse) {
+            isLoading.value = true;
+        } else {
+            isLoading.value = false;
+        }
+
         // Adjust polling frequency based on streaming status
         if (hasStreamingMessage) {
             startPolling(POLLING_INTERVAL_MS);
@@ -324,6 +335,7 @@ const loadConversationMessages = async () => {
             const lastMessage = data.messages[data.messages.length - 1];
             if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
                 // Assistant has responded, we can stop polling eventually
+                isLoading.value = false;
                 if (!pollingInterval.value) {
                     // Do one more poll cycle to ensure we got everything
                     startPolling(POLLING_INTERVAL_SLOW_MS);
@@ -331,6 +343,7 @@ const loadConversationMessages = async () => {
                 }
             } else {
                 // Still waiting for response
+                isLoading.value = true;
                 startPolling(POLLING_INTERVAL_SLOW_MS);
             }
         }
