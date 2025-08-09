@@ -43,8 +43,11 @@ class ClaudeService
             // Set the working directory if repository path is provided
             $workingDirectory = null;
             if ($repositoryPath) {
+                // Remove 'app/private/' prefix if it exists to avoid duplication
+                $cleanPath = preg_replace('/^app\/private\//', '', $repositoryPath);
+                
                 // Convert relative path to absolute path
-                $workingDirectory = storage_path($repositoryPath);
+                $workingDirectory = storage_path('app/private/' . $cleanPath);
 
                 // Check if directory exists
                 if (!is_dir($workingDirectory)) {
@@ -230,8 +233,11 @@ class ClaudeService
         // Set the working directory if repository path is provided
         $workingDirectory = null;
         if ($repositoryPath) {
+            // Remove 'app/private/' prefix if it exists to avoid duplication
+            $cleanPath = preg_replace('/^app\/private\//', '', $repositoryPath);
+            
             // Convert relative path to absolute path
-            $workingDirectory = storage_path($repositoryPath);
+            $workingDirectory = storage_path('app/private/' . $cleanPath);
 
             // Check if directory exists
             if (!is_dir($workingDirectory)) {
