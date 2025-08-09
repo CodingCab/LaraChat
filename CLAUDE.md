@@ -1,5 +1,7 @@
-# CLAUDE.md
+# IMPORTANT - AGENTS.md 
+Read AGENTS.md for more instructions
 
+# CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Essential Commands

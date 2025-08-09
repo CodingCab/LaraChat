@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CopyRepositoryToHotJob;
+use App\Jobs\PrepareProjectDirectoryJob;
 use App\Jobs\SendClaudeMessageJob;
 use App\Models\Conversation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 class ConversationsController extends Controller
@@ -58,7 +61,21 @@ class ConversationsController extends Controller
 
         Storage::put($directory . '/' . $conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
 
+        $hotDirectory = storage_path('app/private/repositories/hot/' . $conversation->repository);
+
+        if (!File::exists($hotDirectory)) {
+            CopyRepositoryToHotJob::dispatchSync($conversation->repository);
+        }
+
+        File::moveDirectory(
+            $hotDirectory,
+            storage_path('app/private/repositories/projects/' . $conversation->project_directory),
+            true
+        );
+
         SendClaudeMessageJob::dispatch($conversation, $msg);
+
+        CopyRepositoryToHotJob::dispatch($conversation->repository);
 
         return redirect()->route('claude.conversation', $conversation->id);
     }
