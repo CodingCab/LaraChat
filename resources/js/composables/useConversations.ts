@@ -8,6 +8,7 @@ interface Conversation {
     repository: string | null;
     project_directory: string | null;
     claude_session_id: string | null;
+    is_processing: boolean;
     created_at: string;
     updated_at: string;
 }

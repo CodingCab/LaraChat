@@ -146,7 +146,7 @@ const handleCopyToHot = async (repositoryId: number) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
-                            <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true">
+                            <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true" class="flex items-center">
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
                                     <span class="block truncate">{{ conversation.title }}</span>
@@ -167,6 +167,7 @@ const handleCopyToHot = async (repositoryId: number) => {
                                         </a>
                                     </div>
                                 </div>
+                                <Loader2 v-if="conversation.is_processing" class="ml-auto h-3 w-3 animate-spin text-muted-foreground" />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
