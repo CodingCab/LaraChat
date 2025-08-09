@@ -79,30 +79,21 @@ const handleRepositoryClick = (repositorySlug: string) => {
 };
 
 const handleCopyToHot = async (repositoryId: number) => {
-    console.log('handleCopyToHot called with id:', repositoryId);
-
     if (!repositoryId) {
-        console.error('No repository ID provided');
         return;
     }
 
     try {
         const response = await copyToHot(repositoryId);
-        console.log('Response from copyToHot:', response);
 
-        if (response.has_hot_folder) {
-            console.log('Hot folder already exists');
-        } else {
-            console.log('Copy job dispatched successfully');
+        if (!response.has_hot_folder) {
             // Refresh repositories after a delay to check status
             setTimeout(() => {
-                console.log('Refreshing repositories...');
                 fetchRepositories();
             }, 3000);
         }
     } catch (error) {
-        console.error('Failed to copy repository to hot folder:', error);
-        alert('Failed to copy repository to hot folder. Check console for details.');
+        alert('Failed to copy repository to hot folder.');
     }
 };
 </script>
@@ -145,17 +136,6 @@ const handleCopyToHot = async (repositoryId: number) => {
                         <SidebarMenuButton @click="handleRepositoryClick(repo.slug)" :tooltip="repo.url">
                             <GitBranch />
                             <span class="flex-1 truncate">{{ repo.name }}</span>
-                            <div v-if="repo.has_hot_folder" class="ml-auto" title="Hot folder ready">
-                                <CheckCircle class="h-3.5 w-3.5 text-green-500" />
-                            </div>
-                            <div
-                                v-else
-                                class="ml-auto cursor-pointer transition-transform hover:scale-110"
-                                @click.stop="() => handleCopyToHot(repo.id)"
-                                title="Click to copy to hot folder"
-                            >
-                                <AlertCircle class="h-3.5 w-3.5 text-yellow-500" />
-                            </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
@@ -178,12 +158,12 @@ const handleCopyToHot = async (repositoryId: number) => {
                                         <span v-else></span>
                                         <a
                                             v-if="conversation.project_directory"
-                                            :href="`http://${conversation.project_directory}.test`"
+                                            :href="`http://${conversation.project_directory.replace('app/private/repositories/projects/', '')}.test`"
                                             target="_blank"
                                             class="truncate text-right hover:underline"
                                             @click.stop
                                         >
-                                            {{ conversation.project_directory }}
+                                            {{ conversation.project_directory.replace('app/private/repositories/projects/', '') }}
                                         </a>
                                     </div>
                                 </div>

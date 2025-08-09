@@ -22,9 +22,7 @@ export function useConversations() {
         error.value = null;
 
         try {
-            console.log('Fetching conversations...');
             const response = await axios.get<Conversation[]>('/api/claude/conversations');
-            console.log('Conversations received:', response.data);
             conversations.value = response.data;
         } catch (err) {
             error.value = 'Failed to fetch conversations';
