@@ -91,6 +91,8 @@ const formattedDate = computed(() => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
+
+
         <div class="container mx-auto space-y-6 py-6">
             <!-- Repository Header -->
             <div class="flex items-start justify-between">
@@ -175,6 +177,28 @@ const formattedDate = computed(() => {
 
                 <TabsContent value="overview" class="space-y-4">
                     <Card>
+                        <!--            <CardHeader>-->
+                        <!--                <CardTitle>Quick Chat</CardTitle>-->
+                        <!--                <CardDescription>Start a new chat session with Claude</CardDescription>-->
+                        <!--            </CardHeader>-->
+                        <CardContent>
+                            <div class="flex gap-2">
+                                <Input
+                                    v-model="messageInput"
+                                    placeholder="Type your message here..."
+                                    @keyup.enter="startChatWithMessage"
+                                    class="flex-1"
+                                />
+                                <Button @click="startChatWithMessage" :disabled="!messageInput.trim()">
+                                    <Send class="mx-0 h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="overview" class="space-y-4">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Repository Information</CardTitle>
                             <CardDescription>Details about this repository</CardDescription>
@@ -199,27 +223,6 @@ const formattedDate = computed(() => {
                                         {{ repository.has_hot_folder ? 'Available for AI assistance' : 'Need to copy to hot folder' }}
                                     </p>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Quick Chat</CardTitle>
-                            <CardDescription>Start a new chat session with Claude</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="flex gap-2">
-                                <Input
-                                    v-model="messageInput"
-                                    placeholder="Type your message here..."
-                                    @keyup.enter="startChatWithMessage"
-                                    class="flex-1"
-                                />
-                                <Button @click="startChatWithMessage" :disabled="!messageInput.trim()">
-                                    <Send class="mr-2 h-4 w-4" />
-                                    Start Chat
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>
