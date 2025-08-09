@@ -70,13 +70,12 @@ class ConversationsController extends Controller
 
         Storage::put($conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
 
-        $hotDirectory = 'app/private/repositories/hot/' . $conversation->repository;
+        $from = storage_path( 'app/private/repositories/hot/' . $conversation->repository);
 
-        if (!File::exists($hotDirectory)) {
+        if (!File::exists($from)) {
             CopyRepositoryToHotJob::dispatchSync($conversation->repository);
         }
 
-        $from = storage_path($hotDirectory);
         $to = storage_path($conversation->project_directory);
 
         ray($from, $to);
