@@ -4,39 +4,53 @@ export function useChatUI() {
     const messagesContainer = ref<HTMLElement>();
     const textareaRef = ref<HTMLTextAreaElement>();
 
-    const scrollToBottom = async () => {
+    const getScrollableViewport = () => {
+        if (!messagesContainer.value) return null;
+        
+        // Get the actual DOM element from the Vue component ref
+        const element = (messagesContainer.value as any).$el || messagesContainer.value;
+
+        // Try multiple selectors for the ScrollArea viewport
+        let viewport = element.querySelector('[data-reka-scroll-area-viewport]');
+
+        // If not found, try to find the first scrollable child
+        if (!viewport) {
+            viewport = element.querySelector('div[style*="overflow"]');
+        }
+
+        // If still not found, try the first child div
+        if (!viewport) {
+            viewport = element.querySelector('div > div');
+        }
+
+        // If still not found, check if the element itself is scrollable
+        if (!viewport && element.scrollHeight > element.clientHeight) {
+            viewport = element;
+        }
+
+        return viewport;
+    };
+
+    const isAtBottom = () => {
+        const viewport = getScrollableViewport();
+        if (!viewport) return true; // Default to true if we can't determine
+        
+        // Check if scrolled to bottom (within 50px threshold for floating point errors)
+        const threshold = 50;
+        return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
+    };
+
+    const scrollToBottom = async (force = false) => {
         await nextTick();
-        if (messagesContainer.value) {
-            // Get the actual DOM element from the Vue component ref
-            const element = (messagesContainer.value as any).$el || messagesContainer.value;
+        const viewport = getScrollableViewport();
+        
+        if (viewport && (force || isAtBottom())) {
+            viewport.scrollTop = viewport.scrollHeight;
 
-            // Try multiple selectors for the ScrollArea viewport
-            let viewport = element.querySelector('[data-reka-scroll-area-viewport]');
-
-            // If not found, try to find the first scrollable child
-            if (!viewport) {
-                viewport = element.querySelector('div[style*="overflow"]');
-            }
-
-            // If still not found, try the first child div
-            if (!viewport) {
-                viewport = element.querySelector('div > div');
-            }
-
-            // If still not found, check if the element itself is scrollable
-            if (!viewport && element.scrollHeight > element.clientHeight) {
-                viewport = element;
-            }
-
-            // If we found a scrollable element, scroll it
-            if (viewport) {
+            // Force a second scroll after a delay in case content is still loading
+            setTimeout(() => {
                 viewport.scrollTop = viewport.scrollHeight;
-
-                // Force a second scroll after a delay in case content is still loading
-                setTimeout(() => {
-                    viewport.scrollTop = viewport.scrollHeight;
-                }, 50);
-            }
+            }, 50);
         }
     };
 
@@ -116,6 +130,7 @@ export function useChatUI() {
         messagesContainer,
         textareaRef,
         scrollToBottom,
+        isAtBottom,
         adjustTextareaHeight,
         resetTextareaHeight,
         focusInput,

@@ -34,7 +34,7 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
 
 // Composables
-const { messagesContainer, textareaRef, scrollToBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
+const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
@@ -104,11 +104,11 @@ const extractRepositoryFromPath = (path: string) => {
     return pathParts[pathParts.length - 1];
 };
 
-const delayedScroll = async () => {
+const delayedScroll = async (force = false) => {
     await nextTick();
     setTimeout(async () => {
-        await scrollToBottom();
-        setTimeout(() => scrollToBottom(), SCROLL_RETRY_DELAY_MS);
+        await scrollToBottom(force);
+        setTimeout(() => scrollToBottom(force), SCROLL_RETRY_DELAY_MS);
     }, SCROLL_DELAY_MS);
 };
 
@@ -259,7 +259,7 @@ const loadSessionMessages = async (isPolling = false) => {
         sessionFilename.value = props.sessionFile;
         console.log('Final messages.value:', messages.value);
         console.log('Final filteredMessages.value:', filteredMessages.value);
-        await delayedScroll();
+        await delayedScroll(false);
 
         // Manage polling based on completion status
         if (incompleteMessageFound.value && !pollingInterval.value) {
@@ -336,7 +336,7 @@ const loadConversationMessages = async () => {
         }
 
         await nextTick();
-        await scrollToBottom();
+        await scrollToBottom(false);
     } catch (error) {
         console.error('Error loading conversation messages:', error);
     }
@@ -350,7 +350,7 @@ const sendMessage = async () => {
     inputMessage.value = '';
     resetTextareaHeight();
     isLoading.value = true;
-    await scrollToBottom();
+    await scrollToBottom(true); // Force scroll when user sends a message
 
     // Initialize session if needed
     if (!sessionFilename.value) {
@@ -398,7 +398,7 @@ const sendMessage = async () => {
 
                 const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
-                scrollToBottom();
+                scrollToBottom(false); // Smart scroll during streaming
             },
         );
 
@@ -416,7 +416,7 @@ const sendMessage = async () => {
         appendToMessage(errorMessage.id, 'Sorry, I encountered an error. Please try again.');
     } finally {
         isLoading.value = false;
-        await scrollToBottom();
+        await scrollToBottom(false); // Smart scroll after message completes
 
         // Handle redirects and refresh
         if (!props.sessionFile && !props.conversationId && conversationId.value) {
