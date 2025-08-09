@@ -44,7 +44,7 @@ class ClaudeService
             $workingDirectory = null;
             if ($repositoryPath) {
                 // Convert relative path to absolute path
-                $workingDirectory = storage_path('app/private/' . $repositoryPath);
+                $workingDirectory = storage_path($repositoryPath);
 
                 // Check if directory exists
                 if (!is_dir($workingDirectory)) {
@@ -231,7 +231,7 @@ class ClaudeService
         $workingDirectory = null;
         if ($repositoryPath) {
             // Convert relative path to absolute path
-            $workingDirectory = storage_path('app/private/' . $repositoryPath);
+            $workingDirectory = storage_path($repositoryPath);
 
             // Check if directory exists
             if (!is_dir($workingDirectory)) {
@@ -313,7 +313,7 @@ class ClaudeService
 
     private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
-        $directory = 'claude-sessions';
+        $directory = '';
 
         \Log::info('Saving response', [
             'filename' => $filename,

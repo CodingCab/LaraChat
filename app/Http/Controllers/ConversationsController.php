@@ -76,7 +76,11 @@ class ConversationsController extends Controller
             CopyRepositoryToHotJob::dispatchSync($conversation->repository);
         }
 
-        File::moveDirectory(storage_path($hotDirectory), storage_path($conversation->project_directory), true);
+        $from = storage_path($hotDirectory);
+        $to = storage_path($conversation->project_directory);
+
+        ray($from, $to);
+        File::moveDirectory($from, $to, true);
 
         SendClaudeMessageJob::dispatch($conversation, $msg);
 
