@@ -5,7 +5,7 @@ import { ref } from 'vue';
 export function useClaudeApi() {
     const isLoading = ref(false);
 
-    const sendMessageToApi = async (request: ClaudeApiRequest, onChunk: (text: string, rawResponse: any) => void): Promise<number | null> => {
+    const sendMessageToApi = async (request: ClaudeApiRequest, onChunk: (text: string, rawResponse: any) => void): Promise<{ conversationId: number | null; sessionFilename: string | null } | null> => {
         const response = await fetch('/api/claude', {
             method: 'POST',
             headers: {

@@ -34,25 +34,32 @@ class ClaudeController extends Controller
             'prompt' => 'required|string',
             'sessionId' => 'nullable|string',
             'sessionFilename' => 'nullable|string',
-            'conversationId' => 'required|integer|exists:conversations,id',
+            'conversationId' => 'nullable|integer|exists:conversations,id',
+            'repositoryPath' => 'nullable|string',
         ]);
 
         $sessionId = $request->input('sessionId');
         $conversationId = $request->input('conversationId');
         $sessionFilename = $request->input('sessionFilename');
+        $repositoryPath = $request->input('repositoryPath');
 
-        /** @var Conversation $conversation */
-        $conversation = Conversation::findOrFail($conversationId);
-
-        $projectDirectory = 'repositories/projects/' . $conversation->project_directory;
+        $projectDirectory = null;
+        $filename = $sessionFilename;
+        
+        if ($conversationId) {
+            /** @var Conversation $conversation */
+            $conversation = Conversation::findOrFail($conversationId);
+            $projectDirectory = 'repositories/projects/' . $conversation->project_directory;
+            $filename = $conversation->filename;
+        }
 
         // Stream the response and include conversation ID
         $response = ClaudeService::stream(
             $request->input('prompt'),
             $request->input('options', '--permission-mode bypassPermissions'),
             $sessionId,
-            $conversation->filename,
-            $projectDirectory,
+            $filename,
+            $projectDirectory ?? $repositoryPath,
         );
 
         // Add conversation ID and filename to the response headers if created
