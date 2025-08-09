@@ -68,8 +68,7 @@ class ClaudeController extends Controller
 
     public function getSessionMessages($filename)
     {
-        $directory = 'claude-sessions';
-        $path = $directory . '/' . $filename;
+        $path = $filename;
 
         if (!Storage::exists($path)) {
             return response()->json(['error' => 'Session file not found'], 404);

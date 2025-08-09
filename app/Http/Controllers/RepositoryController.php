@@ -92,7 +92,6 @@ class RepositoryController extends Controller
 
         // Create repository record
         $repository = Repository::create([
-            'user_id' => auth()->id(),
             'name' => $repoName,
             'url' => $url,
             'local_path' => $localPath,
