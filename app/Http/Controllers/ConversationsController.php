@@ -34,10 +34,10 @@ class ConversationsController extends Controller
                 $message = $decodedMessage;
             }
         }
-        
+
         // Override the request input for validation
         $request->merge(['message' => $message]);
-        
+
         $request->validate([
             'message' => 'required|string',
             'repository' => 'nullable|string',
@@ -72,7 +72,7 @@ class ConversationsController extends Controller
 
         $hotDirectory = 'app/private/repositories/hot/' . $conversation->repository;
 
-        if (!File::exists(storage_path($hotDirectory))) {
+        if (!File::exists($hotDirectory)) {
             CopyRepositoryToHotJob::dispatchSync($conversation->repository);
         }
 

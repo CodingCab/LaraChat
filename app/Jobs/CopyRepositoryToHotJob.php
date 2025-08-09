@@ -29,7 +29,7 @@ class CopyRepositoryToHotJob implements ShouldQueue
         $basePath = storage_path('app/private/repositories/base/' . $this->repository);
         $hotPath = storage_path('app/private/repositories/hot/' . $this->repository);
 
-        if ($basePath) {
+        if (!$basePath) {
             Log::error('CopyRepositoryToHot: Missing repository directory', [
                 'repository' => $this->repository,
             ]);
