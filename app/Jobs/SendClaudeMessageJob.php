@@ -16,18 +16,16 @@ class SendClaudeMessageJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected Conversation $conversation;
-    protected string $message;
 
-    public function __construct(Conversation $conversation, string $message)
+    public function __construct(Conversation $conversation)
     {
         $this->conversation = $conversation;
-        $this->message = $message;
     }
 
     public function handle(): void
     {
         $result = ClaudeService::processInBackground(
-            $this->message,
+            $this->conversation->message,
             '--permission-mode bypassPermissions',
             $this->conversation->claude_session_id,
             $this->conversation->filename,

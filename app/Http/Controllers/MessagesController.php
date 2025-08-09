@@ -39,8 +39,11 @@ class MessagesController extends Controller
             'content' => 'required|string',
         ]);
 
+        // Update conversation with new message
+        $conversation->update(['message' => $validated['content']]);
+
         // Dispatch job to send message to Claude
-        \App\Jobs\SendClaudeMessageJob::dispatch($conversation, $validated['content']);
+        \App\Jobs\SendClaudeMessageJob::dispatch($conversation);
 
         return response()->json([
             'success' => true,
