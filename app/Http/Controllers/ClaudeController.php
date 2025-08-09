@@ -49,7 +49,7 @@ class ClaudeController extends Controller
         if ($conversationId) {
             /** @var Conversation $conversation */
             $conversation = Conversation::findOrFail($conversationId);
-            $projectDirectory = 'repositories/projects/' . $conversation->project_directory;
+            $projectDirectory = $conversation->project_directory;
             $filename = $conversation->filename;
         }
 
