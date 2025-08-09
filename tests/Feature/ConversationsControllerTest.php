@@ -11,15 +11,14 @@ use Tests\TestCase;
 class ConversationsControllerTest extends TestCase
 {
     use RefreshDatabase;
-    
-    /**
-     * A basic feature test example.
-     */
+
     public function test_example(): void
     {
         $user = User::factory()->create();
-        
-        $message = 'Hi 24';
+
+        $number = rand(1, 1000);
+
+        $message = 'Hi! Multiply me by 2 this number: ' . $number;
         $response = $this->actingAs($user)
             ->get('/claude/new?repository=ShipTown&message=' . Str::toBase64($message));
 
