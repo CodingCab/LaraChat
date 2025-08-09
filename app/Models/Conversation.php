@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $project_directory
  * @property string|null $claude_session_id
  * @property string|null $filename
+ * @property bool $is_processing
  */
 class Conversation extends Model
 {
@@ -28,6 +29,7 @@ class Conversation extends Model
         'project_directory',
         'claude_session_id',
         'filename',
+        'is_processing',
     ];
 
     public function user(): BelongsTo
