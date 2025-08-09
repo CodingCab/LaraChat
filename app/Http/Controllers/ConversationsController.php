@@ -82,7 +82,7 @@ class ConversationsController extends Controller
         ray($from, $to);
         File::moveDirectory($from, $to, true);
 
-        SendClaudeMessageJob::dispatch($conversation);
+        SendClaudeMessageJob::dispatch($conversation, $msg);;
 
         CopyRepositoryToHotJob::dispatch($conversation->repository);
 

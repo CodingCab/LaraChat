@@ -46,7 +46,7 @@ class MessagesController extends Controller
         ]);
 
         // Dispatch job to send message to Claude
-        \App\Jobs\SendClaudeMessageJob::dispatch($conversation);
+        \App\Jobs\SendClaudeMessageJob::dispatch($conversation, $validated['content']);
 
         return response()->json([
             'success' => true,
