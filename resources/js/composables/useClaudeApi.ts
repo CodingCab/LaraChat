@@ -16,62 +16,35 @@ export function useClaudeApi() {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to send message');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to send message');
         }
 
-        if (!response.body) {
-            throw new Error('No response body');
+        // Get JSON response
+        const data = await response.json();
+
+        // If it's a success response (job queued), notify the user
+        if (data.success) {
+            // Send a system message to indicate the message was queued
+            onChunk('', {
+                type: 'system',
+                subtype: 'queued',
+                message: data.message || 'Message queued for processing'
+            });
+
+            // Return the conversation ID and filename
+            return {
+                conversationId: data.conversationId || null,
+                sessionFilename: data.sessionFilename || null,
+            };
         }
 
-        // Extract conversation ID and filename from response headers if present
-        const conversationId = response.headers.get('X-Conversation-Id');
-        const sessionFilename = response.headers.get('X-Session-Filename');
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process complete JSON lines
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-            for (const line of lines) {
-                if (line.trim()) {
-                    try {
-                        const jsonData = JSON.parse(line);
-
-                        // Always pass the raw response to onChunk for proper handling
-                        onChunk('', jsonData);
-                    } catch (e) {
-                        console.error('Error parsing JSON:', e, 'Line:', line);
-                    }
-                }
-            }
+        // Handle error response
+        if (data.error) {
+            throw new Error(data.error);
         }
 
-        // Process any remaining buffer
-        if (buffer.trim()) {
-            try {
-                const jsonData = JSON.parse(buffer);
-
-                // Always pass the raw response to onChunk for proper handling
-                onChunk('', jsonData);
-            } catch (e) {
-                console.error('Error parsing final buffer:', e);
-            }
-        }
-
-        // Return the conversation ID and filename if they were created
-        return {
-            conversationId: conversationId ? parseInt(conversationId) : null,
-            sessionFilename: sessionFilename || null,
-        };
+        return null;
     };
 
     const loadSession = async (sessionFile: string): Promise<SessionConversation[]> => {

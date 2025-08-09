@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendClaudeMessageJob;
 use App\Models\Conversation;
 use App\Services\ClaudeService;
 use Exception;
@@ -38,39 +39,38 @@ class ClaudeController extends Controller
             'repositoryPath' => 'nullable|string',
         ]);
 
-        $sessionId = $request->input('sessionId');
         $conversationId = $request->input('conversationId');
-        $sessionFilename = $request->input('sessionFilename');
-        $repositoryPath = $request->input('repositoryPath');
-
-        $projectDirectory = null;
-        $filename = $sessionFilename;
         
         if ($conversationId) {
             /** @var Conversation $conversation */
             $conversation = Conversation::findOrFail($conversationId);
-            $projectDirectory = $conversation->project_directory;
-            $filename = $conversation->filename;
+            
+            // Check if user owns this conversation
+            if ($conversation->user_id !== auth()->id()) {
+                abort(403);
+            }
+            
+            // Update conversation with new message and mark as processing
+            $conversation->update([
+                'message' => $request->input('prompt'),
+                'is_processing' => true
+            ]);
+            
+            // Dispatch job to send message to Claude
+            SendClaudeMessageJob::dispatch($conversation, $request->input('prompt'));
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Message queued for processing',
+                'conversationId' => $conversationId,
+                'sessionFilename' => $conversation->filename,
+            ]);
         }
-
-        // Stream the response and include conversation ID
-        $response = ClaudeService::stream(
-            $request->input('prompt'),
-            $request->input('options', '--permission-mode bypassPermissions'),
-            $sessionId,
-            $filename,
-            $projectDirectory ?? $repositoryPath,
-        );
-
-        // Add conversation ID and filename to the response headers if created
-        if ($conversationId) {
-            $response->headers->set('X-Conversation-Id', (string)$conversationId);
-        }
-        if ($sessionFilename) {
-            $response->headers->set('X-Session-Filename', $sessionFilename);
-        }
-
-        return $response;
+        
+        // If no conversation ID, return error (streaming without conversation is no longer supported)
+        return response()->json([
+            'error' => 'Conversation ID is required'
+        ], 422);
     }
 
     public function getSessionMessages($filename)
