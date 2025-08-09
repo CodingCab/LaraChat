@@ -1,6 +1,9 @@
 # AGENTS.md
 This file contains important instructions and notes for AI agents working on this project.
 
+# Blue Code
+Blue code is 19B
+
 ## Important Instructions
 1. **Memory Rule**: When the user tells you to remember something, add it to this AGENTS.md file.
 

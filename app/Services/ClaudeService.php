@@ -206,6 +206,111 @@ class ClaudeService
         return null;
     }
 
+    /**
+     * Process Claude message in background (for queue jobs)
+     */
+    public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null): array
+    {
+        $wrapperPath = base_path('claude-wrapper.sh');
+        $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
+
+        // Use --resume for continuing an existing session with a valid UUID
+        if ($sessionId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $sessionId)) {
+            $command[] = '--resume';
+            $command[] = $sessionId;
+        }
+
+        if ($options) {
+            $optionsParts = explode(' ', $options);
+            $command = array_merge($command, $optionsParts);
+        }
+
+        $command[] = $prompt;
+
+        // Set the working directory if repository path is provided
+        $workingDirectory = null;
+        if ($repositoryPath) {
+            // Convert relative path to absolute path
+            $workingDirectory = storage_path('app/private/' . $repositoryPath);
+
+            // Check if directory exists
+            if (!is_dir($workingDirectory)) {
+                \Log::error('Repository directory does not exist', [
+                    'repository_path' => $repositoryPath,
+                    'full_path' => $workingDirectory
+                ]);
+                throw new \Exception("Repository directory not found: {$repositoryPath}");
+            }
+
+            \Log::info('Setting working directory for Claude command', [
+                'repository_path' => $repositoryPath,
+                'working_directory' => $workingDirectory
+            ]);
+        }
+
+        $process = new Process($command, $workingDirectory);
+        $process->setTimeout(null);
+        $process->setIdleTimeout(null);
+
+        // Run the process synchronously for background jobs
+        $process->run();
+
+        // Initialize session data
+        $rawJsonResponses = [];
+        $extractedSessionId = $sessionId;
+        $filename = $sessionFilename;
+
+        // Generate filename if not provided
+        if (!$filename) {
+            $timestamp = date('Y-m-d_H-i-s');
+            $filename = "{$timestamp}-claude-chat.json";
+        }
+
+        \Log::info('Processing Claude in background', [
+            'prompt' => $prompt,
+            'sessionId' => $sessionId,
+            'filename' => $filename,
+            'repositoryPath' => $repositoryPath
+        ]);
+
+        // Process the output
+        $output = $process->getOutput();
+        $lines = explode("\n", $output);
+
+        foreach ($lines as $line) {
+            if (trim($line)) {
+                try {
+                    $jsonData = json_decode($line, true);
+                    if ($jsonData) {
+                        $rawJsonResponses[] = $jsonData;
+
+                        // Extract session ID if not provided
+                        if (!$extractedSessionId) {
+                            $extractedSessionId = self::extractSessionId($jsonData);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('JSON parsing error in background job', [
+                        'error' => $e->getMessage(),
+                        'line' => $line
+                    ]);
+                }
+            }
+        }
+
+        // Save the complete response
+        if ($filename) {
+            self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
+        }
+
+        return [
+            'success' => $process->isSuccessful(),
+            'sessionId' => $extractedSessionId,
+            'filename' => $filename,
+            'responses' => $rawJsonResponses
+        ];
+    }
+
     private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
         $directory = 'claude-sessions';
