@@ -39,8 +39,11 @@ class MessagesController extends Controller
             'content' => 'required|string',
         ]);
 
-        // Update conversation with new message
-        $conversation->update(['message' => $validated['content']]);
+        // Update conversation with new message and mark as processing
+        $conversation->update([
+            'message' => $validated['content'],
+            'is_processing' => true
+        ]);
 
         // Dispatch job to send message to Claude
         \App\Jobs\SendClaudeMessageJob::dispatch($conversation);

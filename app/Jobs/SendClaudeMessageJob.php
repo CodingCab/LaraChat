@@ -24,28 +24,43 @@ class SendClaudeMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $result = ClaudeService::processInBackground(
-            $this->conversation->message,
-            '--permission-mode bypassPermissions',
-            $this->conversation->claude_session_id,
-            $this->conversation->filename,
-            $this->conversation->project_directory
-        );
+        try {
+            $result = ClaudeService::processInBackground(
+                $this->conversation->message,
+                '--permission-mode bypassPermissions',
+                $this->conversation->claude_session_id,
+                $this->conversation->filename,
+                $this->conversation->project_directory
+            );
 
-        // Update conversation with the session ID if extracted
-        if ($result['sessionId'] && !$this->conversation->claude_session_id) {
-            $this->conversation->update(['claude_session_id' => $result['sessionId']]);
+            // Update conversation with the session ID if extracted
+            if ($result['sessionId'] && !$this->conversation->claude_session_id) {
+                $this->conversation->update(['claude_session_id' => $result['sessionId']]);
+            }
+
+            // Update filename if generated
+            if ($result['filename'] && !$this->conversation->filename) {
+                $this->conversation->update(['filename' => $result['filename']]);
+            }
+
+            // Mark conversation as no longer processing
+            $this->conversation->update(['is_processing' => false]);
+
+            Log::info('Background Claude processing completed', [
+                'conversation_id' => $this->conversation->id,
+                'success' => $result['success'],
+                'sessionId' => $result['sessionId']
+            ]);
+        } catch (\Exception $e) {
+            // In case of error, mark as not processing
+            $this->conversation->update(['is_processing' => false]);
+            
+            Log::error('Error in SendClaudeMessageJob', [
+                'conversation_id' => $this->conversation->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            throw $e; // Re-throw to let the queue handle retry logic
         }
-
-        // Update filename if generated
-        if ($result['filename'] && !$this->conversation->filename) {
-            $this->conversation->update(['filename' => $result['filename']]);
-        }
-
-        Log::info('Background Claude processing completed', [
-            'conversation_id' => $this->conversation->id,
-            'success' => $result['success'],
-            'sessionId' => $result['sessionId']
-        ]);
     }
 }

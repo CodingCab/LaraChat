@@ -54,6 +54,7 @@ class ConversationsController extends Controller
             'project_directory' => 'app/private/repositories/projects/' . $project_id,
             'repository' => $request->input('repository'),
             'filename' => 'claude-sessions/' . date('Y-m-d\TH-i-s') . '-session-' . $project_id . '.json',
+            'is_processing' => true, // Mark as processing when created
         ]);
 
         // Initialize session with the user's message (but no Claude response)
