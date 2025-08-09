@@ -115,7 +115,6 @@ const delayedScroll = async (force = false) => {
 // Polling management
 const startPolling = (interval = POLLING_INTERVAL_MS) => {
     stopPolling();
-    console.log(`Starting polling with ${interval}ms interval...`);
     pollingInterval.value = window.setInterval(() => {
         if (props.sessionFile) {
             loadSessionMessages(true);
@@ -127,7 +126,6 @@ const startPolling = (interval = POLLING_INTERVAL_MS) => {
 
 const stopPolling = () => {
     if (pollingInterval.value) {
-        console.log('Stopping polling...');
         clearInterval(pollingInterval.value);
         pollingInterval.value = null;
     }
@@ -196,22 +194,18 @@ const loadSessionMessages = async (isPolling = false) => {
 
     try {
         const sessionData = await loadSession(props.sessionFile);
-        console.log('Session data loaded:', sessionData);
         incompleteMessageFound.value = false;
 
         isPolling = false;
 
         if (!isPolling) {
-            console.log('Is not polling, processing session data...');
             messages.value = [];
 
             for (const conversation of sessionData) {
-                console.log('Processing conversation:', conversation);
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
                 const processedMessages = processConversationResponses(conversation);
-                console.log('Processed messages:', processedMessages);
                 messages.value.push(...processedMessages);
             }
 
@@ -231,7 +225,6 @@ const loadSessionMessages = async (isPolling = false) => {
                 }
             }
         } else {
-            console.log('Polling mode, updating messages...');
             // Handle polling updates for incomplete conversations
             if (sessionData.length > 0) {
                 const lastConversation = sessionData[sessionData.length - 1];
@@ -257,8 +250,6 @@ const loadSessionMessages = async (isPolling = false) => {
         }
 
         sessionFilename.value = props.sessionFile;
-        console.log('Final messages.value:', messages.value);
-        console.log('Final filteredMessages.value:', filteredMessages.value);
         await delayedScroll(false);
 
         // Manage polling based on completion status
@@ -283,7 +274,6 @@ const loadConversationMessages = async () => {
         });
         const data = await response.json();
 
-        console.log('Loading conversation messages:', data);
 
         // Clear and rebuild messages array
         const newMessages = [];
@@ -312,13 +302,11 @@ const loadConversationMessages = async () => {
         // Update messages array
         messages.value = newMessages;
 
-        console.log('Messages loaded:', messages.value);
-        console.log('Filtered messages:', filteredMessages.value);
 
         // Check if we're waiting for an assistant response
         const hasUserMessage = newMessages.some(m => m.role === 'user');
         const hasAssistantResponse = newMessages.some(m => m.role === 'assistant' && m.content);
-        
+
         // Show loading if we have a user message but no assistant response yet
         if (hasUserMessage && !hasAssistantResponse) {
             isLoading.value = true;
@@ -471,12 +459,6 @@ watch(() => props.repository, (newRepo) => {
 
 // Lifecycle
 onMounted(async () => {
-    console.log('Claude.vue mounted with props:', {
-        sessionFile: props.sessionFile,
-        conversationId: props.conversationId,
-        sessionId: props.sessionId,
-        repository: props.repository
-    });
 
     await fetchRepositories();
 
@@ -484,11 +466,9 @@ onMounted(async () => {
     if (props.sessionId) sessionId.value = props.sessionId;
 
     if (props.sessionFile) {
-        console.log('Loading session file:', props.sessionFile);
         await loadSessionMessages();
         // If no messages were loaded from session file, also check database
         if (messages.value.length === 0 && props.conversationId) {
-            console.log('No messages from session file, loading from database');
             await loadConversationMessages();
         }
     } else if (props.conversationId) {
