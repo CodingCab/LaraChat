@@ -25,27 +25,36 @@ class ConversationsController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Handle base64 encoded message if present
+        $message = $request->input('message');
+        if ($message && base64_decode($message, true) !== false) {
+            $decodedMessage = base64_decode($message);
+            // Check if it's actually base64 encoded text
+            if (mb_check_encoding($decodedMessage, 'UTF-8')) {
+                $message = $decodedMessage;
+            }
+        }
+        
+        // Override the request input for validation
+        $request->merge(['message' => $message]);
+        
         $request->validate([
             'message' => 'required|string',
             'repository' => 'nullable|string',
         ]);
 
+        $project_id = uniqid();
         $msg = $request->input('message');
 
         $conversation = Conversation::query()->create([
             'user_id' => Auth::id(),
-            'project_directory' => uniqid(),
-            'repository' => $request->input('repository'),
-            'claude_session_id' => null, // Let Claude generate this
-            'filename' => date('Y-m-d\TH-i-s') . '-session-' . uniqid() . '.json',
             'title' => substr($msg, 0, 100) . (strlen($msg) > 100 ? '...' : ''),
+            'message' => $msg,
+            'claude_session_id' => null, // Let Claude generate this
+            'project_directory' => 'app/private/repositories/projects/' . $project_id,
+            'repository' => $request->input('repository'),
+            'filename' => 'claude-sessions/' . date('Y-m-d\TH-i-s') . '-session-' . $project_id . '.json',
         ]);
-
-        // Create empty session file with initial message structure
-        $directory = 'claude-sessions';
-        if (!Storage::exists($directory)) {
-            Storage::makeDirectory($directory);
-        }
 
         // Initialize session with the user's message (but no Claude response)
         $sessionData = [
@@ -59,19 +68,15 @@ class ConversationsController extends Controller
             ]
         ];
 
-        Storage::put($directory . '/' . $conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
+        Storage::put($conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
 
-        $hotDirectory = storage_path('app/private/repositories/hot/' . $conversation->repository);
+        $hotDirectory = 'app/private/repositories/hot/' . $conversation->repository;
 
-        if (!File::exists($hotDirectory)) {
+        if (!File::exists(storage_path($hotDirectory))) {
             CopyRepositoryToHotJob::dispatchSync($conversation->repository);
         }
 
-        File::moveDirectory(
-            $hotDirectory,
-            storage_path('app/private/repositories/projects/' . $conversation->project_directory),
-            true
-        );
+        File::moveDirectory(storage_path($hotDirectory), storage_path($conversation->project_directory), true);
 
         SendClaudeMessageJob::dispatch($conversation, $msg);
 

@@ -11,8 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip this migration for SQLite in testing environment
+        // SQLite doesn't handle dropping columns with foreign keys well
+        if (config('database.default') === 'sqlite') {
+            return;
+        }
+        
+        // Check if the repositories table exists
+        if (!Schema::hasTable('repositories')) {
+            return;
+        }
+        
+        // Check if the user_id column exists
+        if (!Schema::hasColumn('repositories', 'user_id')) {
+            return;
+        }
+        
         Schema::table('repositories', function (Blueprint $table) {
             $table->dropIndex('repositories_user_url_unique');
+            $table->dropForeign(['user_id']);
             $table->dropColumn('user_id');
         });
     }
