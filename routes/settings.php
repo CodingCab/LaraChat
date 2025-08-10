@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\SystemUpdateController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -21,4 +22,11 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/Appearance');
     })->name('appearance');
+
+    Route::get('settings/system-update', function () {
+        return Inertia::render('settings/SystemUpdate');
+    })->name('settings.system-update');
+
+    Route::post('settings/system-update', [SystemUpdateController::class, 'update'])
+        ->name('settings.system-update');
 });

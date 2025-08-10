@@ -18,6 +18,10 @@ const sidebarNavItems: NavItem[] = [
         title: 'Appearance',
         href: '/settings/appearance',
     },
+    {
+        title: 'System Update',
+        href: '/settings/system-update',
+    },
 ];
 
 const page = usePage();

@@ -1,0 +1,113 @@
+<script setup lang="ts">
+import { Head, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+import HeadingSmall from '@/components/HeadingSmall.vue';
+import { Button } from '@/components/ui/button';
+import Alert from '@/components/ui/alert.vue';
+import AlertDescription from '@/components/ui/alert-description.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { type BreadcrumbItem } from '@/types';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-vue-next';
+
+const breadcrumbItems: BreadcrumbItem[] = [
+    {
+        title: 'System Update',
+        href: '/settings/system-update',
+    },
+];
+
+const isUpdating = ref(false);
+const updateStatus = ref<'idle' | 'success' | 'error'>('idle');
+const updateMessage = ref('');
+const updateOutput = ref('');
+
+const form = useForm({});
+
+const runUpdate = () => {
+    isUpdating.value = true;
+    updateStatus.value = 'idle';
+    updateMessage.value = '';
+    updateOutput.value = '';
+
+    form.post(route('settings.system-update'), {
+        preserveScroll: true,
+        onSuccess: (page: any) => {
+            isUpdating.value = false;
+            updateStatus.value = 'success';
+            updateMessage.value = 'System update completed successfully!';
+            if (page.props.flash?.output) {
+                updateOutput.value = page.props.flash.output;
+            }
+        },
+        onError: (errors: any) => {
+            isUpdating.value = false;
+            updateStatus.value = 'error';
+            updateMessage.value = errors.message || 'Update failed. Please check the logs.';
+            if (errors.output) {
+                updateOutput.value = errors.output;
+            }
+        },
+    });
+};
+</script>
+
+<template>
+    <AppLayout :breadcrumbs="breadcrumbItems">
+        <Head title="System Update" />
+
+        <SettingsLayout>
+            <div class="flex flex-col space-y-6">
+                <HeadingSmall 
+                    title="System Update" 
+                    description="Update the application to the latest version from the repository" 
+                />
+
+                <div class="space-y-4">
+                    <Alert>
+                        <AlertCircle class="h-4 w-4" />
+                        <AlertDescription>
+                            <strong>Warning:</strong> This will run the following commands:
+                            <ul class="mt-2 ml-4 list-disc text-sm">
+                                <li><code class="text-xs">git fetch</code> - Fetches latest changes from repository</li>
+                                <li><code class="text-xs">git reset --hard origin/master</code> - Resets to latest master branch (will discard local changes)</li>
+                                <li><code class="text-xs">npm run build</code> - Rebuilds the application assets</li>
+                            </ul>
+                        </AlertDescription>
+                    </Alert>
+
+                    <div class="flex items-center gap-4">
+                        <Button 
+                            @click="runUpdate" 
+                            :disabled="isUpdating"
+                            variant="default"
+                        >
+                            <Loader2 v-if="isUpdating" class="mr-2 h-4 w-4 animate-spin" />
+                            {{ isUpdating ? 'Updating...' : 'Run System Update' }}
+                        </Button>
+                    </div>
+
+                    <Alert v-if="updateStatus === 'success'" class="border-green-500 bg-green-50 dark:bg-green-950/20">
+                        <CheckCircle2 class="h-4 w-4 text-green-600" />
+                        <AlertDescription class="text-green-800 dark:text-green-300">
+                            {{ updateMessage }}
+                        </AlertDescription>
+                    </Alert>
+
+                    <Alert v-if="updateStatus === 'error'" class="border-red-500 bg-red-50 dark:bg-red-950/20">
+                        <AlertCircle class="h-4 w-4 text-red-600" />
+                        <AlertDescription class="text-red-800 dark:text-red-300">
+                            {{ updateMessage }}
+                        </AlertDescription>
+                    </Alert>
+
+                    <div v-if="updateOutput" class="mt-4">
+                        <h3 class="text-sm font-medium mb-2">Command Output:</h3>
+                        <pre class="bg-muted p-4 rounded-md text-xs overflow-x-auto whitespace-pre-wrap">{{ updateOutput }}</pre>
+                    </div>
+                </div>
+            </div>
+        </SettingsLayout>
+    </AppLayout>
+</template>
