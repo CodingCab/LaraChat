@@ -421,7 +421,12 @@ const sendMessage = async () => {
 
         // Handle redirects and refresh
         if (!props.sessionFile && !props.conversationId && conversationId.value) {
-            router.visit(`/claude/conversation/${conversationId.value}`);
+            // Only redirect if we're not already on the conversation page
+            const currentPath = window.location.pathname;
+            const targetPath = `/claude/conversation/${conversationId.value}`;
+            if (!currentPath.includes(targetPath)) {
+                router.visit(targetPath);
+            }
         }
 
         if (!props.sessionFile) {
