@@ -14,17 +14,17 @@ class SystemUpdateController extends Controller
         try {
             $output = [];
 
-            $gitFetchCommand = 'git fetch';
-            $output[] = "git fetch: " . $this->runCommand($gitFetchCommand)->getOutput();
+            $command = 'git fetch';
+            $output[] = "git fetch: " . $this->runCommand($command)->getOutput();
 
-            $gitReset = 'git reset --hard origin/master';
-            $output[] = "git reset: " . $this->runCommand($gitReset)->getOutput();
+            $command = 'git reset --hard origin/master';
+            $output[] = "git reset: " . $this->runCommand($command)->getOutput();
 
-            $gitReset = 'composer install';
-            $output[] = "composer install: " . $this->runCommand($gitReset)->getOutput();
+            $command = 'composer install';
+            $output[] = "composer install: " . $this->runCommand($command)->getOutput();
 
-            $gitReset = 'npm run build';
-            $output[] = "npm build: " . $this->runCommand($gitReset)->getOutput();
+            $command = 'npm run build';
+            $output[] = "npm build: " . $this->runCommand($command)->getOutput();
 
             Log::info('System update completed successfully', ['output' => implode("\n", $output)]);
 
