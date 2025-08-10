@@ -7,6 +7,7 @@ import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
+import './lib/inertia-config';
 
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
@@ -22,8 +23,9 @@ createInertiaApp({
             .mount(el);
     },
     progress: {
-        color: '#4B5563',
-        delay: 100,
+        delay: 0,
+        color: '#3b82f6',
+        includeCSS: true,
         showSpinner: false,
     },
 });
