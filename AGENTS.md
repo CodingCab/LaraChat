@@ -18,3 +18,4 @@ Blue code is 19B
      - Create and checkout to a new feature branch
   4. Push to GitHub
   5. NEVER push directly to the default branch
+- When the user says "show me roadmap", read ROADMAP.md and display its content without any modifications
