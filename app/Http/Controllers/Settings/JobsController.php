@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 use Symfony\Component\Process\PhpExecutableFinder;
 
@@ -415,6 +416,48 @@ class JobsController extends Controller
             return $failedJobs;
         } catch (\Exception $e) {
             return [];
+        }
+    }
+
+    public function retry($id)
+    {
+        try {
+            if (!\Schema::hasTable('failed_jobs')) {
+                return back()->withErrors(['message' => 'Failed jobs table does not exist']);
+            }
+
+            $failedJob = DB::table('failed_jobs')->where('id', $id)->first();
+            
+            if (!$failedJob) {
+                return back()->withErrors(['message' => 'Failed job not found']);
+            }
+
+            // Retry the failed job using Laravel's built-in command
+            Artisan::call('queue:retry', ['id' => [$failedJob->uuid ?? $id]]);
+            
+            return back()->with('message', 'Job has been pushed back to the queue for retry');
+        } catch (\Exception $e) {
+            return back()->withErrors(['message' => 'Failed to retry job: ' . $e->getMessage()]);
+        }
+    }
+
+    public function discard($id)
+    {
+        try {
+            if (!\Schema::hasTable('failed_jobs')) {
+                return back()->withErrors(['message' => 'Failed jobs table does not exist']);
+            }
+
+            // Delete the failed job from the failed_jobs table
+            $deleted = DB::table('failed_jobs')->where('id', $id)->delete();
+            
+            if (!$deleted) {
+                return back()->withErrors(['message' => 'Failed job not found']);
+            }
+            
+            return back()->with('message', 'Failed job has been discarded');
+        } catch (\Exception $e) {
+            return back()->withErrors(['message' => 'Failed to discard job: ' . $e->getMessage()]);
         }
     }
 }

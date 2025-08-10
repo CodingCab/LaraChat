@@ -22,7 +22,9 @@ import {
     ChevronDown,
     ChevronUp,
     Copy,
-    Check
+    Check,
+    RotateCcw,
+    Trash2
 } from 'lucide-vue-next';
 
 const breadcrumbItems: BreadcrumbItem[] = [
@@ -66,6 +68,10 @@ const queueStats = ref<QueueStats>({ pending: 0, running: 0, failed: 0 });
 const failedJobs = ref<FailedJob[]>([]);
 const expandedFailedJobs = ref<Set<number>>(new Set());
 const copiedJobId = ref<number | null>(null);
+const retryingJobId = ref<number | null>(null);
+const discardingJobId = ref<number | null>(null);
+const jobToDiscard = ref<number | null>(null);
+const showDiscardConfirm = ref(false);
 const isLoading = ref(false);
 const isStarting = ref(false);
 const isStopping = ref(false);
@@ -213,6 +219,62 @@ const formatExceptionForDisplay = (exception: string) => {
         return line;
     });
     return formattedLines.join('\n');
+};
+
+const retryJob = async (jobId: number) => {
+    retryingJobId.value = jobId;
+    statusMessage.value = '';
+    
+    form.post(route('settings.jobs.retry', { id: jobId }), {
+        preserveScroll: true,
+        onSuccess: (page: any) => {
+            retryingJobId.value = null;
+            statusType.value = 'success';
+            statusMessage.value = page.props.flash?.message || 'Job has been queued for retry';
+            fetchWorkerStatus();
+        },
+        onError: (errors: any) => {
+            retryingJobId.value = null;
+            statusType.value = 'error';
+            statusMessage.value = errors.message || 'Failed to retry job';
+        },
+    });
+};
+
+const confirmDiscard = (jobId: number) => {
+    jobToDiscard.value = jobId;
+    showDiscardConfirm.value = true;
+};
+
+const discardJob = async () => {
+    if (!jobToDiscard.value) return;
+    
+    const jobId = jobToDiscard.value;
+    discardingJobId.value = jobId;
+    showDiscardConfirm.value = false;
+    statusMessage.value = '';
+    
+    form.delete(route('settings.jobs.discard', { id: jobId }), {
+        preserveScroll: true,
+        onSuccess: (page: any) => {
+            discardingJobId.value = null;
+            jobToDiscard.value = null;
+            statusType.value = 'success';
+            statusMessage.value = page.props.flash?.message || 'Failed job has been discarded';
+            fetchWorkerStatus();
+        },
+        onError: (errors: any) => {
+            discardingJobId.value = null;
+            jobToDiscard.value = null;
+            statusType.value = 'error';
+            statusMessage.value = errors.message || 'Failed to discard job';
+        },
+    });
+};
+
+const cancelDiscard = () => {
+    showDiscardConfirm.value = false;
+    jobToDiscard.value = null;
 };
 
 onMounted(() => {
@@ -394,17 +456,43 @@ onUnmounted(() => {
                                                 {{ job.attempts }} {{ job.attempts === 1 ? 'attempt' : 'attempts' }}
                                             </span>
                                         </div>
-                                        <Button
-                                            @click="copyException(job)"
-                                            variant="ghost"
-                                            size="sm"
-                                            class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                                            :title="'Copy exception to clipboard'"
-                                        >
-                                            <Check v-if="copiedJobId === job.id" class="h-4 w-4 text-green-600" />
-                                            <Copy v-else class="h-4 w-4" />
-                                            <span class="ml-1 text-xs">{{ copiedJobId === job.id ? 'Copied!' : 'Copy' }}</span>
-                                        </Button>
+                                        <div class="flex items-center gap-2">
+                                            <Button
+                                                @click="retryJob(job.id)"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                                :disabled="retryingJobId === job.id || discardingJobId === job.id"
+                                                title="Retry this job"
+                                            >
+                                                <Loader2 v-if="retryingJobId === job.id" class="h-4 w-4 animate-spin" />
+                                                <RotateCcw v-else class="h-4 w-4" />
+                                                <span class="ml-1 text-xs">Retry</span>
+                                            </Button>
+                                            <Button
+                                                @click="confirmDiscard(job.id)"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                                :disabled="retryingJobId === job.id || discardingJobId === job.id"
+                                                title="Discard this job"
+                                            >
+                                                <Loader2 v-if="discardingJobId === job.id" class="h-4 w-4 animate-spin" />
+                                                <Trash2 v-else class="h-4 w-4" />
+                                                <span class="ml-1 text-xs">Discard</span>
+                                            </Button>
+                                            <Button
+                                                @click="copyException(job)"
+                                                variant="ghost"
+                                                size="sm"
+                                                class="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                                                :title="'Copy exception to clipboard'"
+                                            >
+                                                <Check v-if="copiedJobId === job.id" class="h-4 w-4 text-green-600" />
+                                                <Copy v-else class="h-4 w-4" />
+                                                <span class="ml-1 text-xs">{{ copiedJobId === job.id ? 'Copied!' : 'Copy' }}</span>
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -470,6 +558,40 @@ onUnmounted(() => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Discard Confirmation Dialog -->
+                    <div v-if="showDiscardConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                            <div class="flex items-start gap-3 mb-4">
+                                <AlertCircle class="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                        Confirm Discard
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        Are you sure you want to discard this failed job? This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-3">
+                                <Button
+                                    @click="cancelDiscard"
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    @click="discardJob"
+                                    variant="destructive"
+                                    size="sm"
+                                >
+                                    <Trash2 class="h-4 w-4 mr-1" />
+                                    Discard Job
+                                </Button>
                             </div>
                         </div>
                     </div>

@@ -34,4 +34,6 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/jobs', [JobsController::class, 'index'])->name('settings.jobs');
     Route::get('settings/jobs/status', [JobsController::class, 'status'])->name('settings.jobs.status');
     Route::post('settings/jobs/control', [JobsController::class, 'control'])->name('settings.jobs.control');
+    Route::post('settings/jobs/retry/{id}', [JobsController::class, 'retry'])->name('settings.jobs.retry');
+    Route::delete('settings/jobs/discard/{id}', [JobsController::class, 'discard'])->name('settings.jobs.discard');
 });
