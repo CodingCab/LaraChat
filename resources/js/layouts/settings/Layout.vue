@@ -19,6 +19,10 @@ const sidebarNavItems: NavItem[] = [
         href: '/settings/appearance',
     },
     {
+        title: 'Jobs',
+        href: '/settings/jobs',
+    },
+    {
         title: 'System Update',
         href: '/settings/system-update',
     },

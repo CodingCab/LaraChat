@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\JobsController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\SystemUpdateController;
@@ -29,4 +30,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('settings/system-update', [SystemUpdateController::class, 'update'])
         ->name('settings.system-update');
+
+    Route::get('settings/jobs', [JobsController::class, 'index'])->name('settings.jobs');
+    Route::get('settings/jobs/status', [JobsController::class, 'status'])->name('settings.jobs.status');
+    Route::post('settings/jobs/control', [JobsController::class, 'control'])->name('settings.jobs.control');
 });
