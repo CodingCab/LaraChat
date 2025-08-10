@@ -19,7 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->environment('production')) {
+        // Only force HTTPS if we're in production AND the request is actually secure
+        // This prevents redirect loops when behind proxies
+        if ($this->app->environment('production') && request()->secure()) {
             \URL::forceScheme('https');
         }
     }
