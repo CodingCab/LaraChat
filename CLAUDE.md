@@ -21,9 +21,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run format:check` - Check formatting without changes
 - `composer test` - Run PHPUnit tests
 
-### Git & Pull Requests
-- **Create PR**: `gh pr create --base master --title "PR Title" --body "PR Description"`
-
 ## Architecture Overview
 
 This is a **Laravel 12 + Vue 3 + Inertia.js** application with server-side rendering support.
