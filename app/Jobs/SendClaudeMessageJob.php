@@ -27,16 +27,36 @@ class SendClaudeMessageJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            // Create a progress callback to update the conversation in real-time
+            $progressCallback = function ($type, $data) {
+                if ($type === 'sessionId' && !$this->conversation->claude_session_id) {
+                    $this->conversation->update(['claude_session_id' => $data]);
+                    Log::info('Updated conversation with session ID', [
+                        'conversation_id' => $this->conversation->id,
+                        'sessionId' => $data
+                    ]);
+                } elseif ($type === 'response') {
+                    // Update the conversation's updated_at timestamp to signal new content
+                    $this->conversation->touch();
+                    Log::debug('Progress update', [
+                        'conversation_id' => $this->conversation->id,
+                        'filename' => $data['filename'],
+                        'responseCount' => $data['responseCount']
+                    ]);
+                }
+            };
+
             $result = ClaudeService::processInBackground(
                 $this->message,
                 '--permission-mode bypassPermissions',
                 $this->conversation->claude_session_id,
                 $this->conversation->filename,
-                $this->conversation->project_directory
+                $this->conversation->project_directory,
+                $progressCallback
             );
 
-            // Update conversation with the session ID if extracted
-            if ($result['sessionId'] && !$this->conversation->claude_session_id) {
+            // Update conversation with the session ID if extracted (in case callback didn't catch it)
+            if ($result['sessionId'] && !$this->conversation->fresh()->claude_session_id) {
                 $this->conversation->update(['claude_session_id' => $result['sessionId']]);
             }
 
