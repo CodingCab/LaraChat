@@ -3,6 +3,7 @@ import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
+import PageTransition from '@/components/PageTransition.vue';
 import type { BreadcrumbItemType } from '@/types';
 
 interface Props {
@@ -23,7 +24,9 @@ withDefaults(defineProps<Props>(), {
                     <slot name="header-actions" />
                 </template>
             </AppSidebarHeader>
-            <slot />
+            <PageTransition>
+                <slot />
+            </PageTransition>
         </AppContent>
     </AppShell>
 </template>
