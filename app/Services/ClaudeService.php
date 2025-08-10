@@ -212,7 +212,7 @@ class ClaudeService
     /**
      * Process Claude message in background (for queue jobs)
      */
-    public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null): array
+    public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null, ?callable $progressCallback = null): array
     {
         $wrapperPath = base_path('claude-wrapper.sh');
         $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
@@ -258,9 +258,6 @@ class ClaudeService
         $process->setTimeout(null);
         $process->setIdleTimeout(null);
 
-        // Run the process synchronously for background jobs
-        $process->run();
-
         // Initialize session data
         $rawJsonResponses = [];
         $extractedSessionId = $sessionId;
@@ -279,32 +276,51 @@ class ClaudeService
             'repositoryPath' => $repositoryPath
         ]);
 
-        // Process the output
-        $output = $process->getOutput();
-        $lines = explode("\n", $output);
+        // Run the process with real-time output processing
+        $process->run(function ($type, $buffer) use (&$rawJsonResponses, &$extractedSessionId, $prompt, $filename, $sessionId, $repositoryPath, $progressCallback) {
+            $lines = explode("\n", $buffer);
+            
+            foreach ($lines as $line) {
+                if (trim($line)) {
+                    try {
+                        $jsonData = json_decode($line, true);
+                        if ($jsonData) {
+                            $rawJsonResponses[] = $jsonData;
 
-        foreach ($lines as $line) {
-            if (trim($line)) {
-                try {
-                    $jsonData = json_decode($line, true);
-                    if ($jsonData) {
-                        $rawJsonResponses[] = $jsonData;
+                            // Extract session ID if not provided
+                            if (!$extractedSessionId) {
+                                $extractedSessionId = self::extractSessionId($jsonData);
+                                
+                                // Notify about session ID extraction
+                                if ($progressCallback && $extractedSessionId) {
+                                    $progressCallback('sessionId', $extractedSessionId);
+                                }
+                            }
 
-                        // Extract session ID if not provided
-                        if (!$extractedSessionId) {
-                            $extractedSessionId = self::extractSessionId($jsonData);
+                            // Save response incrementally after each message
+                            if ($filename) {
+                                self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
+                                
+                                // Notify about progress
+                                if ($progressCallback) {
+                                    $progressCallback('response', [
+                                        'filename' => $filename,
+                                        'responseCount' => count($rawJsonResponses)
+                                    ]);
+                                }
+                            }
                         }
+                    } catch (\Exception $e) {
+                        \Log::error('JSON parsing error in background job', [
+                            'error' => $e->getMessage(),
+                            'line' => $line
+                        ]);
                     }
-                } catch (\Exception $e) {
-                    \Log::error('JSON parsing error in background job', [
-                        'error' => $e->getMessage(),
-                        'line' => $line
-                    ]);
                 }
             }
-        }
+        });
 
-        // Save the complete response
+        // Final save with complete flag
         if ($filename) {
             self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
         }
