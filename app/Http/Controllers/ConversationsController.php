@@ -60,7 +60,7 @@ class ConversationsController extends Controller
         Bus::chain([
             new InitializeConversationSessionJob($conversation, $msg),
             new SendClaudeMessageJob($conversation, $msg)
-        ]);
+        ])->dispatch();
 
         CopyRepositoryToHotJob::dispatch($conversation->repository);
 

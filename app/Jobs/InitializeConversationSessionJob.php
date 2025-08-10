@@ -49,7 +49,24 @@ class InitializeConversationSessionJob implements ShouldQueue
         $to = storage_path($this->conversation->project_directory);
 
         ray($from, $to);
+        
+        // Ensure the parent directory exists
+        $parentDir = dirname($to);
+        if (!File::exists($parentDir)) {
+            File::makeDirectory($parentDir, 0755, true);
+        }
+        
         File::moveDirectory($from, $to, true);
+
+        // Only run git commands if the directory exists after move
+        if (!File::exists($to)) {
+            Log::error('InitializeConversationSessionJob: Failed to move repository directory', [
+                'from' => $from,
+                'to' => $to,
+                'repository' => $this->conversation->repository,
+            ]);
+            return;
+        }
 
         // Update the Git repository in the moved directory
         try {
