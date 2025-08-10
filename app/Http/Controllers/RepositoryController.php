@@ -165,7 +165,9 @@ class RepositoryController extends Controller
     private function extractRepoName(string $url): string
     {
         // Remove trailing .git if present
-        $url = rtrim($url, '.git');
+        if (str_ends_with($url, '.git')) {
+            $url = substr($url, 0, -4);
+        }
 
         // Extract repository name from URL
         $parts = explode('/', $url);
