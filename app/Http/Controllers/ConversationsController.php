@@ -3,17 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\CopyRepositoryToHotJob;
+use App\Jobs\InitializeConversationSessionJob;
 use App\Jobs\PrepareProjectDirectoryJob;
 use App\Jobs\SendClaudeMessageJob;
 use App\Models\Conversation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
+use Illuminate\Support\Facades\Bus;
 
 class ConversationsController extends Controller
 {
@@ -60,73 +57,14 @@ class ConversationsController extends Controller
             'is_processing' => true, // Mark as processing when created
         ]);
 
-        // Initialize session with the user's message (but no Claude response)
-        $sessionData = [
-            [
-                "sessionId" => null,
-                'role' => 'user',
-                'userMessage' => $msg,
-                'timestamp' => now()->toIso8601String(),
-                "isComplete" => false,
-                "repositoryPath" => null,
-            ]
-        ];
-
-        Storage::put($conversation->filename, json_encode($sessionData, JSON_PRETTY_PRINT));
-
-        $from = storage_path( 'app/private/repositories/hot/' . $conversation->repository);
-
-        if (!File::exists($from)) {
-            CopyRepositoryToHotJob::dispatchSync($conversation->repository);
-        }
-
-        $to = storage_path($conversation->project_directory);
-
-        ray($from, $to);
-        File::moveDirectory($from, $to, true);
-
-        // Update the Git repository in the moved directory
-        try {
-            $this->runGitCommand('checkout master', $to);
-            $this->runGitCommand('fetch', $to);
-            $this->runGitCommand('reset --hard origin/master', $to);
-            
-            Log::info('ConversationsController: Updated project repository to latest version', [
-                'repository' => $conversation->repository,
-                'project_directory' => $conversation->project_directory,
-            ]);
-        } catch (ProcessFailedException $e) {
-            Log::error('ConversationsController: Failed to update project repository', [
-                'repository' => $conversation->repository,
-                'project_directory' => $conversation->project_directory,
-                'error' => $e->getMessage(),
-                'output' => $e->getProcess()->getErrorOutput()
-            ]);
-            
-            // Continue with the conversation even if Git update fails
-            // The repository is still functional, just might not be on latest
-        }
-
-        SendClaudeMessageJob::dispatch($conversation, $msg);;
+        Bus::chain([
+            new InitializeConversationSessionJob($conversation, $msg),
+            new SendClaudeMessageJob($conversation, $msg)
+        ]);
 
         CopyRepositoryToHotJob::dispatch($conversation->repository);
 
         return redirect()->route('claude.conversation', $conversation->id);
     }
 
-    protected function runGitCommand(string $command, string $workingDirectory): Process
-    {
-        $fullCommand = 'git ' . $command;
-        
-        $process = Process::fromShellCommandline($fullCommand);
-        $process->setWorkingDirectory($workingDirectory);
-        $process->setTimeout(60);
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
-
-        return $process;
-    }
 }
