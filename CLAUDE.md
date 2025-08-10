@@ -81,3 +81,4 @@ const breadcrumbs: BreadcrumbItem[] = [
 ## Important Reminders
 - This is important: always read AGENTS.md for more instructions
 - always read AGENTS.md for more instructions
+- When asked to remember something, save it in AGENTS.md for later retrieval
