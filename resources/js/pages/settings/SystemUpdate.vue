@@ -72,6 +72,7 @@ const runUpdate = () => {
                             <ul class="mt-2 ml-4 list-disc text-sm">
                                 <li><code class="text-xs">git fetch</code> - Fetches latest changes from repository</li>
                                 <li><code class="text-xs">git reset --hard origin/master</code> - Resets to latest master branch (will discard local changes)</li>
+                                <li><code class="text-xs">composer install</code> - Installs/updates PHP dependencies</li>
                                 <li><code class="text-xs">npm run build</code> - Rebuilds the application assets</li>
                             </ul>
                         </AlertDescription>
