@@ -27,3 +27,4 @@ yarn-error.log
 !/public/projects/.gitkeep
 /storage/app/private/claude-sessions
 /storage/app/private/repositories
+/repositories
