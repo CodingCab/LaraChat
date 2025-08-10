@@ -17,7 +17,12 @@ import {
     Square, 
     RefreshCw,
     Activity,
-    Clock
+    Clock,
+    XCircle,
+    ChevronDown,
+    ChevronUp,
+    Copy,
+    Check
 } from 'lucide-vue-next';
 
 const breadcrumbItems: BreadcrumbItem[] = [
@@ -44,8 +49,23 @@ interface QueueStats {
     failed: number;
 }
 
+interface FailedJob {
+    id: number;
+    uuid?: string;
+    connection: string;
+    queue: string;
+    exception: string;
+    fullException: string;
+    failed_at: string;
+    job_name: string;
+    attempts: number;
+}
+
 const workers = ref<WorkerStatus[]>([]);
 const queueStats = ref<QueueStats>({ pending: 0, running: 0, failed: 0 });
+const failedJobs = ref<FailedJob[]>([]);
+const expandedFailedJobs = ref<Set<number>>(new Set());
+const copiedJobId = ref<number | null>(null);
 const isLoading = ref(false);
 const isStarting = ref(false);
 const isStopping = ref(false);
@@ -64,6 +84,7 @@ const fetchWorkerStatus = async () => {
         const data = await response.json();
         workers.value = data.workers || [];
         queueStats.value = data.stats || { pending: 0, running: 0, failed: 0 };
+        failedJobs.value = data.failedJobs || [];
         
         // If no workers in cache but processes are running, use those
         if (workers.value.length === 0 && data.processes && data.processes.length > 0) {
@@ -149,6 +170,49 @@ const getStatusIcon = (status: string) => {
         case 'stopped': return Square;
         default: return AlertCircle;
     }
+};
+
+const toggleFailedJobExpansion = (jobId: number) => {
+    if (expandedFailedJobs.value.has(jobId)) {
+        expandedFailedJobs.value.delete(jobId);
+    } else {
+        expandedFailedJobs.value.add(jobId);
+    }
+};
+
+const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString();
+};
+
+const copyException = async (job: FailedJob) => {
+    try {
+        await navigator.clipboard.writeText(job.fullException || job.exception);
+        copiedJobId.value = job.id;
+        setTimeout(() => {
+            copiedJobId.value = null;
+        }, 2000);
+    } catch (error) {
+        console.error('Failed to copy exception:', error);
+    }
+};
+
+const formatExceptionForDisplay = (exception: string) => {
+    // Remove file paths to make it more readable, keeping just the relevant parts
+    const lines = exception.split('\n');
+    const formattedLines = lines.map(line => {
+        // Highlight the main error message (usually the first line)
+        if (lines.indexOf(line) === 0) {
+            return line;
+        }
+        // Format stack trace lines
+        if (line.includes(' at ') || line.includes('#')) {
+            // Extract just the relevant part of the path
+            return line.replace(/\/[^\/]+([\/\w-]+\/vendor\/)/, '.../');
+        }
+        return line;
+    });
+    return formattedLines.join('\n');
 };
 
 onMounted(() => {
@@ -299,6 +363,111 @@ onUnmounted(() => {
                                     <div v-if="worker.cpu">
                                         <span class="text-muted-foreground">CPU:</span>
                                         <div class="font-mono">{{ worker.cpu }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="failedJobs.length > 0" class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">
+                                Failed Jobs ({{ failedJobs.length }})
+                            </h3>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div 
+                                v-for="job in failedJobs" 
+                                :key="job.id"
+                                class="border border-red-200 dark:border-red-800 rounded-lg overflow-hidden bg-red-50 dark:bg-red-950/20"
+                            >
+                                <!-- Header -->
+                                <div class="px-4 py-3 bg-red-100 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <XCircle class="h-5 w-5 text-red-600 dark:text-red-400" />
+                                            <span class="font-semibold text-red-900 dark:text-red-200">
+                                                {{ job.job_name }}
+                                            </span>
+                                            <span class="text-xs px-2 py-0.5 bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-full">
+                                                {{ job.attempts }} {{ job.attempts === 1 ? 'attempt' : 'attempts' }}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            @click="copyException(job)"
+                                            variant="ghost"
+                                            size="sm"
+                                            class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                                            :title="'Copy exception to clipboard'"
+                                        >
+                                            <Check v-if="copiedJobId === job.id" class="h-4 w-4 text-green-600" />
+                                            <Copy v-else class="h-4 w-4" />
+                                            <span class="ml-1 text-xs">{{ copiedJobId === job.id ? 'Copied!' : 'Copy' }}</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Body -->
+                                <div class="p-4">
+                                    <!-- Error Message -->
+                                    <div class="mb-3">
+                                        <div class="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Error Message:</div>
+                                        <div class="p-2 bg-red-100 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                                            <code class="text-xs text-red-800 dark:text-red-200 font-mono break-all">
+                                                {{ job.exception }}
+                                            </code>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Metadata -->
+                                    <div class="flex flex-wrap gap-3 text-xs text-red-600 dark:text-red-400">
+                                        <div class="flex items-center gap-1">
+                                            <span class="font-medium">Queue:</span>
+                                            <span class="font-mono">{{ job.queue }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <span class="font-medium">Failed:</span>
+                                            <span>{{ formatDateTime(job.failed_at) }}</span>
+                                        </div>
+                                        <div v-if="job.uuid" class="flex items-center gap-1">
+                                            <span class="font-medium">UUID:</span>
+                                            <span class="font-mono">{{ job.uuid.substring(0, 8) }}...</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Full Exception (Expandable) -->
+                                    <div v-if="job.fullException" class="mt-3">
+                                        <Button
+                                            @click="toggleFailedJobExpansion(job.id)"
+                                            variant="outline"
+                                            size="sm"
+                                            class="w-full text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-300 dark:border-red-700"
+                                        >
+                                            <ChevronDown v-if="!expandedFailedJobs.has(job.id)" class="h-4 w-4 mr-1" />
+                                            <ChevronUp v-else class="h-4 w-4 mr-1" />
+                                            {{ expandedFailedJobs.has(job.id) ? 'Hide' : 'Show' }} Full Stack Trace
+                                        </Button>
+                                        
+                                        <div 
+                                            v-if="expandedFailedJobs.has(job.id)"
+                                            class="mt-2 relative"
+                                        >
+                                            <div class="absolute top-2 right-2 z-10">
+                                                <Button
+                                                    @click="copyException(job)"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    class="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/70"
+                                                >
+                                                    <Check v-if="copiedJobId === job.id" class="h-3 w-3 text-green-600" />
+                                                    <Copy v-else class="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                            <div class="p-3 bg-gray-900 dark:bg-black rounded border border-red-200 dark:border-red-800 overflow-x-auto">
+                                                <pre class="text-xs text-red-400 whitespace-pre font-mono leading-relaxed">{{ formatExceptionForDisplay(job.fullException) }}</pre>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

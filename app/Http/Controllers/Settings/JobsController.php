@@ -28,6 +28,7 @@ class JobsController extends Controller
             'workers' => $workers,
             'processes' => $runningProcesses,
             'stats' => $this->getQueueStats(),
+            'failedJobs' => $this->getFailedJobs(),
         ]);
     }
 
@@ -368,6 +369,52 @@ class JobsController extends Controller
                 'running' => 0,
                 'failed' => 0,
             ];
+        }
+    }
+
+    private function getFailedJobs($limit = 10)
+    {
+        try {
+            if (!\Schema::hasTable('failed_jobs')) {
+                return [];
+            }
+
+            $failedJobs = DB::table('failed_jobs')
+                ->orderBy('failed_at', 'desc')
+                ->limit($limit)
+                ->get()
+                ->map(function ($job) {
+                    $payload = json_decode($job->payload, true);
+                    $exception = $job->exception;
+                    
+                    // Parse exception to get just the error message
+                    $errorMessage = 'Unknown error';
+                    if ($exception) {
+                        // Extract the main error message from the exception
+                        $lines = explode("\n", $exception);
+                        if (!empty($lines[0])) {
+                            $errorMessage = $lines[0];
+                        }
+                    }
+                    
+                    return [
+                        'id' => $job->id,
+                        'uuid' => $job->uuid ?? null,
+                        'connection' => $job->connection,
+                        'queue' => $job->queue,
+                        'payload' => $payload,
+                        'exception' => $errorMessage,
+                        'fullException' => $exception,
+                        'failed_at' => $job->failed_at,
+                        'job_name' => $payload['displayName'] ?? 'Unknown Job',
+                        'attempts' => $payload['attempts'] ?? 0,
+                    ];
+                })
+                ->toArray();
+
+            return $failedJobs;
+        } catch (\Exception $e) {
+            return [];
         }
     }
 }
