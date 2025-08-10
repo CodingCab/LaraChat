@@ -54,14 +54,27 @@ class SystemUpdateController extends Controller
 
     public function runCommand(string $command): Process
     {
-        $fetchProcess = new Process(explode(' ', $command));
-        $fetchProcess->setWorkingDirectory(base_path());
-        $fetchProcess->run();
+        // Set up PATH with all necessary binaries
+        $herdBin = '/Users/arturhanusek/Library/Application Support/Herd/bin';
+        $nodeBin = '/Users/arturhanusek/Library/Application Support/Herd/config/nvm/versions/node/v22.17.1/bin';
+        $systemPath = '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin';
+        
+        // Combine all paths
+        $fullPath = $herdBin . ':' . $nodeBin . ':' . $systemPath;
+        
+        // Create the shell command with the proper PATH
+        $shellCommand = 'export PATH="' . $fullPath . '" && ' . $command;
+        
+        // Use bash to execute the command with the environment
+        $process = Process::fromShellCommandline($shellCommand);
+        $process->setWorkingDirectory(base_path());
+        $process->setTimeout(300); // 5 minutes timeout
+        $process->run();
 
-        if (!$fetchProcess->isSuccessful()) {
-            throw new ProcessFailedException($fetchProcess);
+        if (!$process->isSuccessful()) {
+            throw new ProcessFailedException($process);
         }
 
-        return $fetchProcess;
+        return $process;
     }
 }
