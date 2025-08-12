@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
-import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -18,41 +16,19 @@ import {
 } from '@/components/ui/sidebar';
 import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
-import { type NavItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { AlertCircle, BookOpen, CheckCircle, Folder, GitBranch, Loader2, MessageSquare, MessageSquarePlus, Plus } from 'lucide-vue-next';
+import { GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const { conversations, fetchConversations, cleanup } = useConversations();
-const { repositories, fetchRepositories, cloneRepository, loading, copyToHot } = useRepositories();
+const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
 
 const showCloneDialog = ref(false);
 const repositoryUrl = ref('');
 const branch = ref('');
 const cloneError = ref('');
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Claude',
-        href: '/claude',
-        icon: MessageSquare,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
 
 onMounted(async () => {
     await fetchRepositories();
@@ -81,25 +57,6 @@ const handleRepositoryClick = (repositorySlug: string) => {
         preserveState: true,
     });
 };
-
-const handleCopyToHot = async (repositoryId: number) => {
-    if (!repositoryId) {
-        return;
-    }
-
-    try {
-        const response = await copyToHot(repositoryId);
-
-        if (!response.has_hot_folder) {
-            // Refresh repositories after a delay to check status
-            setTimeout(() => {
-                fetchRepositories();
-            }, 3000);
-        }
-    } catch (error) {
-        alert('Failed to copy repository to hot folder.');
-    }
-};
 </script>
 
 <template>
@@ -117,8 +74,6 @@ const handleCopyToHot = async (repositoryId: number) => {
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
-
             <SidebarGroup class="px-2 py-0">
                 <div class="flex items-center justify-between">
                     <SidebarGroupLabel>Repositories</SidebarGroupLabel>
@@ -148,7 +103,7 @@ const handleCopyToHot = async (repositoryId: number) => {
             <SidebarGroup class="px-2 py-0" v-if="conversations.length > 0">
                 <SidebarGroupLabel>Conversations</SidebarGroupLabel>
                 <SidebarMenu>
-                    <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id">
+                    <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id" class="mb-1">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
                             <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true" class="flex items-center">
                                 <MessageSquarePlus />
@@ -180,7 +135,6 @@ const handleCopyToHot = async (repositoryId: number) => {
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
