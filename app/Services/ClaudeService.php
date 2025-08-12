@@ -24,8 +24,28 @@ class ClaudeService
                 ob_end_flush();
             }
 
+            // Extract project ID from repository path
+            $projectId = null;
+            if ($repositoryPath) {
+                // Repository path format: repositories/projects/{project_id}
+                if (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
+                    $projectId = $matches[1];
+                }
+            }
+
             $wrapperPath = base_path('claude-wrapper.sh');
-            $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
+            $command = [$wrapperPath];
+            
+            // Add project ID as first argument if available
+            if ($projectId) {
+                $command[] = $projectId;
+            } else {
+                // Default project ID if none specified
+                $command[] = 'default';
+            }
+            
+            // Add Claude CLI arguments
+            $command = array_merge($command, ['--print', '--verbose', '--output-format', 'stream-json']);
 
             // Use --resume for continuing an existing session with a valid UUID
             if ($sessionId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $sessionId)) {
@@ -40,31 +60,9 @@ class ClaudeService
 
             $command[] = $prompt;
 
-            // Set the working directory if repository path is provided
-            $workingDirectory = null;
-            if ($repositoryPath) {
-                // Remove 'app/private/' prefix if it exists to avoid duplication
-                $cleanPath = preg_replace('/^app\/private\//', '', $repositoryPath);
-                
-                // Convert relative path to absolute path
-                $workingDirectory = storage_path('app/private/' . $cleanPath);
-
-                // Check if directory exists
-                if (!is_dir($workingDirectory)) {
-                    \Log::error('Repository directory does not exist', [
-                        'repository_path' => $repositoryPath,
-                        'full_path' => $workingDirectory
-                    ]);
-                    throw new \Exception("Repository directory not found: {$repositoryPath}");
-                }
-
-                \Log::info('Setting working directory for Claude command', [
-                    'repository_path' => $repositoryPath,
-                    'working_directory' => $workingDirectory
-                ]);
-            }
-
-            $process = new Process($command, $workingDirectory);
+            // With the wrapper handling directory changes, we don't need to set working directory here
+            // The wrapper will cd to the correct project directory based on the project ID
+            $process = new Process($command);
             $process->setTimeout(null);
             $process->setIdleTimeout(null);
 
@@ -214,8 +212,28 @@ class ClaudeService
      */
     public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null, ?callable $progressCallback = null): array
     {
+        // Extract project ID from repository path
+        $projectId = null;
+        if ($repositoryPath) {
+            // Repository path format: repositories/projects/{project_id}
+            if (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
+                $projectId = $matches[1];
+            }
+        }
+
         $wrapperPath = base_path('claude-wrapper.sh');
-        $command = [$wrapperPath, '--print', '--verbose', '--output-format', 'stream-json'];
+        $command = [$wrapperPath];
+        
+        // Add project ID as first argument if available
+        if ($projectId) {
+            $command[] = $projectId;
+        } else {
+            // Default project ID if none specified
+            $command[] = 'default';
+        }
+        
+        // Add Claude CLI arguments
+        $command = array_merge($command, ['--print', '--verbose', '--output-format', 'stream-json']);
 
         // Use --resume for continuing an existing session with a valid UUID
         if ($sessionId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $sessionId)) {
@@ -230,31 +248,9 @@ class ClaudeService
 
         $command[] = $prompt;
 
-        // Set the working directory if repository path is provided
-        $workingDirectory = null;
-        if ($repositoryPath) {
-            // Remove 'app/private/' prefix if it exists to avoid duplication
-            $cleanPath = preg_replace('/^app\/private\//', '', $repositoryPath);
-            
-            // Convert relative path to absolute path
-            $workingDirectory = storage_path('app/private/' . $cleanPath);
-
-            // Check if directory exists
-            if (!is_dir($workingDirectory)) {
-                \Log::error('Repository directory does not exist', [
-                    'repository_path' => $repositoryPath,
-                    'full_path' => $workingDirectory
-                ]);
-                throw new \Exception("Repository directory not found: {$repositoryPath}");
-            }
-
-            \Log::info('Setting working directory for Claude command', [
-                'repository_path' => $repositoryPath,
-                'working_directory' => $workingDirectory
-            ]);
-        }
-
-        $process = new Process($command, $workingDirectory);
+        // With the wrapper handling directory changes, we don't need to set working directory here
+        // The wrapper will cd to the correct project directory based on the project ID
+        $process = new Process($command);
         $process->setTimeout(null);
         $process->setIdleTimeout(null);
 
