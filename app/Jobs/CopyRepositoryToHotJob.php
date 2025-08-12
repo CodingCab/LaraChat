@@ -40,9 +40,12 @@ class CopyRepositoryToHotJob implements ShouldQueue
         }
 
         try {
-            $this->runGitCommand('checkout master', $basePath);
+            // Get the default branch name
+            $defaultBranch = $this->getDefaultBranch($basePath);
+            
+            $this->runGitCommand('checkout ' . $defaultBranch, $basePath);
             $this->runGitCommand('fetch', $basePath);
-            $this->runGitCommand('reset --hard origin/master', $basePath);
+            $this->runGitCommand('reset --hard origin/' . $defaultBranch, $basePath);
             
             Log::info('CopyRepositoryToHot: Updated base repository to latest version', [
                 'repository' => $this->repository,
@@ -78,5 +81,32 @@ class CopyRepositoryToHotJob implements ShouldQueue
         }
 
         return $process;
+    }
+    
+    protected function getDefaultBranch(string $workingDirectory): string
+    {
+        try {
+            // Try to get the default branch from remote HEAD
+            $process = $this->runGitCommand('symbolic-ref refs/remotes/origin/HEAD', $workingDirectory);
+            $output = trim($process->getOutput());
+            
+            if ($output && str_contains($output, 'refs/remotes/origin/')) {
+                return str_replace('refs/remotes/origin/', '', $output);
+            }
+        } catch (ProcessFailedException $e) {
+            // If that fails, try to get the current branch
+            try {
+                $process = $this->runGitCommand('rev-parse --abbrev-ref HEAD', $workingDirectory);
+                $branch = trim($process->getOutput());
+                if ($branch && $branch !== 'HEAD') {
+                    return $branch;
+                }
+            } catch (ProcessFailedException $e2) {
+                // Ignore and fall back to default
+            }
+        }
+        
+        // Fall back to 'main' as it's the most common default now
+        return 'main';
     }
 }

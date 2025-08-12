@@ -70,9 +70,12 @@ class InitializeConversationSessionJob implements ShouldQueue
 
         // Update the Git repository in the moved directory
         try {
-            $this->runGitCommand('checkout master', $to);
+            // Get the default branch name
+            $defaultBranch = $this->getDefaultBranch($to);
+            
+            $this->runGitCommand('checkout ' . $defaultBranch, $to);
             $this->runGitCommand('fetch', $to);
-            $this->runGitCommand('reset --hard origin/master', $to);
+            $this->runGitCommand('reset --hard origin/' . $defaultBranch, $to);
             
             Log::info('InitializeConversationSessionJob: Updated project repository to latest version', [
                 'repository' => $this->conversation->repository,
@@ -101,5 +104,41 @@ class InitializeConversationSessionJob implements ShouldQueue
         if (!$result->successful()) {
             throw new ProcessFailedException($result);
         }
+    }
+    
+    protected function getDefaultBranch(string $workingDirectory): string
+    {
+        try {
+            // Try to get the default branch from remote HEAD
+            $result = Process::path($workingDirectory)
+                ->run('git symbolic-ref refs/remotes/origin/HEAD');
+            
+            if ($result->successful()) {
+                $output = trim($result->output());
+                if ($output && str_contains($output, 'refs/remotes/origin/')) {
+                    return str_replace('refs/remotes/origin/', '', $output);
+                }
+            }
+        } catch (\Exception $e) {
+            // Continue to fallback
+        }
+        
+        try {
+            // If that fails, try to get the current branch
+            $result = Process::path($workingDirectory)
+                ->run('git rev-parse --abbrev-ref HEAD');
+            
+            if ($result->successful()) {
+                $branch = trim($result->output());
+                if ($branch && $branch !== 'HEAD') {
+                    return $branch;
+                }
+            }
+        } catch (\Exception $e) {
+            // Continue to fallback
+        }
+        
+        // Fall back to 'main' as it's the most common default now
+        return 'main';
     }
 }
