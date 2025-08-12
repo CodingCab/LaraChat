@@ -5,10 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Activity, Clock, Copy, FileCode, FolderOpen, GitBranch, MessageSquare, Send, Terminal } from 'lucide-vue-next';
+import { Activity, ArrowRight, Clock, Copy, FileCode, FolderOpen, GitBranch, MessageSquare, Send, Sparkles, Terminal } from 'lucide-vue-next';
 import { computed, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -35,7 +34,6 @@ const props = defineProps<{
     }>;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Repositories', href: '/repositories' }, { title: props.repository.name }];
 
 const fileTree = ref<any[]>([]);
 const loadingTree = ref(false);
@@ -70,11 +68,23 @@ const openConversation = (conversationId: number) => {
     router.visit(`/claude/conversation/${conversationId}`);
 };
 
-const startChatWithMessage = () => {
-    if (messageInput.value.trim()) {
-        router.visit(`/claude/new?repository=${encodeURIComponent(props.repository.name)}&message=${encodeURIComponent(messageInput.value.trim())}`);
+const startChatWithMessage = (message?: string) => {
+    const finalMessage = message || messageInput.value.trim();
+    if (finalMessage) {
+        // Use router.get with data to properly send parameters
+        router.get('/claude/new', {
+            message: finalMessage,
+            repository: props.repository.name
+        });
     }
 };
+
+const quickMessages = [
+    { text: 'Show this week tasks', icon: '📋' },
+    { text: 'Let me ask you about', icon: '💬' },
+    { text: 'Review recent changes', icon: '🔍' },
+    { text: 'Help me debug an issue', icon: '🐛' },
+];
 
 onMounted(() => {
     fetchFileTree();
@@ -90,254 +100,75 @@ const formattedDate = computed(() => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppLayout>
+        <div class="container mx-auto py-6">
+            <!-- Main CTA Section -->
+            <div class="flex min-h-[60vh] flex-col items-center justify-center">
+                <!-- Conversation Starter -->
+                <div class="w-full max-w-2xl space-y-6">
+                    <div class="text-center">
+                        <div class="mb-2 flex items-center justify-center">
+                            <Sparkles class="h-8 w-8 text-primary" />
+                        </div>
+                        <h2 class="text-2xl font-semibold">Start a conversation</h2>
+                        <p class="mt-2 text-muted-foreground">Ask Claude about your {{ repository.name }} codebase</p>
+                    </div>
 
+                    <!-- Main Input -->
+                    <div class="relative">
+                        <Input
+                            v-model="messageInput"
+                            placeholder="Type your message or question..."
+                            @keyup.enter="startChatWithMessage()"
+                            class="h-14 pl-5 pr-14 text-base"
+                        />
+                        <Button
+                            @click="startChatWithMessage()"
+                            :disabled="!messageInput.trim()"
+                            size="icon"
+                            class="absolute right-2 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full"
+                        >
+                            <Send class="h-4 w-4" />
+                        </Button>
+                    </div>
 
-        <div class="container mx-auto space-y-6 py-6">
-            <!-- Repository Header -->
-            <div class="flex items-start justify-between">
-                <div>
-                    <h1 class="flex items-center gap-3 text-3xl font-bold">
-                        <GitBranch class="h-8 w-8" />
-                        {{ repository.name }}
-                    </h1>
-                    <p class="mt-2 text-muted-foreground">{{ repository.url }}</p>
-                    <div class="mt-3 flex items-center gap-4">
-                        <Badge variant="outline" v-if="repository.branch">
-                            {{ repository.branch }}
-                        </Badge>
-                        <Badge v-if="repository.has_hot_folder" variant="default" class="bg-green-500"> Hot Folder Ready </Badge>
-                        <Badge v-else variant="secondary"> Not in Hot Folder </Badge>
-                        <span class="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Clock class="h-3 w-3" />
-                            Cloned {{ formattedDate }}
-                        </span>
+                    <!-- Quick Messages -->
+                    <div class="space-y-3">
+                        <p class="text-center text-sm text-muted-foreground">Or start with:</p>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <Button
+                                v-for="(message, index) in quickMessages"
+                                :key="index"
+                                @click="startChatWithMessage(message.text)"
+                                variant="outline"
+                                size="sm"
+                                class="group"
+                            >
+                                <span class="mr-2">{{ message.icon }}</span>
+                                {{ message.text }}
+                                <ArrowRight class="ml-2 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    <Button v-if="!repository.has_hot_folder" @click="copyToHot" variant="outline">
-                        <Copy class="mr-2 h-4 w-4" />
-                        Copy to Hot Folder
-                    </Button>
-                    <Button @click="startChatSession">
-                        <MessageSquare class="mr-2 h-4 w-4" />
-                        Start Chat Session
-                    </Button>
+
+                <!-- Minimal Stats -->
+                <div class="mt-12 flex items-center gap-8 text-sm text-muted-foreground" v-if="stats">
+                    <div class="flex items-center gap-2">
+                        <FileCode class="h-4 w-4" />
+                        <span>{{ stats.files_count }} files</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <MessageSquare class="h-4 w-4" />
+                        <span>{{ recent_conversations?.length || 0 }} conversations</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Activity class="h-4 w-4" />
+                        <span>{{ stats.total_size }}</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid gap-4 md:grid-cols-4" v-if="stats">
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Total Files</CardTitle>
-                        <FileCode class="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.files_count }}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Directories</CardTitle>
-                        <FolderOpen class="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.directories_count }}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Repository Size</CardTitle>
-                        <Activity class="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ stats.total_size }}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle class="text-sm font-medium">Conversations</CardTitle>
-                        <MessageSquare class="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div class="text-2xl font-bold">{{ recent_conversations?.length || 0 }}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <!-- Main Content Tabs -->
-            <Tabs defaultValue="overview" class="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="files">Files</TabsTrigger>
-                    <TabsTrigger value="conversations">Conversations</TabsTrigger>
-                    <TabsTrigger value="actions">Actions</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" class="space-y-4">
-                    <Card>
-                        <!--            <CardHeader>-->
-                        <!--                <CardTitle>Quick Chat</CardTitle>-->
-                        <!--                <CardDescription>Start a new chat session with Claude</CardDescription>-->
-                        <!--            </CardHeader>-->
-                        <CardContent>
-                            <div class="flex gap-2">
-                                <Input
-                                    v-model="messageInput"
-                                    placeholder="Type your message here..."
-                                    @keyup.enter="startChatWithMessage"
-                                    class="flex-1"
-                                />
-                                <Button @click="startChatWithMessage" :disabled="!messageInput.trim()">
-                                    <Send class="mx-0 h-4 w-4" />
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="overview" class="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Repository Information</CardTitle>
-                            <CardDescription>Details about this repository</CardDescription>
-                        </CardHeader>
-                        <CardContent class="space-y-2">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-muted-foreground">Repository Path</p>
-                                    <p class="font-mono text-sm">{{ repository.path }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-muted-foreground">Clone URL</p>
-                                    <p class="font-mono text-sm">{{ repository.url }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-muted-foreground">Branch</p>
-                                    <p class="text-sm">{{ repository.branch || 'main' }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-muted-foreground">Status</p>
-                                    <p class="text-sm">
-                                        {{ repository.has_hot_folder ? 'Available for AI assistance' : 'Need to copy to hot folder' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card v-if="recent_conversations && recent_conversations.length > 0">
-                        <CardHeader>
-                            <CardTitle>Recent Conversations</CardTitle>
-                            <CardDescription>Latest AI chat sessions for this repository</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div class="space-y-2">
-                                <div
-                                    v-for="conversation in recent_conversations.slice(0, 5)"
-                                    :key="conversation.id"
-                                    class="flex cursor-pointer items-center justify-between rounded-lg p-2 hover:bg-accent"
-                                    @click="openConversation(conversation.id)"
-                                >
-                                    <div class="flex items-center gap-2">
-                                        <MessageSquare class="h-4 w-4" />
-                                        <span class="text-sm font-medium">{{ conversation.title }}</span>
-                                    </div>
-                                    <span class="text-xs text-muted-foreground">
-                                        {{ new Date(conversation.created_at).toLocaleDateString() }}
-                                    </span>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="files" class="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>File Structure</CardTitle>
-                            <CardDescription>Browse repository files and directories</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div v-if="loadingTree" class="py-8 text-center text-muted-foreground">Loading file tree...</div>
-                            <div v-else-if="fileTree.length > 0" class="font-mono text-sm">
-                                <pre class="overflow-x-auto">{{ fileTree.join('\n') }}</pre>
-                            </div>
-                            <div v-else class="py-8 text-center text-muted-foreground">No files found or unable to load file tree</div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="conversations" class="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Conversations</CardTitle>
-                            <CardDescription>Complete history of AI conversations for this repository</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div v-if="recent_conversations && recent_conversations.length > 0" class="space-y-2">
-                                <div
-                                    v-for="conversation in recent_conversations"
-                                    :key="conversation.id"
-                                    class="flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-accent"
-                                    @click="openConversation(conversation.id)"
-                                >
-                                    <div>
-                                        <p class="font-medium">{{ conversation.title }}</p>
-                                        <p class="text-sm text-muted-foreground">
-                                            {{ new Date(conversation.created_at).toLocaleString() }}
-                                        </p>
-                                    </div>
-                                    <Button variant="ghost" size="sm"> Open </Button>
-                                </div>
-                            </div>
-                            <div v-else class="py-8 text-center text-muted-foreground">No conversations yet. Start a chat session to begin.</div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="actions" class="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Repository Actions</CardTitle>
-                            <CardDescription>Available operations for this repository</CardDescription>
-                        </CardHeader>
-                        <CardContent class="space-y-3">
-                            <div class="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                    <p class="font-medium">Copy to Hot Folder</p>
-                                    <p class="text-sm text-muted-foreground">Make repository available for AI assistance</p>
-                                </div>
-                                <Button @click="copyToHot" :disabled="repository.has_hot_folder" variant="outline">
-                                    <Copy class="mr-2 h-4 w-4" />
-                                    {{ repository.has_hot_folder ? 'Already Copied' : 'Copy Now' }}
-                                </Button>
-                            </div>
-                            <div class="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                    <p class="font-medium">Start AI Chat</p>
-                                    <p class="text-sm text-muted-foreground">Open Claude assistant for this repository</p>
-                                </div>
-                                <Button @click="startChatSession">
-                                    <MessageSquare class="mr-2 h-4 w-4" />
-                                    Start Chat
-                                </Button>
-                            </div>
-                            <div class="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                    <p class="font-medium">Open in Terminal</p>
-                                    <p class="text-sm text-muted-foreground">Repository path: {{ repository.path }}</p>
-                                </div>
-                                <Button variant="outline" disabled>
-                                    <Terminal class="mr-2 h-4 w-4" />
-                                    Open Terminal
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
         </div>
     </AppLayout>
 </template>

@@ -38,13 +38,13 @@ const toggleRawResponse = () => {
     <div :class="['flex', message.role === 'user' ? 'justify-end' : 'justify-start']">
         <div
             :class="[
-                'max-w-[70%] rounded-2xl px-4 py-2 shadow-sm',
-                message.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-gray-900 dark:bg-gray-800 dark:text-gray-100',
+                'max-w-[70%] rounded-2xl px-4 py-2',
+                message.role === 'user' ? 'bg-muted text-foreground' : 'bg-card text-card-foreground border',
             ]"
         >
             <p class="text-sm break-words whitespace-pre-wrap" v-html="parsedContent"></p>
             <div class="mt-1 flex items-center justify-between">
-                <p :class="['text-[11px]', message.role === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400']">
+                <p :class="['text-[11px]', message.role === 'user' ? 'text-muted-foreground' : 'text-muted-foreground']">
                     {{ formatTime(message.timestamp) }}
                 </p>
                 <button
@@ -52,7 +52,7 @@ const toggleRawResponse = () => {
                     @click="toggleRawResponse"
                     :class="[
                         'cursor-pointer text-[11px] hover:underline',
-                        message.role === 'user' ? 'text-green-100' : 'text-gray-500 dark:text-gray-400',
+                        message.role === 'user' ? 'text-muted-foreground' : 'text-muted-foreground',
                     ]"
                     type="button"
                 >
@@ -69,11 +69,11 @@ const toggleRawResponse = () => {
                 "
                 class="mt-2 space-y-2"
             >
-                <div class="text-[11px] text-gray-500 dark:text-gray-400">Raw JSON Responses ({{ message.rawResponses.length }}):</div>
+                <div class="text-[11px] text-muted-foreground">Raw JSON Responses ({{ message.rawResponses.length }}):</div>
                 <div
                     v-for="(response, index) in message.rawResponses"
                     :key="`raw-${message.id}-${index}`"
-                    class="overflow-x-auto rounded bg-gray-100 p-2 font-mono text-[11px] dark:bg-gray-800"
+                    class="overflow-x-auto rounded bg-muted/50 p-2 font-mono text-[11px]"
                 >
                     <pre>{{ JSON.stringify(response, null, 2) }}</pre>
                 </div>

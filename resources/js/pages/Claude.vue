@@ -13,8 +13,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Eye, EyeOff, GitBranch, Send } from 'lucide-vue-next';
+import { Eye, EyeOff, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { GitBranch } from 'lucide-vue-next';
 
 // Constants
 const POLLING_INTERVAL_MS = 2000;
@@ -31,7 +32,21 @@ const props = defineProps<{
     sessionId?: string;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const items: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
+    if (selectedRepository.value && selectedRepositoryData.value) {
+        items.push({ 
+            title: selectedRepositoryData.value.name,
+            icon: GitBranch
+        });
+    } else if (selectedRepository.value) {
+        items.push({ 
+            title: selectedRepository.value,
+            icon: GitBranch
+        });
+    }
+    return items;
+});
 
 // Composables
 const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
@@ -509,7 +524,7 @@ onUnmounted(() => {
                 <component :is="hideSystemMessages ? EyeOff : Eye" class="h-4 w-4" />
             </Button>
         </template>
-        <div class="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 dark:bg-gray-900">
+        <div class="flex h-[calc(100vh-4rem)] flex-col bg-background">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
                 <div class="space-y-4">
@@ -522,11 +537,11 @@ onUnmounted(() => {
                     />
 
                     <div v-if="isLoading" class="flex justify-start">
-                        <div class="max-w-[70%] rounded-2xl bg-white px-4 py-2 shadow-sm dark:bg-gray-800">
+                        <div class="max-w-[70%] rounded-2xl bg-card px-4 py-2 shadow-sm">
                             <div class="flex space-x-1">
-                                <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.3s]"></div>
-                                <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400 [animation-delay:-0.15s]"></div>
-                                <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400"></div>
+                                <div class="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]"></div>
+                                <div class="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]"></div>
+                                <div class="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50"></div>
                             </div>
                         </div>
                     </div>
@@ -534,14 +549,8 @@ onUnmounted(() => {
             </ScrollArea>
 
             <!-- Input Area -->
-            <div class="border-t bg-white p-4 dark:bg-gray-800">
+            <div class="border-t bg-background p-4">
                 <div>
-                    <div v-if="selectedRepository" class="mb-2 flex items-center text-sm text-muted-foreground">
-                        <GitBranch class="mr-1 h-3 w-3" />
-                        Working in:
-                        <span class="ml-1 font-medium">{{ selectedRepositoryData ? selectedRepositoryData.name : selectedRepository }}</span>
-                        <span v-if="!selectedRepositoryData && repositories.length > 0" class="ml-2 text-xs text-yellow-600">(not found)</span>
-                    </div>
                     <div class="flex items-end space-x-2">
                         <Textarea
                             ref="textareaRef"
