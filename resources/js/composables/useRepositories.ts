@@ -14,17 +14,25 @@ export interface Repository {
     has_hot_folder?: boolean;
 }
 
-export function useRepositories() {
-    const repositories = ref<Repository[]>([]);
-    const loading = ref(false);
-    const error = ref<string | null>(null);
+// Global state to persist across component instances
+const repositories = ref<Repository[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+let hasInitialized = false;
 
-    const fetchRepositories = async () => {
+export function useRepositories() {
+    const fetchRepositories = async (force = false) => {
+        // Skip fetching if already initialized and not forcing
+        if (hasInitialized && !force && repositories.value.length > 0) {
+            return;
+        }
+        
         loading.value = true;
         error.value = null;
         try {
             const response = await axios.get('/api/repositories');
             repositories.value = response.data;
+            hasInitialized = true;
         } catch (err) {
             error.value = 'Failed to fetch repositories';
             console.error(err);

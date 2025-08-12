@@ -17,9 +17,15 @@ const conversations = ref<Conversation[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 let refreshInterval: number | null = null;
+let hasInitialized = false;
 
 export function useConversations() {
-    const fetchConversations = async (silent = false) => {
+    const fetchConversations = async (silent = false, force = false) => {
+        // Skip fetching if already initialized and not forcing or silent refresh
+        if (hasInitialized && !force && !silent && conversations.value.length > 0) {
+            return;
+        }
+        
         if (!silent) {
             loading.value = true;
         }
@@ -28,6 +34,7 @@ export function useConversations() {
         try {
             const response = await axios.get<Conversation[]>('/api/claude/conversations');
             conversations.value = response.data;
+            hasInitialized = true;
             
             // Check if any conversations are processing
             const hasProcessing = response.data.some(conv => conv.is_processing);
@@ -36,7 +43,7 @@ export function useConversations() {
             if (hasProcessing && !refreshInterval) {
                 // Start periodic refresh every 2 seconds
                 refreshInterval = window.setInterval(() => {
-                    fetchConversations(true); // Silent refresh
+                    fetchConversations(true, false); // Silent refresh, not forced
                 }, 2000);
             } else if (!hasProcessing && refreshInterval) {
                 // Clear interval if no conversations are processing
