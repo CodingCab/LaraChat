@@ -208,6 +208,44 @@ class ClaudeService
     }
 
     /**
+     * Extract all text content from Claude responses
+     */
+    private static function extractAllTextContent(array $rawResponses): string
+    {
+        $content = '';
+        
+        foreach ($rawResponses as $response) {
+            // Skip system messages
+            if (isset($response['type']) && $response['type'] === 'system') {
+                continue;
+            }
+            
+            // Handle content blocks (streaming format from Claude CLI)
+            if (isset($response['type']) && $response['type'] === 'content' && isset($response['content'])) {
+                if (is_array($response['content']) && isset($response['content']['type']) && $response['content']['type'] === 'text' && isset($response['content']['text'])) {
+                    $content .= $response['content']['text'];
+                } elseif (is_string($response['content'])) {
+                    $content .= $response['content'];
+                }
+            }
+            
+            // Handle Claude Code CLI assistant response format
+            if (isset($response['type']) && $response['type'] === 'assistant' && isset($response['message'])) {
+                $message = $response['message'];
+                if (isset($message['content']) && is_array($message['content'])) {
+                    foreach ($message['content'] as $item) {
+                        if (isset($item['type']) && $item['type'] === 'text' && isset($item['text'])) {
+                            $content .= $item['text'];
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $content;
+    }
+
+    /**
      * Process Claude message in background (for queue jobs)
      */
     public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null, ?callable $progressCallback = null): array
@@ -297,11 +335,15 @@ class ClaudeService
                             if ($filename) {
                                 self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
                                 
-                                // Notify about progress
+                                // Notify about progress with accumulated content
                                 if ($progressCallback) {
+                                    // Extract all text content from responses
+                                    $allContent = self::extractAllTextContent($rawJsonResponses);
+                                    
                                     $progressCallback('response', [
                                         'filename' => $filename,
-                                        'responseCount' => count($rawJsonResponses)
+                                        'responseCount' => count($rawJsonResponses),
+                                        'content' => $allContent
                                     ]);
                                 }
                             }
