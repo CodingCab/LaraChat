@@ -28,3 +28,4 @@ yarn-error.log
 /storage/app/private/claude-sessions
 /storage/app/private/repositories
 /repositories
+/public/vendor/telescope
