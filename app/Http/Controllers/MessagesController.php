@@ -45,6 +45,13 @@ class MessagesController extends Controller
             'is_processing' => true
         ]);
 
+        // Create the user message in the database immediately
+        $conversation->messages()->create([
+            'role' => 'user',
+            'content' => $validated['content'],
+            'is_streaming' => false,
+        ]);
+
         // Dispatch job to send message to Claude
         \App\Jobs\SendClaudeMessageJob::dispatch($conversation, $validated['content']);
 

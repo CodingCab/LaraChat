@@ -352,7 +352,7 @@ const loadConversationMessages = async () => {
         const data = await response.json();
 
 
-        // Clear and rebuild messages array
+        // Build messages array from API response
         const newMessages = [];
         let hasStreamingMessage = false;
 
@@ -383,22 +383,30 @@ const loadConversationMessages = async () => {
                 pendingUpdates.value = [{ type: 'messages', data: newMessages }];
             }
         } else {
-            // Only update if content actually changed
-            if (!messagesContentEqual(messages.value, newMessages)) {
-                // Save scroll position before update
-                const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
-                const savedScrollTop = scrollContainer?.scrollTop || 0;
-                const wasAtBottom = isAtBottom.value;
-                
-                messages.value = newMessages;
-                
-                // Restore scroll position after update if not at bottom
-                if (!wasAtBottom && scrollContainer) {
-                    nextTick(() => {
-                        scrollContainer.scrollTop = savedScrollTop;
-                    });
+            // Smart update: Only replace messages if we have data from API
+            // or if we're sure we should clear (no local messages)
+            if (newMessages.length > 0) {
+                // Only update if content actually changed
+                if (!messagesContentEqual(messages.value, newMessages)) {
+                    // Save scroll position before update
+                    const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
+                    const savedScrollTop = scrollContainer?.scrollTop || 0;
+                    const wasAtBottom = isAtBottom.value;
+                    
+                    messages.value = newMessages;
+                    
+                    // Restore scroll position after update if not at bottom
+                    if (!wasAtBottom && scrollContainer) {
+                        nextTick(() => {
+                            scrollContainer.scrollTop = savedScrollTop;
+                        });
+                    }
                 }
+            } else if (messages.value.length === 0 || !isLoading.value) {
+                // Only clear if no local messages or not loading
+                messages.value = newMessages;
             }
+            // Otherwise keep existing messages to prevent disappearing
         }
 
 
@@ -512,6 +520,8 @@ const sendMessage = async () => {
         // Handle result
         if (result?.conversationId && !conversationId.value) {
             conversationId.value = result.conversationId;
+            // Start polling to get updates from the server
+            startPolling(POLLING_INTERVAL_MS);
             setTimeout(() => fetchConversations(), REFRESH_DELAY_MS);
         }
         if (result?.sessionFilename && !sessionFilename.value) {
@@ -531,7 +541,11 @@ const sendMessage = async () => {
             const currentPath = window.location.pathname;
             const targetPath = `/claude/conversation/${conversationId.value}`;
             if (!currentPath.includes(targetPath)) {
-                router.visit(targetPath);
+                // Use replace to avoid losing state
+                router.visit(targetPath, { 
+                    preserveState: true,
+                    preserveScroll: true 
+                });
             }
         }
 
