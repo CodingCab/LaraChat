@@ -43,6 +43,11 @@ interface WorkerStatus {
     failedJobs: number;
     memory: string;
     cpu?: string;
+    currentJob?: {
+        name: string;
+        queue: string;
+        startedAt: string;
+    };
 }
 
 interface QueueStats {
@@ -403,7 +408,19 @@ onUnmounted(() => {
                                     </Button>
                                 </div>
                                 
-                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                                <div v-if="worker.currentJob" class="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
+                                    <div class="flex items-center gap-2">
+                                        <Activity class="h-4 w-4 text-blue-600 dark:text-blue-400 animate-pulse" />
+                                        <span class="text-sm font-medium text-blue-900 dark:text-blue-200">
+                                            Processing: {{ worker.currentJob.name }}
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-blue-700 dark:text-blue-400 mt-1 ml-6">
+                                        Queue: {{ worker.currentJob.queue }}
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mt-2">
                                     <div>
                                         <span class="text-muted-foreground">Started:</span>
                                         <div class="font-mono text-xs">{{ new Date(worker.startTime).toLocaleTimeString() }}</div>

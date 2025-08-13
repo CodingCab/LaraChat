@@ -209,6 +209,9 @@ class JobsController extends Controller
         $runningProcesses = $this->findQueueWorkerProcesses();
         $runningPids = array_column($runningProcesses, 'pid');
         
+        // Get currently running jobs
+        $runningJobs = $this->getCurrentlyRunningJobs();
+        
         // Check cached workers
         foreach ($workers as $worker) {
             if (in_array($worker['pid'], $runningPids) || $this->isProcessRunning($worker['pid'])) {
@@ -220,6 +223,9 @@ class JobsController extends Controller
                 $stats = $this->getWorkerStats($worker['startTime']);
                 $worker['processedJobs'] = $stats['processed'];
                 $worker['failedJobs'] = $stats['failed'];
+                
+                // Add current job if available
+                $worker['currentJob'] = $this->getCurrentJobForWorker($worker, $runningJobs);
                 
                 $activeWorkers[] = $worker;
             }
@@ -236,7 +242,7 @@ class JobsController extends Controller
             }
             
             if (!$found) {
-                $activeWorkers[] = [
+                $newWorker = [
                     'id' => uniqid('worker_'),
                     'pid' => $process['pid'],
                     'status' => 'running',
@@ -245,6 +251,11 @@ class JobsController extends Controller
                     'failedJobs' => 0,
                     'memory' => $process['memory'] ?? 'N/A',
                 ];
+                
+                // Add current job if available
+                $newWorker['currentJob'] = $this->getCurrentJobForWorker($newWorker, $runningJobs);
+                
+                $activeWorkers[] = $newWorker;
             }
         }
         
@@ -371,6 +382,60 @@ class JobsController extends Controller
                 'failed' => 0,
             ];
         }
+    }
+
+    private function getCurrentlyRunningJobs()
+    {
+        try {
+            if (!\Schema::hasTable('jobs')) {
+                return [];
+            }
+            
+            // Get jobs that are reserved (being processed)
+            $runningJobs = DB::table('jobs')
+                ->whereNotNull('reserved_at')
+                ->get()
+                ->map(function ($job) {
+                    $payload = json_decode($job->payload, true);
+                    return [
+                        'id' => $job->id,
+                        'queue' => $job->queue,
+                        'payload' => $payload,
+                        'display_name' => $payload['displayName'] ?? 'Unknown Job',
+                        'reserved_at' => $job->reserved_at,
+                    ];
+                })
+                ->toArray();
+                
+            return $runningJobs;
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+    
+    private function getCurrentJobForWorker($worker, $runningJobs)
+    {
+        if (empty($runningJobs)) {
+            return null;
+        }
+        
+        // Since we can't directly link a PID to a job, we'll get the most recently reserved job
+        // This is an approximation - in production you might want to implement a more robust solution
+        $mostRecentJob = null;
+        $mostRecentTime = null;
+        
+        foreach ($runningJobs as $job) {
+            if ($mostRecentTime === null || $job['reserved_at'] > $mostRecentTime) {
+                $mostRecentTime = $job['reserved_at'];
+                $mostRecentJob = $job;
+            }
+        }
+        
+        return $mostRecentJob ? [
+            'name' => $mostRecentJob['display_name'],
+            'queue' => $mostRecentJob['queue'],
+            'startedAt' => $mostRecentJob['reserved_at'],
+        ] : null;
     }
 
     private function getFailedJobs($limit = 10)
