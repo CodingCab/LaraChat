@@ -63,10 +63,46 @@ const sessionId = ref<string | null>(props.sessionId || null);
 const conversationId = ref<number | null>(props.conversationId || null);
 const hideSystemMessages = ref(true);
 const selectedRepository = ref<string | null>(props.repository || null);
+const isUserInteracting = ref(false);
+const pendingUpdates = ref<any[]>([]);
 
 // Polling state
 const pollingInterval = ref<number | null>(null);
 const incompleteMessageFound = ref(false);
+
+// Track user interaction
+const handleUserInteractionStart = () => {
+    isUserInteracting.value = true;
+};
+
+const handleUserInteractionEnd = () => {
+    isUserInteracting.value = false;
+    // Apply pending updates if any
+    if (pendingUpdates.value.length > 0) {
+        applyPendingUpdates();
+    }
+};
+
+const applyPendingUpdates = () => {
+    if (pendingUpdates.value.length === 0) return;
+    
+    const updates = [...pendingUpdates.value];
+    pendingUpdates.value = [];
+    
+    // Apply all pending updates
+    updates.forEach(update => {
+        if (update.type === 'messages') {
+            messages.value = update.data;
+        } else if (update.type === 'append') {
+            messages.value.push(...update.data);
+        }
+    });
+    
+    // Scroll only if user is at bottom
+    if (isAtBottom.value) {
+        nextTick(() => scrollToBottom(false));
+    }
+};
 
 // Setup focus handlers
 setupFocusHandlers(isLoading);
@@ -103,6 +139,21 @@ const generateSessionFilename = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     const tempId = Date.now().toString(36);
     return `${timestamp}-session-${tempId}.json`;
+};
+
+const messagesContentEqual = (msgs1: any[], msgs2: any[]) => {
+    if (msgs1.length !== msgs2.length) return false;
+    
+    for (let i = 0; i < msgs1.length; i++) {
+        const m1 = msgs1[i];
+        const m2 = msgs2[i];
+        
+        if (m1.role !== m2.role || m1.content !== m2.content) {
+            return false;
+        }
+    }
+    
+    return true;
 };
 
 const extractSessionId = (responses: any[]) => {
@@ -214,14 +265,21 @@ const loadSessionMessages = async (isPolling = false) => {
         isPolling = false;
 
         if (!isPolling) {
-            messages.value = [];
+            const newMessages = [];
 
             for (const conversation of sessionData) {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
                 const processedMessages = processConversationResponses(conversation);
-                messages.value.push(...processedMessages);
+                newMessages.push(...processedMessages);
+            }
+            
+            // Update messages - defer if user is interacting
+            if (isUserInteracting.value) {
+                pendingUpdates.value = [{ type: 'messages', data: newMessages }];
+            } else {
+                messages.value = newMessages;
             }
 
             // Extract session metadata
@@ -265,7 +323,11 @@ const loadSessionMessages = async (isPolling = false) => {
         }
 
         sessionFilename.value = props.sessionFile;
-        await delayedScroll(false);
+        
+        // Only scroll if not interacting
+        if (!isUserInteracting.value) {
+            await delayedScroll(false);
+        }
 
         // Manage polling based on completion status
         if (incompleteMessageFound.value && !pollingInterval.value) {
@@ -314,8 +376,30 @@ const loadConversationMessages = async () => {
             }
         }
 
-        // Update messages array
-        messages.value = newMessages;
+        // Update messages array - defer if user is interacting
+        if (isUserInteracting.value) {
+            // Check if update is actually needed
+            if (!messagesContentEqual(messages.value, newMessages)) {
+                pendingUpdates.value = [{ type: 'messages', data: newMessages }];
+            }
+        } else {
+            // Only update if content actually changed
+            if (!messagesContentEqual(messages.value, newMessages)) {
+                // Save scroll position before update
+                const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
+                const savedScrollTop = scrollContainer?.scrollTop || 0;
+                const wasAtBottom = isAtBottom.value;
+                
+                messages.value = newMessages;
+                
+                // Restore scroll position after update if not at bottom
+                if (!wasAtBottom && scrollContainer) {
+                    nextTick(() => {
+                        scrollContainer.scrollTop = savedScrollTop;
+                    });
+                }
+            }
+        }
 
 
         // Check if we're waiting for an assistant response
@@ -351,8 +435,11 @@ const loadConversationMessages = async () => {
             }
         }
 
-        await nextTick();
-        await scrollToBottom(false);
+        // Only scroll if not interacting and at bottom
+        if (!isUserInteracting.value && isAtBottom.value) {
+            await nextTick();
+            await scrollToBottom(false);
+        }
     } catch (error) {
         console.error('Error loading conversation messages:', error);
     }
@@ -414,7 +501,11 @@ const sendMessage = async () => {
 
                 const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
-                scrollToBottom(false); // Smart scroll during streaming
+                
+                // Only scroll if user is not selecting text and is at bottom
+                if (!isUserInteracting.value && isAtBottom.value) {
+                    scrollToBottom(false);
+                }
             },
         );
 
@@ -479,6 +570,29 @@ watch(() => props.repository, (newRepo) => {
 
 // Lifecycle
 onMounted(async () => {
+    // Set up global selection tracking
+    let selectionTimer: number | null = null;
+    
+    const handleSelectionChange = () => {
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) {
+            isUserInteracting.value = true;
+            if (selectionTimer) clearTimeout(selectionTimer);
+        } else {
+            // Delay ending interaction to avoid flicker
+            if (selectionTimer) clearTimeout(selectionTimer);
+            selectionTimer = window.setTimeout(() => {
+                handleUserInteractionEnd();
+            }, 100);
+        }
+    };
+    
+    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('mousedown', handleUserInteractionStart);
+    document.addEventListener('mouseup', () => {
+        // Delay to allow selection to complete
+        setTimeout(handleSelectionChange, 50);
+    });
 
     await fetchRepositories();
 
@@ -508,6 +622,10 @@ onMounted(async () => {
 
 onUnmounted(() => {
     stopPolling();
+    // Clean up event listeners
+    document.removeEventListener('selectionchange', () => {});
+    document.removeEventListener('mousedown', handleUserInteractionStart);
+    document.removeEventListener('mouseup', () => {});
 });
 </script>
 
@@ -526,7 +644,10 @@ onUnmounted(() => {
         </template>
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-background">
             <!-- Chat Messages -->
-            <ScrollArea ref="messagesContainer" class="flex-1 p-4">
+            <ScrollArea 
+                ref="messagesContainer" 
+                class="flex-1 p-4"
+            >
                 <div class="space-y-4">
                     <ChatMessage
                         v-for="message in filteredMessages"
