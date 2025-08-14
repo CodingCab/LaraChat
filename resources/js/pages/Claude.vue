@@ -265,13 +265,61 @@ const loadSessionMessages = async (isPolling = false) => {
 
         if (!isPolling) {
             const newMessages = [];
+            let userMessageAdded = false;
 
             for (const conversation of sessionData) {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
-                const processedMessages = processConversationResponses(conversation);
-                newMessages.push(...processedMessages);
+                
+                // Skip adding user message if it's already been added from a previous entry
+                if (conversation.role === 'user' && !userMessageAdded) {
+                    const processedMessages = processConversationResponses(conversation);
+                    newMessages.push(...processedMessages);
+                    userMessageAdded = true;
+                } else if (conversation.role !== 'user') {
+                    // For non-user entries, skip the user message if already added
+                    const messagesList = [];
+                    
+                    // Only add user message if not already added
+                    if (!userMessageAdded && conversation.userMessage) {
+                        messagesList.push({
+                            id: Date.now() + Math.random(),
+                            content: conversation.userMessage || '',
+                            role: 'user',
+                            timestamp: new Date(conversation.timestamp),
+                        });
+                        userMessageAdded = true;
+                    }
+                    
+                    // Add assistant responses
+                    if (conversation.rawJsonResponses?.length) {
+                        conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
+                            let rawResponse: any;
+                            if (typeof rawResponseStr === 'string') {
+                                try {
+                                    rawResponse = JSON.parse(rawResponseStr);
+                                } catch (e) {
+                                    console.error('Failed to parse raw response:', e);
+                                    rawResponse = { type: 'error', content: rawResponseStr };
+                                }
+                            } else {
+                                rawResponse = rawResponseStr;
+                            }
+                            
+                            const content = extractTextFromResponse(rawResponse);
+                            messagesList.push({
+                                id: Date.now() + Math.random() + i,
+                                content: content || `[${rawResponse.type || 'unknown'} response]`,
+                                role: 'assistant',
+                                timestamp: new Date(conversation.timestamp),
+                                rawResponses: [rawResponse],
+                            });
+                        });
+                    }
+                    
+                    newMessages.push(...messagesList);
+                }
             }
             
             // Update messages - defer if user is interacting
@@ -542,10 +590,10 @@ const sendMessage = async () => {
             const currentPath = window.location.pathname;
             const targetPath = `/claude/conversation/${conversationId.value}`;
             if (!currentPath.includes(targetPath)) {
-                // Use replace to avoid losing state
+                // Don't preserve state to avoid duplicate messages
                 router.visit(targetPath, { 
-                    preserveState: true,
-                    preserveScroll: true 
+                    preserveState: false,
+                    preserveScroll: false 
                 });
             }
         }
