@@ -198,20 +198,7 @@ const stopPolling = () => {
 const processConversationResponses = (conversation: any, isPolling = false) => {
     const messagesList = [];
 
-    // Handle initial session format with role: 'user'
-    if (conversation.role === 'user') {
-        if (!isPolling || messages.value.length === 0) {
-            messagesList.push({
-                id: Date.now() + Math.random(),
-                content: conversation.userMessage || '',
-                role: 'user',
-                timestamp: new Date(conversation.timestamp),
-            });
-        }
-        return messagesList;
-    }
-
-    // Handle normal conversation format
+    // Add user message
     if (!isPolling || messages.value.length === 0) {
         messagesList.push({
             id: Date.now() + Math.random(),
@@ -221,6 +208,7 @@ const processConversationResponses = (conversation: any, isPolling = false) => {
         });
     }
 
+    // Process any responses regardless of role field
     if (conversation.rawJsonResponses?.length) {
         // Handle rawJsonResponses as an array of strings (JSON strings that need parsing)
         conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
