@@ -56,13 +56,6 @@ class ClaudeController extends Controller
                 'is_processing' => true
             ]);
             
-            // Create the user message in the database immediately
-            $conversation->messages()->create([
-                'role' => 'user',
-                'content' => $request->input('prompt'),
-                'is_streaming' => false,
-            ]);
-            
             // Dispatch job to send message to Claude
             SendClaudeMessageJob::dispatch($conversation, $request->input('prompt'));
             
