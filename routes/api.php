@@ -5,6 +5,7 @@ use App\Http\Controllers\CommandController;
 use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\GitHubWebhookController;
 use App\Http\Controllers\RepositoryController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])->group(function () {
@@ -27,3 +28,5 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 Route::post('/github/webhook', [GitHubWebhookController::class, 'handle']);
 Route::get('/github/webhook', [GitHubWebhookController::class, 'handle']);
+
+Route::post('/webhooks', [WebhookController::class, 'handle']);
