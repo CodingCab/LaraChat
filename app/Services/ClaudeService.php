@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\SystemMessage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,6 +16,9 @@ class ClaudeService
 
     public static function stream(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null)
     {
+        // Append active system message to prompt if available
+        $prompt = self::appendSystemMessage($prompt);
+        
         // Generate a unique process ID for this request
         $processId = uniqid('claude_', true);
 
@@ -254,6 +258,8 @@ class ClaudeService
      */
     public static function processInBackground(string $prompt, string $options = '--permission-mode bypassPermissions', ?string $sessionId = null, ?string $sessionFilename = null, ?string $repositoryPath = null, ?callable $progressCallback = null): array
     {
+        // Append active system message to prompt if available
+        $prompt = self::appendSystemMessage($prompt);
         // Extract project ID from repository path
         $projectId = null;
         if ($repositoryPath) {
@@ -573,5 +579,36 @@ class ClaudeService
             ]);
             throw new \Exception("Failed to copy directory: {$error}");
         }
+    }
+
+    /**
+     * Append active system message to prompt
+     */
+    private static function appendSystemMessage(string $prompt): string
+    {
+        try {
+            if (auth()->check()) {
+                $systemMessage = SystemMessage::where('user_id', auth()->id())
+                    ->where('is_active', true)
+                    ->first();
+                
+                if ($systemMessage) {
+                    // Append the system message to the user's prompt
+                    $prompt = $prompt . "\n\n" . $systemMessage->message;
+                    
+                    \Log::info('System message appended', [
+                        'user_id' => auth()->id(),
+                        'system_message_id' => $systemMessage->id,
+                        'message_length' => strlen($systemMessage->message)
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error appending system message', [
+                'error' => $e->getMessage()
+            ]);
+        }
+        
+        return $prompt;
     }
 }
