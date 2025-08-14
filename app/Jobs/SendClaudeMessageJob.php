@@ -15,6 +15,11 @@ class SendClaudeMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 3;
+    public $maxExceptions = 3;
+    public $timeout = 600;
+    public $backoff = [30, 60, 120];
+
     protected Conversation $conversation;
     protected string $message;
 
@@ -102,5 +107,19 @@ class SendClaudeMessageJob implements ShouldQueue
 
             throw $e; // Re-throw to let the queue handle retry logic
         }
+    }
+
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('SendClaudeMessageJob failed permanently', [
+            'conversation_id' => $this->conversation->id,
+            'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString()
+        ]);
+
+        $this->conversation->update([
+            'is_processing' => false,
+            'error_message' => 'Failed to send message to Claude: ' . $exception->getMessage()
+        ]);
     }
 }
