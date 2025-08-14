@@ -555,6 +555,19 @@ watch(() => props.repository, (newRepo) => {
     selectedRepository.value = newRepo || null;
 }, { immediate: true });
 
+// Reset archive state when conversation changes
+watch(() => props.conversationId, (newId) => {
+    conversationId.value = newId || null;
+    // Reset archive button state when conversation changes
+    isArchived.value = props.isArchived || false;
+    isArchiving.value = false;
+});
+
+// Update archive state when prop changes
+watch(() => props.isArchived, (newValue) => {
+    isArchived.value = newValue || false;
+});
+
 // Lifecycle
 onMounted(async () => {
     // Set up global selection tracking
