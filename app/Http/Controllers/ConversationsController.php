@@ -16,8 +16,7 @@ class ConversationsController extends Controller
 {
     public function index()
     {
-        $conversations = Conversation::where('user_id', Auth::id())
-            ->where('archived', false)
+        $conversations = Conversation::where('archived', false)
             ->orderBy('updated_at', 'desc')
             ->get();
 
