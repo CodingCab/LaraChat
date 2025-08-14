@@ -32,6 +32,32 @@ class SendClaudeMessageJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            // Validate conversation exists and is valid
+            if (!$this->conversation->exists) {
+                Log::warning('Conversation no longer exists', [
+                    'conversation_id' => $this->conversation->id
+                ]);
+                return;
+            }
+
+            // Check if project directory exists (if specified)
+            if ($this->conversation->project_directory) {
+                $projectPath = base_path($this->conversation->project_directory);
+                if (!is_dir($projectPath)) {
+                    Log::error('Project directory does not exist', [
+                        'conversation_id' => $this->conversation->id,
+                        'project_directory' => $this->conversation->project_directory,
+                        'full_path' => $projectPath
+                    ]);
+                    
+                    $this->conversation->update([
+                        'is_processing' => false,
+                        'error_message' => 'Project directory not found: ' . $this->conversation->project_directory
+                    ]);
+                    return;
+                }
+            }
+
             // Filename should already be set by the controller
             $filename = $this->conversation->filename;
             
