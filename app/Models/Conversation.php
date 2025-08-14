@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $claude_session_id
  * @property string|null $filename
  * @property bool $is_processing
+ * @property bool $archived
  */
 class Conversation extends Model
 {
@@ -29,6 +30,12 @@ class Conversation extends Model
         'claude_session_id',
         'filename',
         'is_processing',
+        'archived',
+    ];
+
+    protected $casts = [
+        'is_processing' => 'boolean',
+        'archived' => 'boolean',
     ];
 
     public function user(): BelongsTo

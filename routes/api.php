@@ -21,6 +21,9 @@ Route::middleware(['web', 'auth'])->group(function () {
 
     Route::get('/conversations', [ConversationsController::class, 'index']);
     Route::post('/conversations', [ConversationsController::class, 'store']);
+    Route::get('/conversations/archived', [ConversationsController::class, 'archived']);
+    Route::post('/conversations/{conversation}/archive', [ConversationsController::class, 'archive']);
+    Route::post('/conversations/{conversation}/unarchive', [ConversationsController::class, 'unarchive']);
 
     Route::get('/claude/conversations', [ConversationsController::class, 'index']); // TODO: deprecated, replace usage with /conversations
 });

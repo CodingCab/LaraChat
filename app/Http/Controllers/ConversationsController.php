@@ -17,6 +17,7 @@ class ConversationsController extends Controller
     public function index()
     {
         $conversations = Conversation::where('user_id', Auth::id())
+            ->where('archived', false)
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -69,6 +70,42 @@ class ConversationsController extends Controller
         CopyRepositoryToHotJob::dispatch($conversation->repository);
 
         return redirect()->route('claude.conversation', $conversation->id);
+    }
+
+    public function archive(Conversation $conversation)
+    {
+        // Ensure the user owns this conversation
+        if ($conversation->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $conversation->archived = true;
+        $conversation->save();
+
+        return response()->json(['message' => 'Conversation archived successfully']);
+    }
+
+    public function unarchive(Conversation $conversation)
+    {
+        // Ensure the user owns this conversation
+        if ($conversation->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $conversation->archived = false;
+        $conversation->save();
+
+        return response()->json(['message' => 'Conversation unarchived successfully']);
+    }
+
+    public function archived()
+    {
+        $conversations = Conversation::where('user_id', Auth::id())
+            ->where('archived', true)
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return response()->json($conversations);
     }
 
 }
