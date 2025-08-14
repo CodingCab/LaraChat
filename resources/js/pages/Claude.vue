@@ -12,7 +12,6 @@ import { useRepositories } from '@/composables/useRepositories';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
-import { router } from '@inertiajs/vue3';
 import { Eye, EyeOff, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { GitBranch } from 'lucide-vue-next';
@@ -64,6 +63,7 @@ const hideSystemMessages = ref(true);
 const selectedRepository = ref<string | null>(props.repository || null);
 const isUserInteracting = ref(false);
 const pendingUpdates = ref<any[]>([]);
+const localPendingMessage = ref<string | null>(null);
 
 // Polling state
 const pollingInterval = ref<number | null>(null);
@@ -460,20 +460,41 @@ const loadConversationMessages = async () => {
             // Smart update: Only replace messages if we have data from API
             // or if we're sure we should clear (no local messages)
             if (newMessages.length > 0) {
-                // Only update if content actually changed
-                if (!messagesContentEqual(messages.value, newMessages)) {
-                    // Save scroll position before update
-                    const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
-                    const savedScrollTop = scrollContainer?.scrollTop || 0;
-                    const wasAtBottom = isAtBottom.value;
+                // Check if we have a local user message that's not in the database yet
+                const lastLocalUserMessage = messages.value.filter(m => m.role === 'user').pop();
+                const lastApiUserMessage = newMessages.filter(m => m.role === 'user').pop();
+                
+                // If we have a local user message that's not in the API response yet, preserve it
+                if (localPendingMessage.value && lastLocalUserMessage && 
+                    (!lastApiUserMessage || lastLocalUserMessage.content !== lastApiUserMessage.content)) {
+                    // Keep the local user message and any assistant messages that follow
+                    const localUserMessageIndex = messages.value.findIndex(m => m === lastLocalUserMessage);
+                    const preservedMessages = messages.value.slice(localUserMessageIndex);
                     
-                    messages.value = newMessages;
+                    // Merge: API messages + preserved local messages
+                    messages.value = [...newMessages, ...preservedMessages];
+                } else {
+                    // Clear pending message if it appears in the API response
+                    if (localPendingMessage.value && lastApiUserMessage && 
+                        lastApiUserMessage.content === localPendingMessage.value) {
+                        localPendingMessage.value = null;
+                    }
                     
-                    // Restore scroll position after update if not at bottom
-                    if (!wasAtBottom && scrollContainer) {
-                        nextTick(() => {
-                            scrollContainer.scrollTop = savedScrollTop;
-                        });
+                    if (!messagesContentEqual(messages.value, newMessages)) {
+                        // Only update if content actually changed
+                        // Save scroll position before update
+                        const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
+                        const savedScrollTop = scrollContainer?.scrollTop || 0;
+                        const wasAtBottom = isAtBottom.value;
+                        
+                        messages.value = newMessages;
+                        
+                        // Restore scroll position after update if not at bottom
+                        if (!wasAtBottom && scrollContainer) {
+                            nextTick(() => {
+                                scrollContainer.scrollTop = savedScrollTop;
+                            });
+                        }
                     }
                 }
             } else if (messages.value.length === 0 || !isLoading.value) {
@@ -532,6 +553,7 @@ const sendMessage = async () => {
 
     const messageToSend = inputMessage.value;
     addUserMessage(messageToSend);
+    localPendingMessage.value = messageToSend; // Track the pending message
     inputMessage.value = '';
     resetTextareaHeight();
     isLoading.value = true;
@@ -593,18 +615,19 @@ const sendMessage = async () => {
         );
 
         // Handle result
-        if (result?.conversationId && !conversationId.value) {
-            conversationId.value = result.conversationId;
+        if (result?.conversationId) {
+            if (!conversationId.value) {
+                conversationId.value = result.conversationId;
+                // Update the URL immediately without losing state
+                if (!props.conversationId) {
+                    const targetPath = `/claude/conversation/${conversationId.value}`;
+                    window.history.replaceState({}, '', targetPath);
+                }
+            }
             // Start polling to get updates from the server
             startPolling(POLLING_INTERVAL_MS);
             // Immediately refresh conversations to show in sidebar
             await fetchConversations(false, true);
-            
-            // Update the URL immediately without losing state
-            if (!props.conversationId) {
-                const targetPath = `/claude/conversation/${conversationId.value}`;
-                window.history.replaceState({}, '', targetPath);
-            }
         }
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
