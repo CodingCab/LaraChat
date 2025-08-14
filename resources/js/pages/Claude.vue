@@ -263,31 +263,28 @@ const loadSessionMessages = async (isPolling = false) => {
 
         if (!isPolling) {
             const newMessages = [];
-            let userMessageAdded = false;
 
             for (const conversation of sessionData) {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
                 
-                // Skip adding user message if it's already been added from a previous entry
-                if (conversation.role === 'user' && !userMessageAdded) {
+                // Process entries with role field (new format)
+                if (conversation.role === 'user') {
                     const processedMessages = processConversationResponses(conversation);
                     newMessages.push(...processedMessages);
-                    userMessageAdded = true;
-                } else if (conversation.role !== 'user') {
-                    // For non-user entries, skip the user message if already added
+                } else {
+                    // For entries without role or non-user entries
                     const messagesList = [];
                     
-                    // Only add user message if not already added
-                    if (!userMessageAdded && conversation.userMessage) {
+                    // Add user message from this conversation entry
+                    if (conversation.userMessage) {
                         messagesList.push({
                             id: Date.now() + Math.random(),
                             content: conversation.userMessage || '',
                             role: 'user',
                             timestamp: new Date(conversation.timestamp),
                         });
-                        userMessageAdded = true;
                     }
                     
                     // Add assistant responses
