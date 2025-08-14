@@ -27,23 +27,25 @@ class SendClaudeMessageJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            // Generate filename if not exists
-            if (!$this->conversation->filename) {
+            // Filename should already be set by the controller
+            $filename = $this->conversation->filename;
+            
+            // If for some reason it's not set, generate it
+            if (!$filename) {
                 $timestamp = now()->format('Y-m-d\TH-i-s');
                 $tempId = substr(uniqid(), -12);
-                $filename = "{$timestamp}-session-{$tempId}.json";
+                $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
                 $this->conversation->update(['filename' => $filename]);
-            } else {
-                $filename = $this->conversation->filename;
+                
+                // Also save the user message if we had to generate filename
+                ClaudeService::saveUserMessage(
+                    $this->message,
+                    $filename,
+                    $this->conversation->claude_session_id,
+                    $this->conversation->project_directory
+                );
             }
-
-            // Save user message immediately
-            ClaudeService::saveUserMessage(
-                $this->message,
-                $filename,
-                $this->conversation->claude_session_id,
-                $this->conversation->project_directory
-            );
+            // Note: User message is already saved by the controller synchronously
 
             // Create a progress callback to update the conversation in real-time
             $progressCallback = function ($type, $data) {

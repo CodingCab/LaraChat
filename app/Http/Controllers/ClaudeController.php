@@ -50,11 +50,28 @@ class ClaudeController extends Controller
                 abort(403);
             }
             
+            // Generate filename if not exists
+            if (!$conversation->filename) {
+                $timestamp = now()->format('Y-m-d\TH-i-s');
+                $tempId = substr(uniqid(), -12);
+                $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
+                $conversation->filename = $filename;
+            }
+            
             // Update conversation with new message and mark as processing
             $conversation->update([
                 'message' => $request->input('prompt'),
-                'is_processing' => true
+                'is_processing' => true,
+                'filename' => $conversation->filename
             ]);
+            
+            // Save user message immediately (synchronously) before queuing
+            ClaudeService::saveUserMessage(
+                $request->input('prompt'),
+                $conversation->filename,
+                $conversation->claude_session_id,
+                $conversation->project_directory
+            );
             
             // Dispatch job to send message to Claude
             SendClaudeMessageJob::dispatch($conversation, $request->input('prompt'));
