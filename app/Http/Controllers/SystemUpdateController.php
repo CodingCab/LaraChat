@@ -55,8 +55,8 @@ class SystemUpdateController extends Controller
     public function runCommand(string $command): Process
     {
         // Set up PATH with all necessary binaries
-        $herdBin = '/Users/arturhanusek/Library/Application Support/Herd/bin';
-        $nodeBin = '/Users/arturhanusek/Library/Application Support/Herd/config/nvm/versions/node/v22.17.1/bin';
+        $herdBin = '/Users/customer/Library/Application Support/Herd/bin';
+        $nodeBin = '/Users/customer/Library/Application Support/Herd/config/nvm/versions/node/v22.17.1/bin';
         $systemPath = '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin';
         
         // Combine all paths
