@@ -3,7 +3,6 @@
 use App\Http\Controllers\ClaudeController;
 use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\GitHubWebhookController;
-use App\Http\Controllers\MessagesController;
 use App\Http\Controllers\RepositoryController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,10 +21,6 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/conversations', [ConversationsController::class, 'store']);
 
     Route::get('/claude/conversations', [ConversationsController::class, 'index']); // TODO: deprecated, replace usage with /conversations
-
-    // Messages API
-    Route::get('/conversations/{conversation}/messages', [MessagesController::class, 'index']);
-    Route::post('/conversations/{conversation}/messages', [MessagesController::class, 'store']);
 });
 
 Route::post('/github/webhook', [GitHubWebhookController::class, 'handle']);
