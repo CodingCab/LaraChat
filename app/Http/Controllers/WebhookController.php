@@ -58,7 +58,7 @@ class WebhookController extends Controller
             $repository = $data['repository'] ?? null;
             
             // Get base project directory from .env
-            $baseProjectDirectory = env('PROJECT_DIRECTORY', 'app/private/repositories');
+            $baseProjectDirectory = env('PROJECTS_DIRECTORY', 'app/private/repositories');
             $projectDirectory = rtrim($baseProjectDirectory, '/') . '/' . $project_id;
 
             // Create conversation

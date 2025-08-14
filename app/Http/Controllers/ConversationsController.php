@@ -16,7 +16,8 @@ class ConversationsController extends Controller
 {
     public function index()
     {
-        $conversations = Conversation::where('archived', false)
+        $conversations = Conversation::where('user_id', Auth::id())
+            ->where('archived', false)
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -47,7 +48,7 @@ class ConversationsController extends Controller
         $msg = $request->input('message');
         
         // Get base project directory from .env
-        $baseProjectDirectory = env('PROJECT_DIRECTORY', 'app/private/repositories');
+        $baseProjectDirectory = env('PROJECTS_DIRECTORY', 'app/private/repositories');
         $projectDirectory = rtrim($baseProjectDirectory, '/') . '/' . $project_id;
 
         $conversation = Conversation::query()->create([
