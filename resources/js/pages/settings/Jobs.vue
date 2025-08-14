@@ -295,11 +295,6 @@ onUnmounted(() => {
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall 
-                    title="Queue Workers" 
-                    description="Manage and monitor queue workers for background job processing" 
-                />
-
                 <div class="space-y-4">
                     <Alert>
                         <AlertCircle class="h-4 w-4" />
@@ -308,27 +303,6 @@ onUnmounted(() => {
                             The worker will run with a timeout of 3600 seconds (1 hour).
                         </AlertDescription>
                     </Alert>
-
-                    <div class="flex items-center gap-4">
-                        <Button 
-                            @click="startWorker" 
-                            :disabled="isStarting || isStopping"
-                            variant="default"
-                        >
-                            <Play v-if="!isStarting" class="mr-2 h-4 w-4" />
-                            <Loader2 v-if="isStarting" class="mr-2 h-4 w-4 animate-spin" />
-                            {{ isStarting ? 'Starting...' : 'Start Queue Worker' }}
-                        </Button>
-
-                        <Button 
-                            @click="refreshStatus" 
-                            :disabled="isLoading"
-                            variant="outline"
-                        >
-                            <RefreshCw :class="['h-4 w-4', isLoading ? 'animate-spin' : '']" />
-                            <span class="ml-2">Refresh</span>
-                        </Button>
-                    </div>
 
                     <Alert v-if="statusMessage" :class="{
                         'border-green-500 bg-green-50 dark:bg-green-950/20': statusType === 'success',
@@ -369,7 +343,29 @@ onUnmounted(() => {
                     </div>
 
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold">Active Workers</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">Active Workers</h3>
+                            <div class="flex items-center gap-4">
+                                <Button 
+                                    @click="startWorker" 
+                                    :disabled="isStarting || isStopping"
+                                    variant="default"
+                                >
+                                    <Play v-if="!isStarting" class="mr-2 h-4 w-4" />
+                                    <Loader2 v-if="isStarting" class="mr-2 h-4 w-4 animate-spin" />
+                                    {{ isStarting ? 'Starting...' : 'Start Queue Worker' }}
+                                </Button>
+
+                                <Button 
+                                    @click="refreshStatus" 
+                                    :disabled="isLoading"
+                                    variant="outline"
+                                >
+                                    <RefreshCw :class="['h-4 w-4', isLoading ? 'animate-spin' : '']" />
+                                    <span class="ml-2">Refresh</span>
+                                </Button>
+                            </div>
+                        </div>
                         
                         <div v-if="workers.length === 0" class="text-muted-foreground">
                             No active workers found. Click "Start Queue Worker" to begin processing jobs.
