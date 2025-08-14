@@ -381,9 +381,36 @@ const loadSessionMessages = async (isPolling = false) => {
             startPolling();
         } else if (!incompleteMessageFound.value && pollingInterval.value) {
             stopPolling();
+        } else if (pollingInterval.value && messages.value.length > 0) {
+            // If we were polling rapidly for file creation and now have messages,
+            // switch to normal polling speed
+            stopPolling();
+            if (incompleteMessageFound.value) {
+                startPolling(POLLING_INTERVAL_MS);
+            }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading session messages:', error);
+        
+        // If the session file doesn't exist yet (404), start polling to retry
+        if (error?.response?.status === 404) {
+            console.log('Session file not found yet, starting polling to retry...');
+            
+            // Show loading state while waiting for session file
+            if (messages.value.length === 0) {
+                isLoading.value = true;
+            }
+            
+            // Keep trying to load the session file
+            if (!pollingInterval.value) {
+                startPolling(500); // Poll more frequently when waiting for file
+            }
+            
+            // Also try to load from database in the meantime
+            if (props.conversationId && messages.value.length === 0) {
+                await loadConversationMessages();
+            }
+        }
     }
 };
 
@@ -572,6 +599,12 @@ const sendMessage = async () => {
             startPolling(POLLING_INTERVAL_MS);
             // Immediately refresh conversations to show in sidebar
             await fetchConversations(false, true);
+            
+            // Update the URL immediately without losing state
+            if (!props.conversationId) {
+                const targetPath = `/claude/conversation/${conversationId.value}`;
+                window.history.replaceState({}, '', targetPath);
+            }
         }
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
@@ -583,20 +616,6 @@ const sendMessage = async () => {
     } finally {
         isLoading.value = false;
         await scrollToBottom(false); // Smart scroll after message completes
-
-        // Handle redirects and refresh
-        if (!props.sessionFile && !props.conversationId && conversationId.value) {
-            // Only redirect if we're not already on the conversation page
-            const currentPath = window.location.pathname;
-            const targetPath = `/claude/conversation/${conversationId.value}`;
-            if (!currentPath.includes(targetPath)) {
-                // Don't preserve state to avoid duplicate messages
-                router.visit(targetPath, { 
-                    preserveState: false,
-                    preserveScroll: false 
-                });
-            }
-        }
 
         if (!props.sessionFile) {
             setTimeout(() => refreshSessions(), SESSION_REFRESH_DELAY_MS);
