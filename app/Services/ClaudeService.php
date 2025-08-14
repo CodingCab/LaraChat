@@ -438,12 +438,21 @@ class ClaudeService
                     $lastConversation = &$data[$lastIndex];
 
                     if (!$lastConversation['isComplete'] &&
-                        $lastConversation['userMessage'] === $userMessage &&
-                        $lastConversation['sessionId'] === $messageData['sessionId']) {
+                        $lastConversation['userMessage'] === $userMessage) {
                         // Update the existing conversation with new responses
-                        $lastConversation['rawJsonResponses'] = $rawJsonResponses;
-                        $lastConversation['isComplete'] = $isComplete;
-                        $lastConversation['timestamp'] = $messageData['timestamp'];
+                        // Preserve the role field if it exists
+                        if (isset($lastConversation['role'])) {
+                            $messageData['role'] = $lastConversation['role'];
+                        }
+                        // Update with new data while preserving important fields
+                        $data[$lastIndex] = array_merge($lastConversation, [
+                            'rawJsonResponses' => $rawJsonResponses,
+                            'isComplete' => $isComplete,
+                            'timestamp' => $messageData['timestamp'],
+                            'sessionId' => $messageData['sessionId'] ?? $lastConversation['sessionId'],
+                            'repositoryPath' => $messageData['repositoryPath'] ?? $lastConversation['repositoryPath'],
+                            'role' => $lastConversation['role'] ?? $messageData['role'] ?? null
+                        ]);
                         $isNewConversation = false;
                     }
                 }
