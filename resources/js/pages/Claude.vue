@@ -54,7 +54,7 @@ const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextar
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
-const { fetchConversations } = useConversations();
+const { fetchConversations, startPolling: startConversationPolling, stopPolling: stopConversationPolling } = useConversations();
 const { repositories, fetchRepositories } = useRepositories();
 
 // Local state
@@ -462,18 +462,23 @@ const sendMessage = async () => {
         );
 
         // Handle result
-        if (result?.conversationId && !conversationId.value) {
-            conversationId.value = result.conversationId;
+        if (result?.conversationId) {
+            if (!conversationId.value) {
+                conversationId.value = result.conversationId;
+                // Update the URL immediately without losing state
+                if (!props.conversationId) {
+                    const targetPath = `/claude/conversation/${conversationId.value}`;
+                    window.history.replaceState({}, '', targetPath);
+                }
+            }
+            
             // Start polling to get updates from the server
             startPolling(POLLING_INTERVAL_MS);
             // Immediately refresh conversations to show in sidebar
-            await fetchConversations(false, true);
-            
-            // Update the URL immediately without losing state
-            if (!props.conversationId) {
-                const targetPath = `/claude/conversation/${conversationId.value}`;
-                window.history.replaceState({}, '', targetPath);
-            }
+            await fetchConversations(true, true); // Force refresh silently
+            // Start temporary conversation polling to ensure sidebar updates
+            startConversationPolling(1000); // Poll every 1 second temporarily
+            setTimeout(() => stopConversationPolling(), 5000); // Stop after 5 seconds
         }
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
@@ -487,7 +492,11 @@ const sendMessage = async () => {
         await scrollToBottom(false); // Smart scroll after message completes
 
         if (!props.sessionFile) {
-            setTimeout(() => refreshSessions(), SESSION_REFRESH_DELAY_MS);
+            setTimeout(() => {
+                refreshSessions();
+                // Also refresh conversations
+                fetchConversations(true, true);
+            }, SESSION_REFRESH_DELAY_MS);
         }
     }
 };
@@ -598,6 +607,8 @@ onMounted(async () => {
     });
 
     await fetchRepositories();
+    // Fetch conversations on mount to ensure they're up to date
+    await fetchConversations(false, true);
 
     if (props.conversationId) conversationId.value = props.conversationId;
     if (props.sessionId) sessionId.value = props.sessionId;
@@ -606,12 +617,16 @@ onMounted(async () => {
         await loadSessionMessages();
         // Force scroll to bottom when opening an existing conversation
         await scrollToBottom(true);
+        // Also refresh conversations to ensure sidebar is up to date
+        await fetchConversations(true, true);
     } else if (props.conversationId) {
         // For conversation-based pages, we'll need to wait for the session file
         // Start polling immediately to check for session file
         if (!pollingInterval.value) {
             startPolling(POLLING_INTERVAL_MS);
         }
+        // Also refresh conversations to ensure sidebar is up to date
+        await fetchConversations(true, true);
     } else {
         messages.value = [];
         sessionFilename.value = null;
