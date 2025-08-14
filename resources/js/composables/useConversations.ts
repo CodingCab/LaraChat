@@ -19,9 +19,17 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 let refreshInterval: number | null = null;
 let hasInitialized = false;
+let lastFetchTime = 0;
 
 export function useConversations() {
     const fetchConversations = async (silent = false, force = false) => {
+        // Prevent too frequent fetches (within 500ms)
+        const now = Date.now();
+        if (now - lastFetchTime < 500 && !force) {
+            return;
+        }
+        lastFetchTime = now;
+        
         // Skip fetching if already initialized and not forcing or silent refresh
         if (hasInitialized && !force && !silent && conversations.value.length > 0) {
             return;
@@ -44,7 +52,7 @@ export function useConversations() {
             if (hasProcessing && !refreshInterval) {
                 // Start periodic refresh every 2 seconds
                 refreshInterval = window.setInterval(() => {
-                    fetchConversations(true, false); // Silent refresh, not forced
+                    fetchConversations(true, true); // Silent refresh, forced to get latest
                 }, 2000);
             } else if (!hasProcessing && refreshInterval) {
                 // Clear interval if no conversations are processing
@@ -66,12 +74,27 @@ export function useConversations() {
         return conversations.value.some((conv) => conv.is_processing);
     });
 
-    // Clean up interval on component unmount
-    const cleanup = () => {
+    // Start polling for updates
+    const startPolling = (intervalMs = 2000) => {
+        if (refreshInterval) {
+            window.clearInterval(refreshInterval);
+        }
+        refreshInterval = window.setInterval(() => {
+            fetchConversations(true, true); // Silent refresh, forced
+        }, intervalMs);
+    };
+    
+    // Stop polling
+    const stopPolling = () => {
         if (refreshInterval) {
             window.clearInterval(refreshInterval);
             refreshInterval = null;
         }
+    };
+    
+    // Clean up interval on component unmount
+    const cleanup = () => {
+        stopPolling();
     };
 
     // Ensure cleanup when composable is no longer used
@@ -85,6 +108,8 @@ export function useConversations() {
         error,
         fetchConversations,
         hasProcessingConversations,
+        startPolling,
+        stopPolling,
         cleanup,
     };
 }

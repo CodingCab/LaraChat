@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import AlertDescription from '@/components/ui/alert-description.vue';
-import Alert from '@/components/ui/alert.vue';
 import { Button } from '@/components/ui/button';
+import Alert from '@/components/ui/alert.vue';
+import AlertDescription from '@/components/ui/alert-description.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import {
+import { 
+    Loader2, 
+    AlertCircle, 
+    CheckCircle2, 
+    Play, 
+    Square, 
+    RefreshCw,
     Activity,
-    AlertCircle,
-    Check,
-    CheckCircle2,
+    Clock,
+    XCircle,
     ChevronDown,
     ChevronUp,
-    Clock,
     Copy,
-    Loader2,
-    Play,
-    RefreshCw,
+    Check,
     RotateCcw,
-    Square,
-    Trash2,
-    XCircle,
+    Trash2
 } from 'lucide-vue-next';
 
 const breadcrumbItems: BreadcrumbItem[] = [
@@ -91,7 +91,7 @@ const fetchWorkerStatus = async () => {
         workers.value = data.workers || [];
         queueStats.value = data.stats || { pending: 0, running: 0, failed: 0 };
         failedJobs.value = data.failedJobs || [];
-
+        
         // If no workers in cache but processes are running, use those
         if (workers.value.length === 0 && data.processes && data.processes.length > 0) {
             workers.value = data.processes.map((p: any) => ({
@@ -113,7 +113,7 @@ const fetchWorkerStatus = async () => {
 const startWorker = () => {
     isStarting.value = true;
     statusMessage.value = '';
-
+    
     form.action = 'start';
     form.post(route('settings.jobs.control'), {
         preserveScroll: true,
@@ -134,7 +134,7 @@ const startWorker = () => {
 const stopWorker = (workerId?: string) => {
     isStopping.value = true;
     statusMessage.value = '';
-
+    
     form.action = 'stop';
     form.workerId = workerId || '';
     form.post(route('settings.jobs.control'), {
@@ -161,28 +161,20 @@ const refreshStatus = () => {
 };
 
 const getStatusColor = (status: string) => {
-    switch (status) {
-        case 'running':
-            return 'text-green-600 dark:text-green-400';
-        case 'idle':
-            return 'text-yellow-600 dark:text-yellow-400';
-        case 'stopped':
-            return 'text-gray-600 dark:text-gray-400';
-        default:
-            return 'text-gray-600 dark:text-gray-400';
+    switch(status) {
+        case 'running': return 'text-green-600 dark:text-green-400';
+        case 'idle': return 'text-yellow-600 dark:text-yellow-400';
+        case 'stopped': return 'text-gray-600 dark:text-gray-400';
+        default: return 'text-gray-600 dark:text-gray-400';
     }
 };
 
 const getStatusIcon = (status: string) => {
-    switch (status) {
-        case 'running':
-            return Activity;
-        case 'idle':
-            return Clock;
-        case 'stopped':
-            return Square;
-        default:
-            return AlertCircle;
+    switch(status) {
+        case 'running': return Activity;
+        case 'idle': return Clock;
+        case 'stopped': return Square;
+        default: return AlertCircle;
     }
 };
 
@@ -214,7 +206,7 @@ const copyException = async (job: FailedJob) => {
 const formatExceptionForDisplay = (exception: string) => {
     // Remove file paths to make it more readable, keeping just the relevant parts
     const lines = exception.split('\n');
-    const formattedLines = lines.map((line) => {
+    const formattedLines = lines.map(line => {
         // Highlight the main error message (usually the first line)
         if (lines.indexOf(line) === 0) {
             return line;
@@ -232,7 +224,7 @@ const formatExceptionForDisplay = (exception: string) => {
 const retryJob = async (jobId: number) => {
     retryingJobId.value = jobId;
     statusMessage.value = '';
-
+    
     form.post(route('settings.jobs.retry', { id: jobId }), {
         preserveScroll: true,
         onSuccess: (page: any) => {
@@ -256,12 +248,12 @@ const confirmDiscard = (jobId: number) => {
 
 const discardJob = async () => {
     if (!jobToDiscard.value) return;
-
+    
     const jobId = jobToDiscard.value;
     discardingJobId.value = jobId;
     showDiscardConfirm.value = false;
     statusMessage.value = '';
-
+    
     form.delete(route('settings.jobs.discard', { id: jobId }), {
         preserveScroll: true,
         onSuccess: (page: any) => {
@@ -303,48 +295,28 @@ onUnmounted(() => {
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Queue Workers" description="Manage and monitor queue workers for background job processing" />
-
                 <div class="space-y-4">
                     <Alert>
                         <AlertCircle class="h-4 w-4" />
                         <AlertDescription>
-                            Queue workers process background jobs such as sending emails, processing uploads, and other asynchronous tasks. The worker
-                            will run with a timeout of 3600 seconds (1 hour).
+                            Queue workers process background jobs such as sending emails, processing uploads, and other asynchronous tasks.
+                            The worker will run with a timeout of 3600 seconds (1 hour).
                         </AlertDescription>
                     </Alert>
 
-                    <div class="flex items-center gap-4">
-                        <Button @click="startWorker" :disabled="isStarting || isStopping" variant="default">
-                            <Play v-if="!isStarting" class="mr-2 h-4 w-4" />
-                            <Loader2 v-if="isStarting" class="mr-2 h-4 w-4 animate-spin" />
-                            {{ isStarting ? 'Starting...' : 'Start Queue Worker' }}
-                        </Button>
-
-                        <Button @click="refreshStatus" :disabled="isLoading" variant="outline">
-                            <RefreshCw :class="['h-4 w-4', isLoading ? 'animate-spin' : '']" />
-                            <span class="ml-2">Refresh</span>
-                        </Button>
-                    </div>
-
-                    <Alert
-                        v-if="statusMessage"
-                        :class="{
-                            'border-green-500 bg-green-50 dark:bg-green-950/20': statusType === 'success',
-                            'border-red-500 bg-red-50 dark:bg-red-950/20': statusType === 'error',
-                            'border-blue-500 bg-blue-50 dark:bg-blue-950/20': statusType === 'info',
-                        }"
-                    >
+                    <Alert v-if="statusMessage" :class="{
+                        'border-green-500 bg-green-50 dark:bg-green-950/20': statusType === 'success',
+                        'border-red-500 bg-red-50 dark:bg-red-950/20': statusType === 'error',
+                        'border-blue-500 bg-blue-50 dark:bg-blue-950/20': statusType === 'info'
+                    }">
                         <CheckCircle2 v-if="statusType === 'success'" class="h-4 w-4 text-green-600" />
                         <AlertCircle v-if="statusType === 'error'" class="h-4 w-4 text-red-600" />
                         <AlertCircle v-if="statusType === 'info'" class="h-4 w-4 text-blue-600" />
-                        <AlertDescription
-                            :class="{
-                                'text-green-800 dark:text-green-300': statusType === 'success',
-                                'text-red-800 dark:text-red-300': statusType === 'error',
-                                'text-blue-800 dark:text-blue-300': statusType === 'info',
-                            }"
-                        >
+                        <AlertDescription :class="{
+                            'text-green-800 dark:text-green-300': statusType === 'success',
+                            'text-red-800 dark:text-red-300': statusType === 'error',
+                            'text-blue-800 dark:text-blue-300': statusType === 'info'
+                        }">
                             {{ statusMessage }}
                         </AlertDescription>
                     </Alert>
@@ -353,17 +325,17 @@ onUnmounted(() => {
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-semibold">Queue Statistics</h3>
                         </div>
-
+                        
                         <div class="grid grid-cols-3 gap-4">
-                            <div class="rounded-lg border p-3">
+                            <div class="border rounded-lg p-3">
                                 <div class="text-sm text-muted-foreground">Pending Jobs</div>
                                 <div class="text-2xl font-semibold">{{ queueStats.pending }}</div>
                             </div>
-                            <div class="rounded-lg border p-3">
+                            <div class="border rounded-lg p-3">
                                 <div class="text-sm text-muted-foreground">Running Jobs</div>
                                 <div class="text-2xl font-semibold text-blue-600 dark:text-blue-400">{{ queueStats.running }}</div>
                             </div>
-                            <div class="rounded-lg border p-3">
+                            <div class="border rounded-lg p-3">
                                 <div class="text-sm text-muted-foreground">Failed Jobs</div>
                                 <div class="text-2xl font-semibold text-red-600 dark:text-red-400">{{ queueStats.failed }}</div>
                             </div>
@@ -371,27 +343,63 @@ onUnmounted(() => {
                     </div>
 
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold">Active Workers</h3>
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">Active Workers</h3>
+                            <div class="flex items-center gap-4">
+                                <Button 
+                                    @click="startWorker" 
+                                    :disabled="isStarting || isStopping"
+                                    variant="default"
+                                >
+                                    <Play v-if="!isStarting" class="mr-2 h-4 w-4" />
+                                    <Loader2 v-if="isStarting" class="mr-2 h-4 w-4 animate-spin" />
+                                    {{ isStarting ? 'Starting...' : 'Start Queue Worker' }}
+                                </Button>
 
+                                <Button 
+                                    @click="refreshStatus" 
+                                    :disabled="isLoading"
+                                    variant="outline"
+                                >
+                                    <RefreshCw :class="['h-4 w-4', isLoading ? 'animate-spin' : '']" />
+                                    <span class="ml-2">Refresh</span>
+                                </Button>
+                            </div>
+                        </div>
+                        
                         <div v-if="workers.length === 0" class="text-muted-foreground">
                             No active workers found. Click "Start Queue Worker" to begin processing jobs.
                         </div>
 
                         <div v-else class="space-y-3">
-                            <div v-for="worker in workers" :key="worker.id" class="space-y-2 rounded-lg border p-4">
+                            <div 
+                                v-for="worker in workers" 
+                                :key="worker.id"
+                                class="border rounded-lg p-4 space-y-2"
+                            >
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-2">
-                                        <component :is="getStatusIcon(worker.status)" :class="['h-5 w-5', getStatusColor(worker.status)]" />
+                                        <component 
+                                            :is="getStatusIcon(worker.status)" 
+                                            :class="['h-5 w-5', getStatusColor(worker.status)]"
+                                        />
                                         <span class="font-medium">Worker PID: {{ worker.pid }}</span>
-                                        <span :class="['text-sm', getStatusColor(worker.status)]"> ({{ worker.status }}) </span>
+                                        <span :class="['text-sm', getStatusColor(worker.status)]">
+                                            ({{ worker.status }})
+                                        </span>
                                     </div>
-                                    <Button @click="stopWorker(worker.id)" :disabled="isStopping" variant="outline" size="sm">
-                                        <Square class="mr-1 h-3 w-3" />
+                                    <Button 
+                                        @click="stopWorker(worker.id)" 
+                                        :disabled="isStopping"
+                                        variant="outline"
+                                        size="sm"
+                                    >
+                                        <Square class="h-3 w-3 mr-1" />
                                         Stop
                                     </Button>
                                 </div>
-
-                                <div class="grid grid-cols-2 gap-4 text-sm md:grid-cols-5">
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                                     <div>
                                         <span class="text-muted-foreground">Started:</span>
                                         <div class="font-mono text-xs">{{ new Date(worker.startTime).toLocaleTimeString() }}</div>
@@ -421,24 +429,26 @@ onUnmounted(() => {
 
                     <div v-if="failedJobs.length > 0" class="space-y-4">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">Failed Jobs ({{ failedJobs.length }})</h3>
+                            <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">
+                                Failed Jobs ({{ failedJobs.length }})
+                            </h3>
                         </div>
-
+                        
                         <div class="space-y-3">
-                            <div
-                                v-for="job in failedJobs"
+                            <div 
+                                v-for="job in failedJobs" 
                                 :key="job.id"
-                                class="overflow-hidden rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                                class="border border-red-200 dark:border-red-800 rounded-lg overflow-hidden bg-red-50 dark:bg-red-950/20"
                             >
                                 <!-- Header -->
-                                <div class="border-b border-red-200 bg-red-100 px-4 py-3 dark:border-red-800 dark:bg-red-900/30">
+                                <div class="px-4 py-3 bg-red-100 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
                                             <XCircle class="h-5 w-5 text-red-600 dark:text-red-400" />
                                             <span class="font-semibold text-red-900 dark:text-red-200">
                                                 {{ job.job_name }}
                                             </span>
-                                            <span class="rounded-full bg-red-200 px-2 py-0.5 text-xs text-red-700 dark:bg-red-800 dark:text-red-300">
+                                            <span class="text-xs px-2 py-0.5 bg-red-200 dark:bg-red-800 text-red-700 dark:text-red-300 rounded-full">
                                                 {{ job.attempts }} {{ job.attempts === 1 ? 'attempt' : 'attempts' }}
                                             </span>
                                         </div>
@@ -447,7 +457,7 @@ onUnmounted(() => {
                                                 @click="retryJob(job.id)"
                                                 variant="ghost"
                                                 size="sm"
-                                                class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                                class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                                                 :disabled="retryingJobId === job.id || discardingJobId === job.id"
                                                 title="Retry this job"
                                             >
@@ -459,7 +469,7 @@ onUnmounted(() => {
                                                 @click="confirmDiscard(job.id)"
                                                 variant="ghost"
                                                 size="sm"
-                                                class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                                                 :disabled="retryingJobId === job.id || discardingJobId === job.id"
                                                 title="Discard this job"
                                             >
@@ -471,7 +481,7 @@ onUnmounted(() => {
                                                 @click="copyException(job)"
                                                 variant="ghost"
                                                 size="sm"
-                                                class="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                                class="text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                                 :title="'Copy exception to clipboard'"
                                             >
                                                 <Check v-if="copiedJobId === job.id" class="h-4 w-4 text-green-600" />
@@ -481,19 +491,19 @@ onUnmounted(() => {
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <!-- Body -->
                                 <div class="p-4">
                                     <!-- Error Message -->
                                     <div class="mb-3">
-                                        <div class="mb-1 text-xs font-medium text-red-700 dark:text-red-300">Error Message:</div>
-                                        <div class="rounded border border-red-200 bg-red-100 p-2 dark:border-red-800 dark:bg-red-900/20">
-                                            <code class="font-mono text-xs break-all text-red-800 dark:text-red-200">
+                                        <div class="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Error Message:</div>
+                                        <div class="p-2 bg-red-100 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                                            <code class="text-xs text-red-800 dark:text-red-200 font-mono break-all">
                                                 {{ job.exception }}
                                             </code>
                                         </div>
                                     </div>
-
+                                    
                                     <!-- Metadata -->
                                     <div class="flex flex-wrap gap-3 text-xs text-red-600 dark:text-red-400">
                                         <div class="flex items-center gap-1">
@@ -509,38 +519,37 @@ onUnmounted(() => {
                                             <span class="font-mono">{{ job.uuid.substring(0, 8) }}...</span>
                                         </div>
                                     </div>
-
+                                    
                                     <!-- Full Exception (Expandable) -->
                                     <div v-if="job.fullException" class="mt-3">
                                         <Button
                                             @click="toggleFailedJobExpansion(job.id)"
                                             variant="outline"
                                             size="sm"
-                                            class="w-full border-red-300 text-red-600 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                            class="w-full text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border-red-300 dark:border-red-700"
                                         >
-                                            <ChevronDown v-if="!expandedFailedJobs.has(job.id)" class="mr-1 h-4 w-4" />
-                                            <ChevronUp v-else class="mr-1 h-4 w-4" />
+                                            <ChevronDown v-if="!expandedFailedJobs.has(job.id)" class="h-4 w-4 mr-1" />
+                                            <ChevronUp v-else class="h-4 w-4 mr-1" />
                                             {{ expandedFailedJobs.has(job.id) ? 'Hide' : 'Show' }} Full Stack Trace
                                         </Button>
-
-                                        <div v-if="expandedFailedJobs.has(job.id)" class="relative mt-2">
+                                        
+                                        <div 
+                                            v-if="expandedFailedJobs.has(job.id)"
+                                            class="mt-2 relative"
+                                        >
                                             <div class="absolute top-2 right-2 z-10">
                                                 <Button
                                                     @click="copyException(job)"
                                                     variant="ghost"
                                                     size="sm"
-                                                    class="bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 dark:hover:bg-red-900/70"
+                                                    class="bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/70"
                                                 >
                                                     <Check v-if="copiedJobId === job.id" class="h-3 w-3 text-green-600" />
                                                     <Copy v-else class="h-3 w-3" />
                                                 </Button>
                                             </div>
-                                            <div
-                                                class="overflow-x-auto rounded border border-red-200 bg-gray-900 p-3 dark:border-red-800 dark:bg-black"
-                                            >
-                                                <pre class="font-mono text-xs leading-relaxed whitespace-pre text-red-400">{{
-                                                    formatExceptionForDisplay(job.fullException)
-                                                }}</pre>
+                                            <div class="p-3 bg-gray-900 dark:bg-black rounded border border-red-200 dark:border-red-800 overflow-x-auto">
+                                                <pre class="text-xs text-red-400 whitespace-pre font-mono leading-relaxed">{{ formatExceptionForDisplay(job.fullException) }}</pre>
                                             </div>
                                         </div>
                                     </div>
@@ -551,20 +560,32 @@ onUnmounted(() => {
 
                     <!-- Discard Confirmation Dialog -->
                     <div v-if="showDiscardConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                        <div class="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-                            <div class="mb-4 flex items-start gap-3">
-                                <AlertCircle class="mt-0.5 h-6 w-6 flex-shrink-0 text-red-600 dark:text-red-400" />
+                        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+                            <div class="flex items-start gap-3 mb-4">
+                                <AlertCircle class="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                                 <div>
-                                    <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Discard</h3>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                                        Confirm Discard
+                                    </h3>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">
                                         Are you sure you want to discard this failed job? This action cannot be undone.
                                     </p>
                                 </div>
                             </div>
                             <div class="flex justify-end gap-3">
-                                <Button @click="cancelDiscard" variant="outline" size="sm"> Cancel </Button>
-                                <Button @click="discardJob" variant="destructive" size="sm">
-                                    <Trash2 class="mr-1 h-4 w-4" />
+                                <Button
+                                    @click="cancelDiscard"
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    @click="discardJob"
+                                    variant="destructive"
+                                    size="sm"
+                                >
+                                    <Trash2 class="h-4 w-4 mr-1" />
                                     Discard Job
                                 </Button>
                             </div>

@@ -22,7 +22,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const { conversations, fetchConversations, cleanup } = useConversations();
+const { conversations, fetchConversations, startPolling, stopPolling, cleanup } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
 
 const showCloneDialog = ref(false);
@@ -33,10 +33,25 @@ const cloneError = ref('');
 onMounted(async () => {
     await fetchRepositories();
     await fetchConversations(false, true); // Force initial fetch
+    
+    // Set up periodic refresh for conversations
+    // This ensures new conversations appear without manual refresh
+    const refreshInterval = setInterval(() => {
+        fetchConversations(true, true); // Silent forced refresh
+    }, 3000); // Check every 3 seconds
+    
+    // Store interval ID for cleanup
+    (window as any).__sidebarRefreshInterval = refreshInterval;
 });
 
 onUnmounted(() => {
     cleanup(); // Clean up the refresh interval when component unmounts
+    
+    // Clean up sidebar refresh interval
+    if ((window as any).__sidebarRefreshInterval) {
+        clearInterval((window as any).__sidebarRefreshInterval);
+        delete (window as any).__sidebarRefreshInterval;
+    }
 });
 
 const handleCloneRepository = async () => {
