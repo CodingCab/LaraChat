@@ -389,10 +389,19 @@ class ClaudeService
 
     private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
-        $directory = '';
+        // If filename already includes claude-sessions/, use it as-is
+        // Otherwise, prepend claude-sessions/
+        if (strpos($filename, 'claude-sessions/') === 0) {
+            $path = $filename;
+            $directory = 'claude-sessions';
+        } else {
+            $directory = 'claude-sessions';
+            $path = $directory . '/' . $filename;
+        }
 
         \Log::info('Saving response', [
             'filename' => $filename,
+            'path' => $path,
             'sessionId' => $sessionId,
             'response_count' => count($rawJsonResponses),
             'isComplete' => $isComplete
@@ -403,8 +412,6 @@ class ClaudeService
             Storage::makeDirectory($directory);
             \Log::info('Created claude-sessions directory');
         }
-
-        $path = $directory . '/' . $filename;
         $lockKey = 'file_lock_' . md5($path);
 
         // Use cache lock to prevent concurrent writes
