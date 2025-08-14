@@ -32,7 +32,7 @@ const cloneError = ref('');
 
 onMounted(async () => {
     await fetchRepositories();
-    await fetchConversations();
+    await fetchConversations(false, true); // Force initial fetch
 });
 
 onUnmounted(() => {

@@ -22,7 +22,6 @@ const POLLING_INTERVAL_MS = 2000;
 const POLLING_INTERVAL_SLOW_MS = 5000;
 const SCROLL_DELAY_MS = 150;
 const SCROLL_RETRY_DELAY_MS = 200;
-const REFRESH_DELAY_MS = 500;
 const SESSION_REFRESH_DELAY_MS = 1000;
 
 const props = defineProps<{
@@ -462,6 +461,7 @@ const sendMessage = async () => {
     resetTextareaHeight();
     isLoading.value = true;
     await scrollToBottom(true); // Force scroll when user sends a message
+    
 
     // Initialize session if needed
     if (!sessionFilename.value) {
@@ -522,7 +522,8 @@ const sendMessage = async () => {
             conversationId.value = result.conversationId;
             // Start polling to get updates from the server
             startPolling(POLLING_INTERVAL_MS);
-            setTimeout(() => fetchConversations(), REFRESH_DELAY_MS);
+            // Immediately refresh conversations to show in sidebar
+            await fetchConversations(false, true);
         }
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
