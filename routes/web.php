@@ -43,7 +43,8 @@ Route::get('claude/conversation/{conversation}', function ($conversation) {
         'conversationId' => $conv->id,
         'repository' => $conv->repository,
         'sessionId' => $conv->claude_session_id,
-        'sessionFile' => $conv->filename
+        'sessionFile' => $conv->filename,
+        'isArchived' => $conv->archived ?? false
     ]);
 })->middleware(['auth', 'verified'])->name('claude.conversation');
 

@@ -13,9 +13,10 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Eye, EyeOff, Send } from 'lucide-vue-next';
+import { Eye, EyeOff, Send, Archive, ArchiveRestore } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { GitBranch } from 'lucide-vue-next';
+import axios from 'axios';
 
 // Constants
 const POLLING_INTERVAL_MS = 2000;
@@ -29,6 +30,7 @@ const props = defineProps<{
     repository?: string;
     conversationId?: number;
     sessionId?: string;
+    isArchived?: boolean;
 }>();
 
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
@@ -64,6 +66,8 @@ const hideSystemMessages = ref(true);
 const selectedRepository = ref<string | null>(props.repository || null);
 const isUserInteracting = ref(false);
 const pendingUpdates = ref<any[]>([]);
+const isArchived = ref(props.isArchived || false);
+const isArchiving = ref(false);
 
 // Polling state
 const pollingInterval = ref<number | null>(null);
@@ -494,6 +498,43 @@ const handleKeydown = (event: KeyboardEvent) => {
     }
 };
 
+const archiveConversation = async () => {
+    if (!conversationId.value || isArchiving.value) return;
+    
+    isArchiving.value = true;
+    try {
+        await axios.post(`/api/conversations/${conversationId.value}/archive`);
+        isArchived.value = true;
+        
+        // Refresh conversations list to update sidebar
+        await fetchConversations(false, true);
+        
+        // Redirect to main Claude page after archiving
+        router.visit('/claude');
+    } catch (error) {
+        console.error('Error archiving conversation:', error);
+    } finally {
+        isArchiving.value = false;
+    }
+};
+
+const unarchiveConversation = async () => {
+    if (!conversationId.value || isArchiving.value) return;
+    
+    isArchiving.value = true;
+    try {
+        await axios.post(`/api/conversations/${conversationId.value}/unarchive`);
+        isArchived.value = false;
+        
+        // Refresh conversations list to update sidebar
+        await fetchConversations(false, true);
+    } catch (error) {
+        console.error('Error unarchiving conversation:', error);
+    } finally {
+        isArchiving.value = false;
+    }
+};
+
 // Watchers
 watch(() => props.sessionFile, async (newFile, oldFile) => {
     if (newFile !== oldFile) {
@@ -574,6 +615,17 @@ onUnmounted(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <template #header-actions>
             <Button
+                v-if="conversationId"
+                @click="isArchived ? unarchiveConversation() : archiveConversation()"
+                variant="ghost"
+                size="icon"
+                :title="isArchived ? 'Unarchive Conversation' : 'Archive Conversation'"
+                :disabled="isArchiving"
+                class="mr-2"
+            >
+                <component :is="isArchived ? ArchiveRestore : Archive" class="h-4 w-4" />
+            </Button>
+            <Button
                 @click="hideSystemMessages = !hideSystemMessages"
                 variant="ghost"
                 size="icon"
@@ -612,7 +664,10 @@ onUnmounted(() => {
 
             <!-- Input Area -->
             <div class="border-t bg-background p-4">
-                <div>
+                <div v-if="isArchived" class="text-center text-muted-foreground">
+                    This conversation is archived. Unarchive it to continue the conversation.
+                </div>
+                <div v-else>
                     <div class="flex items-end space-x-2">
                         <Textarea
                             ref="textareaRef"
