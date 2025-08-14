@@ -366,9 +366,16 @@ class ClaudeService
             }
         });
 
-        // Final save with complete flag
-        if ($filename) {
+        // Final save with complete flag ONLY if we got responses
+        if ($filename && count($rawJsonResponses) > 0) {
             self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
+        } elseif ($filename && count($rawJsonResponses) === 0) {
+            // If no responses, keep it incomplete so it can be retried
+            \Log::warning('No responses from Claude process', [
+                'filename' => $filename,
+                'process_successful' => $process->isSuccessful()
+            ]);
+            self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
         }
 
         return [
@@ -444,6 +451,13 @@ class ClaudeService
                     $lastIndex = count($data) - 1;
                     $lastConversation = &$data[$lastIndex];
 
+                    \Log::info('Checking update condition', [
+                        'lastIsComplete' => $lastConversation['isComplete'],
+                        'lastUserMessage' => $lastConversation['userMessage'],
+                        'currentUserMessage' => $userMessage,
+                        'match' => (!$lastConversation['isComplete'] && $lastConversation['userMessage'] === $userMessage)
+                    ]);
+                    
                     if (!$lastConversation['isComplete'] &&
                         $lastConversation['userMessage'] === $userMessage) {
                         // Update the existing conversation with new responses

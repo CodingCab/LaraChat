@@ -66,11 +66,17 @@ class ClaudeController extends Controller
             ]);
             
             // Save user message immediately (synchronously) before queuing
+            // Convert relative path to absolute if needed
+            $projectDir = $conversation->project_directory;
+            if ($projectDir && !str_starts_with($projectDir, '/')) {
+                $projectDir = storage_path($projectDir);
+            }
+            
             ClaudeService::saveUserMessage(
                 $request->input('prompt'),
                 $conversation->filename,
                 $conversation->claude_session_id,
-                $conversation->project_directory
+                $projectDir
             );
             
             // Dispatch job to send message to Claude
