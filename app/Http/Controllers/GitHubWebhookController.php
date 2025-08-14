@@ -22,7 +22,7 @@ class GitHubWebhookController extends Controller
         $event = $request->header('X-GitHub-Event');
         $data = json_decode($payload, true);
 
-        $webhookLog = GitHubWebhookLog::query()->make([
+        $webhookLog = GitHubWebhookLog::create([
             'event_type' => $event,
             'delivery_id' => $request->header('X-GitHub-Delivery'),
             'repository' => $data['repository']['full_name'] ?? null,
