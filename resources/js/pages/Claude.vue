@@ -358,7 +358,8 @@ const loadSessionMessages = async (isPolling = false) => {
         
         // Only scroll if not interacting
         if (!isUserInteracting.value) {
-            await delayedScroll(false);
+            // Force scroll to bottom on initial load, otherwise use smart scrolling
+            await delayedScroll(!isPolling);
         }
 
         // Manage polling based on completion status
@@ -544,6 +545,8 @@ watch(() => props.sessionFile, async (newFile, oldFile) => {
 
         if (newFile) {
             await loadSessionMessages();
+            // Force scroll to bottom when switching to a different conversation
+            await scrollToBottom(true);
         } else {
             sessionFilename.value = null;
             sessionId.value = null;
@@ -601,6 +604,8 @@ onMounted(async () => {
 
     if (props.sessionFile) {
         await loadSessionMessages();
+        // Force scroll to bottom when opening an existing conversation
+        await scrollToBottom(true);
     } else if (props.conversationId) {
         // For conversation-based pages, we'll need to wait for the session file
         // Start polling immediately to check for session file
