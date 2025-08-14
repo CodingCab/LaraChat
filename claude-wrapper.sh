@@ -14,11 +14,24 @@ fi
 PROJECT_ID="$1"
 shift # Remove PROJECT_ID from arguments to pass remaining args to claude
 
-# Change to the project-specific directory
-PROJECT_DIR="$SCRIPT_DIR/storage/app/private/repositories/projects/$PROJECT_ID"
+# Try new location first (direct subdomain path)
+PROJECT_DIR="/Users/customer/www/subdomains/$PROJECT_ID"
+
+# If not found, try old location in storage
+if [ ! -d "$PROJECT_DIR" ]; then
+    PROJECT_DIR="$SCRIPT_DIR/storage/app/private/repositories/projects/$PROJECT_ID"
+fi
+
+# If still not found, try another old location
+if [ ! -d "$PROJECT_DIR" ]; then
+    PROJECT_DIR="$SCRIPT_DIR/storage/Users/customer/www/subdomains/projects/$PROJECT_ID"
+fi
 
 if [ ! -d "$PROJECT_DIR" ]; then
-    echo "Error: Project directory does not exist: $PROJECT_DIR"
+    echo "Error: Project directory does not exist in any of the expected locations:"
+    echo "  - /Users/customer/www/subdomains/$PROJECT_ID"
+    echo "  - $SCRIPT_DIR/storage/app/private/repositories/projects/$PROJECT_ID"
+    echo "  - $SCRIPT_DIR/storage/Users/customer/www/subdomains/projects/$PROJECT_ID"
     exit 1
 fi
 

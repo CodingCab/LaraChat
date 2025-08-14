@@ -46,7 +46,14 @@ class InitializeConversationSessionJob implements ShouldQueue
             CopyRepositoryToHotJob::dispatchSync($this->conversation->repository);
         }
 
-        $to = storage_path($this->conversation->project_directory);
+        // If project_directory starts with absolute path from PROJECT_DIRECTORY env, use it directly
+        // Otherwise treat it as relative to storage_path
+        $projectDir = $this->conversation->project_directory;
+        if (str_starts_with($projectDir, '/')) {
+            $to = $projectDir;
+        } else {
+            $to = storage_path($projectDir);
+        }
 
         ray($from, $to);
         

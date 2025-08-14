@@ -27,8 +27,12 @@ class ClaudeService
             // Extract project ID from repository path
             $projectId = null;
             if ($repositoryPath) {
-                // Repository path format: repositories/projects/{project_id}
-                if (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
+                // Try new format: /Users/customer/www/subdomains/{project_id}
+                if (preg_match('/\/subdomains\/([^\/]+)/', $repositoryPath, $matches)) {
+                    $projectId = $matches[1];
+                }
+                // Fallback to old format: repositories/projects/{project_id}
+                elseif (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
                     $projectId = $matches[1];
                 }
             }
@@ -253,8 +257,12 @@ class ClaudeService
         // Extract project ID from repository path
         $projectId = null;
         if ($repositoryPath) {
-            // Repository path format: repositories/projects/{project_id}
-            if (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
+            // Try new format: /Users/customer/www/subdomains/{project_id}
+            if (preg_match('/\/subdomains\/([^\/]+)/', $repositoryPath, $matches)) {
+                $projectId = $matches[1];
+            }
+            // Fallback to old format: repositories/projects/{project_id}
+            elseif (preg_match('/repositories\/projects\/([^\/]+)/', $repositoryPath, $matches)) {
                 $projectId = $matches[1];
             }
         }
