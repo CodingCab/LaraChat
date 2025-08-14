@@ -413,6 +413,7 @@ class ClaudeService
 
                 $messageData = [
                     'sessionId' => $sessionId ?? $extractedSessionId ?? \Illuminate\Support\Str::uuid()->toString(),
+                    'role' => 'user',
                     'userMessage' => $userMessage,
                     'timestamp' => now()->toIso8601String(),
                     'isComplete' => $isComplete,
