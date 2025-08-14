@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class InitializeConversationSessionJob implements ShouldQueue
 {
@@ -88,12 +87,11 @@ class InitializeConversationSessionJob implements ShouldQueue
                 'repository' => $this->conversation->repository,
                 'project_directory' => $this->conversation->project_directory,
             ]);
-        } catch (ProcessFailedException $e) {
-            Log::error('InitializeConversationSessionJob: Failed to update project repository', [
+        } catch (\Exception $e) {
+            Log::warning('InitializeConversationSessionJob: Could not update project repository', [
                 'repository' => $this->conversation->repository,
                 'project_directory' => $this->conversation->project_directory,
                 'error' => $e->getMessage(),
-                'output' => $e->getProcess()->getErrorOutput()
             ]);
             
             // Continue with the conversation even if Git update fails
@@ -109,7 +107,7 @@ class InitializeConversationSessionJob implements ShouldQueue
             ->run($gitCommand);
         
         if (!$result->successful()) {
-            throw new ProcessFailedException($result);
+            throw new \RuntimeException("Git command failed: {$gitCommand}. Output: " . $result->errorOutput());
         }
     }
     
