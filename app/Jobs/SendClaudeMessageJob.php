@@ -37,7 +37,14 @@ class SendClaudeMessageJob implements ShouldQueue
 
             // Check if project directory exists (if specified)
             if ($this->conversation->project_directory) {
-                $projectPath = base_path($this->conversation->project_directory);
+                // If project_directory starts with absolute path, use it directly
+                // Otherwise treat it as relative to storage_path
+                if (str_starts_with($this->conversation->project_directory, '/')) {
+                    $projectPath = $this->conversation->project_directory;
+                } else {
+                    $projectPath = storage_path($this->conversation->project_directory);
+                }
+                
                 if (!is_dir($projectPath)) {
                     Log::error('Project directory does not exist', [
                         'conversation_id' => $this->conversation->id,
