@@ -117,12 +117,12 @@ const handleRepositoryClick = (repositorySlug: string) => {
                                         <span v-else></span>
                                         <a
                                             v-if="conversation.project_directory"
-                                            :href="`http://${conversation.project_directory.replace('app/private/repositories/projects/', '')}.test`"
+                                            :href="`https://${conversation.project_directory.split('/').pop()}.larachat-restricted.coding.cab`"
                                             target="_blank"
                                             class="truncate text-right hover:underline"
                                             @click.stop
                                         >
-                                            {{ conversation.project_directory.replace('app/private/repositories/projects/', '') }}
+                                            {{ conversation.project_directory.split('/').pop() }}
                                         </a>
                                     </div>
                                 </div>
