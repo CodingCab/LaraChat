@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\ClaudeController;
+use App\Http\Controllers\CommandController;
 use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\GitHubWebhookController;
 use App\Http\Controllers\RepositoryController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/run-command', [CommandController::class, 'run']);
     Route::post('/claude', [ClaudeController::class, 'store']);
 //    Route::get('/claude/sessions', [ClaudeController::class, 'getSessions']);
     Route::get('/claude/sessions/{filename}', [ClaudeController::class, 'getSessionMessages'])->where('filename', '.*');

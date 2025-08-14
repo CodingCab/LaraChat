@@ -10,6 +10,10 @@ Route::get('/', function () {
     return redirect('/claude');
 })->name('home');
 
+Route::get('/dashboard', function () {
+    return redirect('/claude');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
 Route::get('repository/{repository:slug}', [RepositoryDashboardController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('repository.dashboard');

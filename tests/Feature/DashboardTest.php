@@ -22,6 +22,7 @@ class DashboardTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get('/dashboard');
-        $response->assertStatus(200);
+        $response->assertStatus(302);
+        $response->assertRedirect('/claude');
     }
 }

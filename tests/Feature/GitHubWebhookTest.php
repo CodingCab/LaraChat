@@ -113,10 +113,10 @@ class GitHubWebhookTest extends TestCase
 
     public function test_webhook_handles_invalid_json()
     {
-        $response = $this->post('/api/github/webhook', 'invalid-json', [
-            'X-Hub-Signature-256' => 'invalid',
-            'X-GitHub-Event' => 'push',
-        ]);
+        $response = $this->call('POST', '/api/github/webhook', [], [], [], [
+            'HTTP_X-Hub-Signature-256' => 'invalid',
+            'HTTP_X-GitHub-Event' => 'push',
+        ], 'invalid-json');
         
         $response->assertStatus(401);
     }

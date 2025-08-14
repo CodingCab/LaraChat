@@ -9,6 +9,8 @@ class GitHubWebhookLog extends Model
 {
     use HasFactory;
 
+    protected $table = 'github_webhook_logs';
+
     protected $fillable = [
         'event_type',
         'delivery_id',
