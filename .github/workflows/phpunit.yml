@@ -1,20 +1,16 @@
 name: PHPUnit Tests
 on: [push]
 
+env:
+  APP_URL: "http://127.0.0.1:8000"
+  APP_ENV: testing
+  DB_CONNECTION: sqlite
+  DB_DATABASE: ":memory:"
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: laravel_test
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
+  phpunit:
+    runs-on: ubuntu-24.04
+    
     steps:
     - uses: actions/checkout@v4
 
@@ -23,7 +19,7 @@ jobs:
       with:
         php-version: '8.3'
         extensions: mbstring, pdo, pdo_mysql, sqlite, pdo_sqlite, bcmath, json, xml, curl, zip
-        coverage: xdebug
+        coverage: none
 
     - name: Get composer cache directory
       id: composer-cache
@@ -37,24 +33,18 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
 
     - name: Install Composer dependencies
-      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      run: composer install --no-progress --prefer-dist --optimize-autoloader
 
-    - name: Copy .env
+    - name: Prepare The Environment
       run: cp .env.example .env
 
-    - name: Generate application key
+    - name: Generate Application Key
       run: php artisan key:generate
 
-    - name: Create SQLite test database
+    - name: Create SQLite Database
       run: |
         mkdir -p database
         touch database/database.sqlite
-
-    - name: Run migrations
-      env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
-      run: php artisan migrate --force
 
     - name: Install NPM dependencies
       run: npm ci
@@ -62,15 +52,16 @@ jobs:
     - name: Build frontend assets
       run: npm run build
 
-    - name: Execute tests
-      env:
-        DB_CONNECTION: sqlite
-        DB_DATABASE: database/database.sqlite
-      run: php artisan test --parallel
+    - name: Run migrations
+      run: php artisan migrate:fresh --force
 
-    - name: Upload test coverage
-      if: github.event_name == 'push'
-      uses: codecov/codecov-action@v4
+    - name: Run PHPUnit Tests
+      run: php artisan test --order-by=defects
+      timeout-minutes: 10
+
+    - name: Upload Console Logs
+      if: failure()
+      uses: actions/upload-artifact@v4
       with:
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN }}
+        name: console-logs
+        path: storage/logs

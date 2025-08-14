@@ -26,18 +26,29 @@ class SendClaudeMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $assistantMessage = null;
-        
         try {
-            // Create an assistant message placeholder that will be updated as responses come in
-            $assistantMessage = $this->conversation->messages()->create([
-                'role' => 'assistant',
-                'content' => '',
-                'is_streaming' => true,
-            ]);
+            // Filename should already be set by the controller
+            $filename = $this->conversation->filename;
             
+            // If for some reason it's not set, generate it
+            if (!$filename) {
+                $timestamp = now()->format('Y-m-d\TH-i-s');
+                $tempId = substr(uniqid(), -12);
+                $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
+                $this->conversation->update(['filename' => $filename]);
+                
+                // Also save the user message if we had to generate filename
+                ClaudeService::saveUserMessage(
+                    $this->message,
+                    $filename,
+                    $this->conversation->claude_session_id,
+                    $this->conversation->project_directory
+                );
+            }
+            // Note: User message is already saved by the controller synchronously
+
             // Create a progress callback to update the conversation in real-time
-            $progressCallback = function ($type, $data) use ($assistantMessage) {
+            $progressCallback = function ($type, $data) {
                 if ($type === 'sessionId' && !$this->conversation->claude_session_id) {
                     $this->conversation->update(['claude_session_id' => $data]);
                     Log::info('Updated conversation with session ID', [
@@ -47,14 +58,6 @@ class SendClaudeMessageJob implements ShouldQueue
                 } elseif ($type === 'response') {
                     // Update the conversation's updated_at timestamp to signal new content
                     $this->conversation->touch();
-                    
-                    // Update the assistant message content if we have text responses
-                    if (isset($data['content'])) {
-                        $assistantMessage->update([
-                            'content' => $data['content'],
-                            'is_streaming' => true,
-                        ]);
-                    }
                     
                     Log::debug('Progress update', [
                         'conversation_id' => $this->conversation->id,
@@ -68,7 +71,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 $this->message,
                 '--permission-mode bypassPermissions',
                 $this->conversation->claude_session_id,
-                $this->conversation->filename,
+                $filename,
                 $this->conversation->project_directory,
                 $progressCallback
             );
@@ -78,13 +81,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 $this->conversation->update(['claude_session_id' => $result['sessionId']]);
             }
 
-            // Update filename if generated
-            if ($result['filename'] && !$this->conversation->filename) {
-                $this->conversation->update(['filename' => $result['filename']]);
-            }
-
-            // Mark assistant message as no longer streaming
-            $assistantMessage->update(['is_streaming' => false]);
+            // Filename is already set at the beginning, no need to update it again
             
             // Mark conversation as no longer processing
             $this->conversation->update(['is_processing' => false]);
@@ -95,14 +92,6 @@ class SendClaudeMessageJob implements ShouldQueue
                 'sessionId' => $result['sessionId']
             ]);
         } catch (\Exception $e) {
-            // In case of error, mark assistant message as failed and not streaming
-            if ($assistantMessage) {
-                $assistantMessage->update([
-                    'content' => 'Error: Failed to get response from Claude',
-                    'is_streaming' => false,
-                ]);
-            }
-            
             // In case of error, mark as not processing
             $this->conversation->update(['is_processing' => false]);
 

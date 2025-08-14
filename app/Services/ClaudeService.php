@@ -366,9 +366,16 @@ class ClaudeService
             }
         });
 
-        // Final save with complete flag
-        if ($filename) {
+        // Final save with complete flag ONLY if we got responses
+        if ($filename && count($rawJsonResponses) > 0) {
             self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, true, $repositoryPath);
+        } elseif ($filename && count($rawJsonResponses) === 0) {
+            // If no responses, keep it incomplete so it can be retried
+            \Log::warning('No responses from Claude process', [
+                'filename' => $filename,
+                'process_successful' => $process->isSuccessful()
+            ]);
+            self::saveResponse($prompt, $filename, $sessionId, $extractedSessionId, $rawJsonResponses, false, $repositoryPath);
         }
 
         return [
@@ -379,12 +386,29 @@ class ClaudeService
         ];
     }
 
+    /**
+     * Save initial user message to session file immediately
+     */
+    public static function saveUserMessage(string $userMessage, string $filename, ?string $sessionId = null, ?string $repositoryPath = null): void
+    {
+        self::saveResponse($userMessage, $filename, $sessionId, null, [], false, $repositoryPath);
+    }
+
     private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
-        $directory = '';
+        // If filename already includes claude-sessions/, use it as-is
+        // Otherwise, prepend claude-sessions/
+        if (strpos($filename, 'claude-sessions/') === 0) {
+            $path = $filename;
+            $directory = 'claude-sessions';
+        } else {
+            $directory = 'claude-sessions';
+            $path = $directory . '/' . $filename;
+        }
 
         \Log::info('Saving response', [
             'filename' => $filename,
+            'path' => $path,
             'sessionId' => $sessionId,
             'response_count' => count($rawJsonResponses),
             'isComplete' => $isComplete
@@ -395,8 +419,6 @@ class ClaudeService
             Storage::makeDirectory($directory);
             \Log::info('Created claude-sessions directory');
         }
-
-        $path = $directory . '/' . $filename;
         $lockKey = 'file_lock_' . md5($path);
 
         // Use cache lock to prevent concurrent writes
@@ -413,6 +435,7 @@ class ClaudeService
 
                 $messageData = [
                     'sessionId' => $sessionId ?? $extractedSessionId ?? \Illuminate\Support\Str::uuid()->toString(),
+                    'role' => 'user',
                     'userMessage' => $userMessage,
                     'timestamp' => now()->toIso8601String(),
                     'isComplete' => $isComplete,
@@ -428,13 +451,29 @@ class ClaudeService
                     $lastIndex = count($data) - 1;
                     $lastConversation = &$data[$lastIndex];
 
+                    \Log::info('Checking update condition', [
+                        'lastIsComplete' => $lastConversation['isComplete'],
+                        'lastUserMessage' => $lastConversation['userMessage'],
+                        'currentUserMessage' => $userMessage,
+                        'match' => (!$lastConversation['isComplete'] && $lastConversation['userMessage'] === $userMessage)
+                    ]);
+                    
                     if (!$lastConversation['isComplete'] &&
-                        $lastConversation['userMessage'] === $userMessage &&
-                        $lastConversation['sessionId'] === $messageData['sessionId']) {
+                        $lastConversation['userMessage'] === $userMessage) {
                         // Update the existing conversation with new responses
-                        $lastConversation['rawJsonResponses'] = $rawJsonResponses;
-                        $lastConversation['isComplete'] = $isComplete;
-                        $lastConversation['timestamp'] = $messageData['timestamp'];
+                        // Preserve the role field if it exists
+                        if (isset($lastConversation['role'])) {
+                            $messageData['role'] = $lastConversation['role'];
+                        }
+                        // Update with new data while preserving important fields
+                        $data[$lastIndex] = array_merge($lastConversation, [
+                            'rawJsonResponses' => $rawJsonResponses,
+                            'isComplete' => $isComplete,
+                            'timestamp' => $messageData['timestamp'],
+                            'sessionId' => $messageData['sessionId'] ?? $lastConversation['sessionId'],
+                            'repositoryPath' => $messageData['repositoryPath'] ?? $lastConversation['repositoryPath'],
+                            'role' => $lastConversation['role'] ?? $messageData['role'] ?? null
+                        ]);
                         $isNewConversation = false;
                     }
                 }

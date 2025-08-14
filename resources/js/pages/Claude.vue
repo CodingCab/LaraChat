@@ -183,8 +183,6 @@ const startPolling = (interval = POLLING_INTERVAL_MS) => {
     pollingInterval.value = window.setInterval(() => {
         if (props.sessionFile) {
             loadSessionMessages(true);
-        } else if (props.conversationId) {
-            loadConversationMessages();
         }
     }, interval);
 };
@@ -200,20 +198,7 @@ const stopPolling = () => {
 const processConversationResponses = (conversation: any, isPolling = false) => {
     const messagesList = [];
 
-    // Handle initial session format with role: 'user'
-    if (conversation.role === 'user') {
-        if (!isPolling || messages.value.length === 0) {
-            messagesList.push({
-                id: Date.now() + Math.random(),
-                content: conversation.userMessage || '',
-                role: 'user',
-                timestamp: new Date(conversation.timestamp),
-            });
-        }
-        return messagesList;
-    }
-
-    // Handle normal conversation format
+    // Add user message
     if (!isPolling || messages.value.length === 0) {
         messagesList.push({
             id: Date.now() + Math.random(),
@@ -223,6 +208,7 @@ const processConversationResponses = (conversation: any, isPolling = false) => {
         });
     }
 
+    // Process any responses regardless of role field
     if (conversation.rawJsonResponses?.length) {
         // Handle rawJsonResponses as an array of strings (JSON strings that need parsing)
         conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
@@ -265,31 +251,28 @@ const loadSessionMessages = async (isPolling = false) => {
 
         if (!isPolling) {
             const newMessages = [];
-            let userMessageAdded = false;
 
             for (const conversation of sessionData) {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
                 
-                // Skip adding user message if it's already been added from a previous entry
-                if (conversation.role === 'user' && !userMessageAdded) {
+                // Process entries with role field (new format)
+                if (conversation.role === 'user') {
                     const processedMessages = processConversationResponses(conversation);
                     newMessages.push(...processedMessages);
-                    userMessageAdded = true;
-                } else if (conversation.role !== 'user') {
-                    // For non-user entries, skip the user message if already added
+                } else {
+                    // For entries without role or non-user entries
                     const messagesList = [];
                     
-                    // Only add user message if not already added
-                    if (!userMessageAdded && conversation.userMessage) {
+                    // Add user message from this conversation entry
+                    if (conversation.userMessage) {
                         messagesList.push({
                             id: Date.now() + Math.random(),
                             content: conversation.userMessage || '',
                             role: 'user',
                             timestamp: new Date(conversation.timestamp),
                         });
-                        userMessageAdded = true;
                     }
                     
                     // Add assistant responses
@@ -405,127 +388,10 @@ const loadSessionMessages = async (isPolling = false) => {
             if (!pollingInterval.value) {
                 startPolling(500); // Poll more frequently when waiting for file
             }
-            
-            // Also try to load from database in the meantime
-            if (props.conversationId && messages.value.length === 0) {
-                await loadConversationMessages();
-            }
         }
     }
 };
 
-const loadConversationMessages = async () => {
-    if (!props.conversationId) return;
-
-    try {
-        const response = await fetch(`/api/conversations/${props.conversationId}/messages`, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-            }
-        });
-        const data = await response.json();
-
-
-        // Build messages array from API response
-        const newMessages = [];
-        let hasStreamingMessage = false;
-
-        for (const msg of data.messages) {
-            if (msg.role === 'user') {
-                newMessages.push({
-                    id: msg.id || Date.now() + Math.random(),
-                    content: msg.content || '',
-                    role: 'user',
-                    timestamp: new Date(msg.created_at),
-                });
-            } else if (msg.role === 'assistant') {
-                newMessages.push({
-                    id: msg.id || Date.now() + Math.random(),
-                    content: msg.content || '',
-                    role: 'assistant',
-                    timestamp: new Date(msg.created_at),
-                    rawResponses: [],
-                });
-                if (msg.is_streaming) hasStreamingMessage = true;
-            }
-        }
-
-        // Update messages array - defer if user is interacting
-        if (isUserInteracting.value) {
-            // Check if update is actually needed
-            if (!messagesContentEqual(messages.value, newMessages)) {
-                pendingUpdates.value = [{ type: 'messages', data: newMessages }];
-            }
-        } else {
-            // Smart update: Only replace messages if we have data from API
-            // or if we're sure we should clear (no local messages)
-            if (newMessages.length > 0) {
-                // Only update if content actually changed
-                if (!messagesContentEqual(messages.value, newMessages)) {
-                    // Save scroll position before update
-                    const scrollContainer = messagesContainer.value?.$el?.querySelector('.scroll-area-viewport');
-                    const savedScrollTop = scrollContainer?.scrollTop || 0;
-                    const wasAtBottom = isAtBottom.value;
-                    
-                    messages.value = newMessages;
-                    
-                    // Restore scroll position after update if not at bottom
-                    if (!wasAtBottom && scrollContainer) {
-                        nextTick(() => {
-                            scrollContainer.scrollTop = savedScrollTop;
-                        });
-                    }
-                }
-            } else if (messages.value.length === 0 || !isLoading.value) {
-                // Only clear if no local messages or not loading
-                messages.value = newMessages;
-            }
-            // Otherwise keep existing messages to prevent disappearing
-        }
-
-
-        // Check if we're waiting for an assistant response
-        const hasUserMessage = newMessages.some(m => m.role === 'user');
-        const hasAssistantResponse = newMessages.some(m => m.role === 'assistant' && m.content);
-
-        // Show loading if we have a user message but no assistant response yet
-        if (hasUserMessage && !hasAssistantResponse) {
-            isLoading.value = true;
-        } else {
-            isLoading.value = false;
-        }
-
-        // Adjust polling frequency based on streaming status
-        if (hasStreamingMessage) {
-            startPolling(POLLING_INTERVAL_MS);
-        } else if (data.messages.length > 0) {
-            // Only continue slow polling if conversation might still be active
-            // Stop after messages are complete
-            const lastMessage = data.messages[data.messages.length - 1];
-            if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content) {
-                // Assistant has responded, we can stop polling eventually
-                isLoading.value = false;
-                if (!pollingInterval.value) {
-                    // Do one more poll cycle to ensure we got everything
-                    startPolling(POLLING_INTERVAL_SLOW_MS);
-                    setTimeout(() => stopPolling(), POLLING_INTERVAL_SLOW_MS * 2);
-                }
-            } else {
-                // Still waiting for response
-                isLoading.value = true;
-                startPolling(POLLING_INTERVAL_SLOW_MS);
-            }
-        }
-
-        // Only scroll if not interacting and at bottom
-        if (!isUserInteracting.value && isAtBottom.value) {
-            await nextTick();
-            await scrollToBottom(false);
-        }
-    } catch (error) {
-        console.error('Error loading conversation messages:', error);
-    }
-};
 
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || isLoading.value) return;
@@ -683,14 +549,9 @@ onMounted(async () => {
 
     if (props.sessionFile) {
         await loadSessionMessages();
-        // If no messages were loaded from session file, also check database
-        if (messages.value.length === 0 && props.conversationId) {
-            await loadConversationMessages();
-        }
     } else if (props.conversationId) {
-        // Load messages from database (for job-based conversations from quick chat)
-        await loadConversationMessages();
-        // Start polling immediately since message might still be processing
+        // For conversation-based pages, we'll need to wait for the session file
+        // Start polling immediately to check for session file
         if (!pollingInterval.value) {
             startPolling(POLLING_INTERVAL_MS);
         }
