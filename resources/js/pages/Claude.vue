@@ -247,8 +247,6 @@ const loadSessionMessages = async (isPolling = false) => {
         const sessionData = await loadSession(props.sessionFile);
         incompleteMessageFound.value = false;
 
-        isPolling = false;
-
         if (!isPolling) {
             const newMessages = [];
 
