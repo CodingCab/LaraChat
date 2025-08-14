@@ -13,6 +13,7 @@ interface Conversation {
     updated_at: string;
 }
 
+// Move these outside the composable function to share state across all instances
 const conversations = ref<Conversation[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);

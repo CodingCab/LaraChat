@@ -22,7 +22,6 @@ const POLLING_INTERVAL_MS = 2000;
 const POLLING_INTERVAL_SLOW_MS = 5000;
 const SCROLL_DELAY_MS = 150;
 const SCROLL_RETRY_DELAY_MS = 200;
-const REFRESH_DELAY_MS = 500;
 const SESSION_REFRESH_DELAY_MS = 1000;
 
 const props = defineProps<{
@@ -266,13 +265,61 @@ const loadSessionMessages = async (isPolling = false) => {
 
         if (!isPolling) {
             const newMessages = [];
+            let userMessageAdded = false;
 
             for (const conversation of sessionData) {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
-                const processedMessages = processConversationResponses(conversation);
-                newMessages.push(...processedMessages);
+                
+                // Skip adding user message if it's already been added from a previous entry
+                if (conversation.role === 'user' && !userMessageAdded) {
+                    const processedMessages = processConversationResponses(conversation);
+                    newMessages.push(...processedMessages);
+                    userMessageAdded = true;
+                } else if (conversation.role !== 'user') {
+                    // For non-user entries, skip the user message if already added
+                    const messagesList = [];
+                    
+                    // Only add user message if not already added
+                    if (!userMessageAdded && conversation.userMessage) {
+                        messagesList.push({
+                            id: Date.now() + Math.random(),
+                            content: conversation.userMessage || '',
+                            role: 'user',
+                            timestamp: new Date(conversation.timestamp),
+                        });
+                        userMessageAdded = true;
+                    }
+                    
+                    // Add assistant responses
+                    if (conversation.rawJsonResponses?.length) {
+                        conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
+                            let rawResponse: any;
+                            if (typeof rawResponseStr === 'string') {
+                                try {
+                                    rawResponse = JSON.parse(rawResponseStr);
+                                } catch (e) {
+                                    console.error('Failed to parse raw response:', e);
+                                    rawResponse = { type: 'error', content: rawResponseStr };
+                                }
+                            } else {
+                                rawResponse = rawResponseStr;
+                            }
+                            
+                            const content = extractTextFromResponse(rawResponse);
+                            messagesList.push({
+                                id: Date.now() + Math.random() + i,
+                                content: content || `[${rawResponse.type || 'unknown'} response]`,
+                                role: 'assistant',
+                                timestamp: new Date(conversation.timestamp),
+                                rawResponses: [rawResponse],
+                            });
+                        });
+                    }
+                    
+                    newMessages.push(...messagesList);
+                }
             }
             
             // Update messages - defer if user is interacting
@@ -334,9 +381,36 @@ const loadSessionMessages = async (isPolling = false) => {
             startPolling();
         } else if (!incompleteMessageFound.value && pollingInterval.value) {
             stopPolling();
+        } else if (pollingInterval.value && messages.value.length > 0) {
+            // If we were polling rapidly for file creation and now have messages,
+            // switch to normal polling speed
+            stopPolling();
+            if (incompleteMessageFound.value) {
+                startPolling(POLLING_INTERVAL_MS);
+            }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error loading session messages:', error);
+        
+        // If the session file doesn't exist yet (404), start polling to retry
+        if (error?.response?.status === 404) {
+            console.log('Session file not found yet, starting polling to retry...');
+            
+            // Show loading state while waiting for session file
+            if (messages.value.length === 0) {
+                isLoading.value = true;
+            }
+            
+            // Keep trying to load the session file
+            if (!pollingInterval.value) {
+                startPolling(500); // Poll more frequently when waiting for file
+            }
+            
+            // Also try to load from database in the meantime
+            if (props.conversationId && messages.value.length === 0) {
+                await loadConversationMessages();
+            }
+        }
     }
 };
 
@@ -462,6 +536,7 @@ const sendMessage = async () => {
     resetTextareaHeight();
     isLoading.value = true;
     await scrollToBottom(true); // Force scroll when user sends a message
+    
 
     // Initialize session if needed
     if (!sessionFilename.value) {
@@ -522,7 +597,14 @@ const sendMessage = async () => {
             conversationId.value = result.conversationId;
             // Start polling to get updates from the server
             startPolling(POLLING_INTERVAL_MS);
-            setTimeout(() => fetchConversations(), REFRESH_DELAY_MS);
+            // Immediately refresh conversations to show in sidebar
+            await fetchConversations(false, true);
+            
+            // Update the URL immediately without losing state
+            if (!props.conversationId) {
+                const targetPath = `/claude/conversation/${conversationId.value}`;
+                window.history.replaceState({}, '', targetPath);
+            }
         }
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
@@ -534,20 +616,6 @@ const sendMessage = async () => {
     } finally {
         isLoading.value = false;
         await scrollToBottom(false); // Smart scroll after message completes
-
-        // Handle redirects and refresh
-        if (!props.sessionFile && !props.conversationId && conversationId.value) {
-            // Only redirect if we're not already on the conversation page
-            const currentPath = window.location.pathname;
-            const targetPath = `/claude/conversation/${conversationId.value}`;
-            if (!currentPath.includes(targetPath)) {
-                // Use replace to avoid losing state
-                router.visit(targetPath, { 
-                    preserveState: true,
-                    preserveScroll: true 
-                });
-            }
-        }
 
         if (!props.sessionFile) {
             setTimeout(() => refreshSessions(), SESSION_REFRESH_DELAY_MS);
