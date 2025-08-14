@@ -49,51 +49,62 @@ class ClaudeController extends Controller
             if ($conversation->user_id !== auth()->id()) {
                 abort(403);
             }
+        } else {
+            // Create a new conversation if none exists
+            $timestamp = now()->format('Y-m-d\TH-i-s');
+            $tempId = substr(uniqid(), -12);
+            $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
             
-            // Generate filename if not exists
-            if (!$conversation->filename) {
-                $timestamp = now()->format('Y-m-d\TH-i-s');
-                $tempId = substr(uniqid(), -12);
-                $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
-                $conversation->filename = $filename;
-            }
-            
-            // Update conversation with new message and mark as processing
-            $conversation->update([
+            $conversation = Conversation::create([
+                'user_id' => auth()->id(),
                 'message' => $request->input('prompt'),
+                'filename' => $filename,
                 'is_processing' => true,
-                'filename' => $conversation->filename
+                'claude_session_id' => $request->input('sessionId'),
+                'project_directory' => $request->input('repositoryPath'),
             ]);
             
-            // Save user message immediately (synchronously) before queuing
-            // Convert relative path to absolute if needed
-            $projectDir = $conversation->project_directory;
-            if ($projectDir && !str_starts_with($projectDir, '/')) {
-                $projectDir = storage_path($projectDir);
-            }
-            
-            ClaudeService::saveUserMessage(
-                $request->input('prompt'),
-                $conversation->filename,
-                $conversation->claude_session_id,
-                $projectDir
-            );
-            
-            // Dispatch job to send message to Claude
-            SendClaudeMessageJob::dispatch($conversation, $request->input('prompt'));
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Message queued for processing',
-                'conversationId' => $conversationId,
-                'sessionFilename' => $conversation->filename,
-            ]);
+            $conversationId = $conversation->id;
         }
         
-        // If no conversation ID, return error (streaming without conversation is no longer supported)
+        // Generate filename if not exists
+        if (!$conversation->filename) {
+            $timestamp = now()->format('Y-m-d\TH-i-s');
+            $tempId = substr(uniqid(), -12);
+            $filename = "claude-sessions/{$timestamp}-session-{$tempId}.json";
+            $conversation->filename = $filename;
+        }
+        
+        // Update conversation with new message and mark as processing
+        $conversation->update([
+            'message' => $request->input('prompt'),
+            'is_processing' => true,
+            'filename' => $conversation->filename
+        ]);
+        
+        // Save user message immediately (synchronously) before queuing
+        // Convert relative path to absolute if needed
+        $projectDir = $conversation->project_directory;
+        if ($projectDir && !str_starts_with($projectDir, '/')) {
+            $projectDir = storage_path($projectDir);
+        }
+        
+        ClaudeService::saveUserMessage(
+            $request->input('prompt'),
+            $conversation->filename,
+            $conversation->claude_session_id,
+            $projectDir
+        );
+        
+        // Dispatch job to send message to Claude
+        SendClaudeMessageJob::dispatch($conversation, $request->input('prompt'));
+        
         return response()->json([
-            'error' => 'Conversation ID is required'
-        ], 422);
+            'success' => true,
+            'message' => 'Message queued for processing',
+            'conversationId' => $conversationId,
+            'sessionFilename' => $conversation->filename,
+        ]);
     }
 
     public function getSessionMessages($filename)
