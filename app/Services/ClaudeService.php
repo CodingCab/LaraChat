@@ -379,6 +379,14 @@ class ClaudeService
         ];
     }
 
+    /**
+     * Save initial user message to session file immediately
+     */
+    public static function saveUserMessage(string $userMessage, string $filename, ?string $sessionId = null, ?string $repositoryPath = null): void
+    {
+        self::saveResponse($userMessage, $filename, $sessionId, null, [], false, $repositoryPath);
+    }
+
     private static function saveResponse(string $userMessage, string $filename, ?string $sessionId, ?string $extractedSessionId, array $rawJsonResponses, bool $isComplete, ?string $repositoryPath = null): void
     {
         $directory = '';

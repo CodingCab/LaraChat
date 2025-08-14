@@ -27,6 +27,24 @@ class SendClaudeMessageJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            // Generate filename if not exists
+            if (!$this->conversation->filename) {
+                $timestamp = now()->format('Y-m-d\TH-i-s');
+                $tempId = substr(uniqid(), -12);
+                $filename = "{$timestamp}-session-{$tempId}.json";
+                $this->conversation->update(['filename' => $filename]);
+            } else {
+                $filename = $this->conversation->filename;
+            }
+
+            // Save user message immediately
+            ClaudeService::saveUserMessage(
+                $this->message,
+                $filename,
+                $this->conversation->claude_session_id,
+                $this->conversation->project_directory
+            );
+
             // Create a progress callback to update the conversation in real-time
             $progressCallback = function ($type, $data) {
                 if ($type === 'sessionId' && !$this->conversation->claude_session_id) {
@@ -51,7 +69,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 $this->message,
                 '--permission-mode bypassPermissions',
                 $this->conversation->claude_session_id,
-                $this->conversation->filename,
+                $filename,
                 $this->conversation->project_directory,
                 $progressCallback
             );
@@ -61,10 +79,7 @@ class SendClaudeMessageJob implements ShouldQueue
                 $this->conversation->update(['claude_session_id' => $result['sessionId']]);
             }
 
-            // Update filename if generated
-            if ($result['filename'] && !$this->conversation->filename) {
-                $this->conversation->update(['filename' => $result['filename']]);
-            }
+            // Filename is already set at the beginning, no need to update it again
             
             // Mark conversation as no longer processing
             $this->conversation->update(['is_processing' => false]);
