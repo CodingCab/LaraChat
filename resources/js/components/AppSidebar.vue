@@ -105,7 +105,12 @@ const handleRepositoryClick = (repositorySlug: string) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id" class="mb-1">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
-                            <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true" class="flex items-center">
+                            <Link
+                                :href="`/claude/conversation/${conversation.id}`"
+                                :preserve-scroll="true"
+                                :preserve-state="true"
+                                class="flex items-center"
+                            >
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
                                     <span class="block truncate">{{ conversation.title }}</span>

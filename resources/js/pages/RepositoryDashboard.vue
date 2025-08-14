@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Activity, ArrowRight, Clock, Copy, FileCode, FolderOpen, GitBranch, MessageSquare, Send, Sparkles, Terminal } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { Activity, ArrowRight, FileCode, MessageSquare, Send, Sparkles } from 'lucide-vue-next';
+import { onMounted, ref } from 'vue';
 
 const props = defineProps<{
     repository: {
@@ -34,7 +31,6 @@ const props = defineProps<{
     }>;
 }>();
 
-
 const fileTree = ref<any[]>([]);
 const loadingTree = ref(false);
 const messageInput = ref('');
@@ -51,30 +47,13 @@ const fetchFileTree = async () => {
     }
 };
 
-const copyToHot = async () => {
-    try {
-        await axios.post(`/api/repositories/${props.repository.id}/copy-to-hot`);
-        router.reload({ only: ['repository'] });
-    } catch (error) {
-        console.error('Failed to copy to hot folder:', error);
-    }
-};
-
-const startChatSession = () => {
-    router.visit(`/claude?repository=${encodeURIComponent(props.repository.name)}`);
-};
-
-const openConversation = (conversationId: number) => {
-    router.visit(`/claude/conversation/${conversationId}`);
-};
-
 const startChatWithMessage = (message?: string) => {
     const finalMessage = message || messageInput.value.trim();
     if (finalMessage) {
         // Use router.get with data to properly send parameters
         router.get('/claude/new', {
             message: finalMessage,
-            repository: props.repository.name
+            repository: props.repository.name,
         });
     }
 };
@@ -88,14 +67,6 @@ const quickMessages = [
 
 onMounted(() => {
     fetchFileTree();
-});
-
-const formattedDate = computed(() => {
-    return new Date(props.repository.created_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    });
 });
 </script>
 
@@ -120,13 +91,13 @@ const formattedDate = computed(() => {
                             v-model="messageInput"
                             placeholder="Type your message or question..."
                             @keyup.enter="startChatWithMessage()"
-                            class="h-14 pl-5 pr-14 text-base"
+                            class="h-14 pr-14 pl-5 text-base"
                         />
                         <Button
                             @click="startChatWithMessage()"
                             :disabled="!messageInput.trim()"
                             size="icon"
-                            class="absolute right-2 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full"
+                            class="absolute top-1/2 right-2 h-10 w-10 -translate-y-1/2 rounded-full"
                         >
                             <Send class="h-4 w-4" />
                         </Button>
@@ -168,7 +139,6 @@ const formattedDate = computed(() => {
                     </div>
                 </div>
             </div>
-
         </div>
     </AppLayout>
 </template>

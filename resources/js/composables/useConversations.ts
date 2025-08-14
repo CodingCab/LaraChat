@@ -26,7 +26,7 @@ export function useConversations() {
         if (hasInitialized && !force && !silent && conversations.value.length > 0) {
             return;
         }
-        
+
         if (!silent) {
             loading.value = true;
         }
@@ -36,10 +36,10 @@ export function useConversations() {
             const response = await axios.get<Conversation[]>('/api/claude/conversations');
             conversations.value = response.data;
             hasInitialized = true;
-            
+
             // Check if any conversations are processing
-            const hasProcessing = response.data.some(conv => conv.is_processing);
-            
+            const hasProcessing = response.data.some((conv) => conv.is_processing);
+
             // Set up or clear interval based on processing status
             if (hasProcessing && !refreshInterval) {
                 // Start periodic refresh every 2 seconds
@@ -63,7 +63,7 @@ export function useConversations() {
 
     // Check if any conversation is processing
     const hasProcessingConversations = computed(() => {
-        return conversations.value.some(conv => conv.is_processing);
+        return conversations.value.some((conv) => conv.is_processing);
     });
 
     // Clean up interval on component unmount
