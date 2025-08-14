@@ -15,11 +15,6 @@ class SendClaudeMessageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3;
-    public $maxExceptions = 3;
-    public $timeout = 600;
-    public $backoff = [30, 60, 120];
-
     protected Conversation $conversation;
     protected string $message;
 
