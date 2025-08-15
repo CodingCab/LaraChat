@@ -6,8 +6,33 @@ use App\Models\Repository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
 
+/**
+ * @group Repository Management
+ * 
+ * APIs for managing Git repositories
+ */
 class RepositoryController extends Controller
 {
+    /**
+     * List repositories
+     * 
+     * Get a list of all repositories with their hot folder status
+     * 
+     * @authenticated
+     * 
+     * @response 200 scenario="Success" [{
+     *   "id": 1,
+     *   "name": "my-project",
+     *   "url": "https://github.com/user/my-project.git",
+     *   "local_path": "repositories/base/my-project",
+     *   "branch": "main",
+     *   "last_pulled_at": "2024-01-15T10:30:00.000000Z",
+     *   "has_hot_folder": true,
+     *   "slug": "my-project",
+     *   "created_at": "2024-01-10T08:00:00.000000Z",
+     *   "updated_at": "2024-01-15T10:30:00.000000Z"
+     * }]
+     */
     public function index(Request $request)
     {
         $repositories = Repository::orderBy('created_at', 'desc')
@@ -27,6 +52,38 @@ class RepositoryController extends Controller
         return $repositories;
     }
 
+    /**
+     * Clone repository
+     * 
+     * Clone a new Git repository to the local system
+     * 
+     * @authenticated
+     * 
+     * @bodyParam url string required The Git repository URL. Example: https://github.com/user/repo.git
+     * @bodyParam branch string optional The branch to clone. If not specified, the default branch will be used. Example: develop
+     * 
+     * @response 200 scenario="Success" {
+     *   "message": "Repository cloned successfully",
+     *   "repository": {
+     *     "id": 1,
+     *     "name": "my-project",
+     *     "url": "https://github.com/user/my-project.git",
+     *     "local_path": "repositories/base/my-project",
+     *     "branch": "main",
+     *     "last_pulled_at": "2024-01-15T10:30:00.000000Z"
+     *   }
+     * }
+     * 
+     * @response 409 scenario="Repository Exists" {
+     *   "message": "Repository already exists",
+     *   "repository": {}
+     * }
+     * 
+     * @response 422 scenario="Clone Failed" {
+     *   "message": "Failed to clone repository",
+     *   "error": "fatal: repository not found"
+     * }
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -105,6 +162,19 @@ class RepositoryController extends Controller
         ]);
     }
 
+    /**
+     * Delete repository
+     * 
+     * Remove a repository from the system
+     * 
+     * @authenticated
+     * 
+     * @urlParam repository integer required The ID of the repository. Example: 1
+     * 
+     * @response 200 scenario="Success" {
+     *   "message": "Repository deleted successfully"
+     * }
+     */
     public function destroy(Repository $repository)
     {
         $fullPath = storage_path('app/private/' . $repository->local_path);
@@ -120,6 +190,32 @@ class RepositoryController extends Controller
         ]);
     }
 
+    /**
+     * Pull repository updates
+     * 
+     * Pull the latest changes from the remote repository
+     * 
+     * @authenticated
+     * 
+     * @urlParam repository integer required The ID of the repository. Example: 1
+     * 
+     * @response 200 scenario="Success" {
+     *   "message": "Repository updated successfully",
+     *   "repository": {
+     *     "id": 1,
+     *     "name": "my-project",
+     *     "url": "https://github.com/user/my-project.git",
+     *     "local_path": "repositories/base/my-project",
+     *     "branch": "main",
+     *     "last_pulled_at": "2024-01-15T11:00:00.000000Z"
+     *   }
+     * }
+     * 
+     * @response 422 scenario="Pull Failed" {
+     *   "message": "Failed to pull repository",
+     *   "error": "error: Your local changes would be overwritten"
+     * }
+     */
     public function pull(Repository $repository)
     {
         $fullPath = storage_path('app/private/' . $repository->local_path);
@@ -143,6 +239,25 @@ class RepositoryController extends Controller
         ]);
     }
 
+    /**
+     * Copy repository to hot folder
+     * 
+     * Check if a hot folder exists for the repository or trigger creation
+     * 
+     * @authenticated
+     * 
+     * @urlParam repository integer required The ID of the repository. Example: 1
+     * 
+     * @response 200 scenario="Hot Folder Exists" {
+     *   "message": "Hot folder already exists",
+     *   "has_hot_folder": true
+     * }
+     * 
+     * @response 200 scenario="Copy Job Dispatched" {
+     *   "message": "Repository copy job dispatched",
+     *   "has_hot_folder": false
+     * }
+     */
     public function copyToHot(Repository $repository)
     {
         // Check if hot folder already exists

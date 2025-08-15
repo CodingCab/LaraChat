@@ -10,6 +10,11 @@ Route::get('/', function () {
     return redirect('/claude');
 })->name('home');
 
+// Redirect from /api/docs to /docs for convenience
+Route::get('/api/docs', function () {
+    return redirect('/docs');
+});
+
 Route::get('/dashboard', function () {
     return redirect('/claude');
 })->middleware(['auth', 'verified'])->name('dashboard');

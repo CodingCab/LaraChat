@@ -1,0 +1,386 @@
+name: Conversations
+description: |-
+
+  APIs for managing Claude AI conversations
+endpoints:
+  -
+    httpMethods:
+      - GET
+    uri: api/conversations
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List conversations'
+      description: 'Get a list of all non-archived conversations for the authenticated user'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          [{
+            "id": 1,
+            "user_id": 1,
+            "title": "How to implement authentication",
+            "message": "Can you help me implement JWT authentication?",
+            "claude_session_id": "session_abc123",
+            "project_directory": "/projects/abc123",
+            "repository": "myapp",
+            "filename": "claude-sessions/2024-01-15T10-30-00-session-abc123.json",
+            "is_processing": false,
+            "archived": false,
+            "created_at": "2024-01-15T10:30:00.000000Z",
+            "updated_at": "2024-01-15T10:35:00.000000Z"
+          }]
+        headers: []
+        description: Success
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: api/conversations
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create conversation'
+      description: 'Start a new conversation with Claude AI'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      message:
+        name: message
+        description: 'The initial message to send to Claude. Can be base64 encoded.'
+        required: true
+        example: 'How do I implement authentication?'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+      repository:
+        name: repository
+        description: 'optional The repository to use for this conversation.'
+        required: false
+        example: myapp
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        custom: []
+    cleanBodyParameters:
+      message: 'How do I implement authentication?'
+      repository: myapp
+    fileParameters: []
+    responses:
+      -
+        status: 302
+        content: |-
+          {
+            "redirect": "/claude/1"
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 422
+        content: |-
+          {
+            "message": "The message field is required.",
+            "errors": {
+              "message": ["The message field is required."]
+            }
+          }
+        headers: []
+        description: 'Validation Error'
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - GET
+    uri: api/conversations/archived
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List archived conversations'
+      description: 'Get a list of all archived conversations for the authenticated user'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          [{
+            "id": 2,
+            "user_id": 1,
+            "title": "Old conversation about testing",
+            "message": "How do I write unit tests?",
+            "claude_session_id": "session_xyz789",
+            "project_directory": "/projects/xyz789",
+            "repository": "testapp",
+            "filename": "claude-sessions/2024-01-10T14-20-00-session-xyz789.json",
+            "is_processing": false,
+            "archived": true,
+            "created_at": "2024-01-10T14:20:00.000000Z",
+            "updated_at": "2024-01-10T14:25:00.000000Z"
+          }]
+        headers: []
+        description: Success
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: 'api/conversations/{conversation_id}/archive'
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Archive conversation'
+      description: 'Archive a conversation to hide it from the main list'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      conversation_id:
+        name: conversation_id
+        description: 'The ID of the conversation.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        custom: []
+      conversation:
+        name: conversation
+        description: 'The ID of the conversation.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanUrlParameters:
+      conversation_id: 16
+      conversation: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Conversation archived successfully"
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 403
+        content: |-
+          {
+            "error": "Unauthorized"
+          }
+        headers: []
+        description: Unauthorized
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: 'api/conversations/{conversation_id}/unarchive'
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Unarchive conversation'
+      description: 'Restore an archived conversation to the main list'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      conversation_id:
+        name: conversation_id
+        description: 'The ID of the conversation.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        custom: []
+      conversation:
+        name: conversation
+        description: 'The ID of the conversation.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanUrlParameters:
+      conversation_id: 16
+      conversation: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Conversation unarchived successfully"
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 403
+        content: |-
+          {
+            "error": "Unauthorized"
+          }
+        headers: []
+        description: Unauthorized
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - GET
+    uri: api/claude/conversations
+    metadata:
+      groupName: Conversations
+      groupDescription: |-
+
+        APIs for managing Claude AI conversations
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List conversations'
+      description: 'Get a list of all non-archived conversations for the authenticated user'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          [{
+            "id": 1,
+            "user_id": 1,
+            "title": "How to implement authentication",
+            "message": "Can you help me implement JWT authentication?",
+            "claude_session_id": "session_abc123",
+            "project_directory": "/projects/abc123",
+            "repository": "myapp",
+            "filename": "claude-sessions/2024-01-15T10-30-00-session-abc123.json",
+            "is_processing": false,
+            "archived": false,
+            "created_at": "2024-01-15T10:30:00.000000Z",
+            "updated_at": "2024-01-15T10:35:00.000000Z"
+          }]
+        headers: []
+        description: Success
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
