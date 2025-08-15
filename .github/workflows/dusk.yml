@@ -51,10 +51,10 @@ jobs:
         composer install --no-interaction --prefer-dist --optimize-autoloader
 
     - name: Copy .env
-      run: cp .env.example .env.dusk.local
+      run: cp .env.example .env
 
     - name: Generate application key
-      run: php artisan key:generate --env=dusk.local
+      run: php artisan key:generate
 
     - name: Create SQLite test database
       run: |
