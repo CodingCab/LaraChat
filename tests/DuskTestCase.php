@@ -28,10 +28,14 @@ abstract class DuskTestCase extends BaseTestCase
      */
     protected function driver(): RemoteWebDriver
     {
+        $tempDir = sys_get_temp_dir() . '/chrome-' . uniqid();
+        mkdir($tempDir, 0777, true);
+        
         $options = (new ChromeOptions)->addArguments(collect([
             $this->shouldStartMaximized() ? '--start-maximized' : '--window-size=1920,1080',
             '--disable-dev-shm-usage',
             '--no-sandbox',
+            '--user-data-dir=' . $tempDir,
             '--disable-blink-features=AutomationControlled',
             '--disable-web-security',
             '--ignore-certificate-errors',
