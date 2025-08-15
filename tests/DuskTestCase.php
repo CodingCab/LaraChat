@@ -32,7 +32,9 @@ abstract class DuskTestCase extends BaseTestCase
             $this->shouldStartMaximized() ? '--start-maximized' : '--window-size=1920,1080',
             '--disable-dev-shm-usage',
             '--no-sandbox',
-            '--user-data-dir=/tmp/chrome-' . uniqid(),
+            '--disable-blink-features=AutomationControlled',
+            '--disable-web-security',
+            '--ignore-certificate-errors',
         ])->unless($this->hasHeadlessDisabled(), function (Collection $items) {
             return $items->merge([
                 '--disable-gpu',
