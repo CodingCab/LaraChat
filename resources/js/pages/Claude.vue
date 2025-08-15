@@ -13,14 +13,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
-import { Eye, EyeOff, Send, Archive, ArchiveRestore } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { GitBranch } from 'lucide-vue-next';
 import axios from 'axios';
+import { Archive, ArchiveRestore, Eye, EyeOff, GitBranch, Send } from 'lucide-vue-next';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 // Constants
 const POLLING_INTERVAL_MS = 2000;
-const POLLING_INTERVAL_SLOW_MS = 5000;
 const SCROLL_DELAY_MS = 150;
 const SCROLL_RETRY_DELAY_MS = 200;
 const SESSION_REFRESH_DELAY_MS = 1000;
@@ -36,21 +34,22 @@ const props = defineProps<{
 const breadcrumbs = computed<BreadcrumbItem[]>(() => {
     const items: BreadcrumbItem[] = [{ title: 'Claude', href: '/claude' }];
     if (selectedRepository.value && selectedRepositoryData.value) {
-        items.push({ 
+        items.push({
             title: selectedRepositoryData.value.name,
-            icon: GitBranch
+            icon: GitBranch,
         });
     } else if (selectedRepository.value) {
-        items.push({ 
+        items.push({
             title: selectedRepository.value,
-            icon: GitBranch
+            icon: GitBranch,
         });
     }
     return items;
 });
 
 // Composables
-const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } = useChatUI();
+const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextareaHeight, resetTextareaHeight, focusInput, setupFocusHandlers } =
+    useChatUI();
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
@@ -88,19 +87,19 @@ const handleUserInteractionEnd = () => {
 
 const applyPendingUpdates = () => {
     if (pendingUpdates.value.length === 0) return;
-    
+
     const updates = [...pendingUpdates.value];
     pendingUpdates.value = [];
-    
+
     // Apply all pending updates
-    updates.forEach(update => {
+    updates.forEach((update) => {
         if (update.type === 'messages') {
             messages.value = update.data;
         } else if (update.type === 'append') {
             messages.value.push(...update.data);
         }
     });
-    
+
     // Scroll only if user is at bottom
     if (isAtBottom.value) {
         nextTick(() => scrollToBottom(false));
@@ -142,21 +141,6 @@ const generateSessionFilename = () => {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     const tempId = Date.now().toString(36);
     return `${timestamp}-session-${tempId}.json`;
-};
-
-const messagesContentEqual = (msgs1: any[], msgs2: any[]) => {
-    if (msgs1.length !== msgs2.length) return false;
-    
-    for (let i = 0; i < msgs1.length; i++) {
-        const m1 = msgs1[i];
-        const m2 = msgs2[i];
-        
-        if (m1.role !== m2.role || m1.content !== m2.content) {
-            return false;
-        }
-    }
-    
-    return true;
 };
 
 const extractSessionId = (responses: any[]) => {
@@ -258,7 +242,7 @@ const loadSessionMessages = async (isPolling = false) => {
                 if (!conversation.isComplete) {
                     incompleteMessageFound.value = true;
                 }
-                
+
                 // Process entries with role field (new format)
                 if (conversation.role === 'user') {
                     const processedMessages = processConversationResponses(conversation);
@@ -266,7 +250,7 @@ const loadSessionMessages = async (isPolling = false) => {
                 } else {
                     // For entries without role or non-user entries
                     const messagesList = [];
-                    
+
                     // Add user message from this conversation entry
                     if (conversation.userMessage) {
                         messagesList.push({
@@ -276,7 +260,7 @@ const loadSessionMessages = async (isPolling = false) => {
                             timestamp: new Date(conversation.timestamp),
                         });
                     }
-                    
+
                     // Add assistant responses
                     if (conversation.rawJsonResponses?.length) {
                         conversation.rawJsonResponses.forEach((rawResponseStr: any, i: number) => {
@@ -291,7 +275,7 @@ const loadSessionMessages = async (isPolling = false) => {
                             } else {
                                 rawResponse = rawResponseStr;
                             }
-                            
+
                             const content = extractTextFromResponse(rawResponse);
                             messagesList.push({
                                 id: Date.now() + Math.random() + i,
@@ -302,11 +286,11 @@ const loadSessionMessages = async (isPolling = false) => {
                             });
                         });
                     }
-                    
+
                     newMessages.push(...messagesList);
                 }
             }
-            
+
             // Update messages - defer if user is interacting
             if (isUserInteracting.value) {
                 pendingUpdates.value = [{ type: 'messages', data: newMessages }];
@@ -337,7 +321,7 @@ const loadSessionMessages = async (isPolling = false) => {
                     incompleteMessageFound.value = true;
 
                     // Update only if we have new responses
-                    const existingResponseCount = messages.value.filter(m => m.role === 'assistant').length;
+                    const existingResponseCount = messages.value.filter((m) => m.role === 'assistant').length;
                     const newResponses = lastConversation.rawJsonResponses?.slice(existingResponseCount) || [];
 
                     newResponses.forEach((rawResponse: any, i: number) => {
@@ -355,7 +339,7 @@ const loadSessionMessages = async (isPolling = false) => {
         }
 
         sessionFilename.value = props.sessionFile;
-        
+
         // Only scroll if not interacting
         if (!isUserInteracting.value) {
             // Force scroll to bottom on initial load, otherwise use smart scrolling
@@ -377,16 +361,16 @@ const loadSessionMessages = async (isPolling = false) => {
         }
     } catch (error: any) {
         console.error('Error loading session messages:', error);
-        
+
         // If the session file doesn't exist yet (404), start polling to retry
         if (error?.response?.status === 404) {
             console.log('Session file not found yet, starting polling to retry...');
-            
+
             // Show loading state while waiting for session file
             if (messages.value.length === 0) {
                 isLoading.value = true;
             }
-            
+
             // Keep trying to load the session file
             if (!pollingInterval.value) {
                 startPolling(500); // Poll more frequently when waiting for file
@@ -394,7 +378,6 @@ const loadSessionMessages = async (isPolling = false) => {
         }
     }
 };
-
 
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || isLoading.value) return;
@@ -405,7 +388,6 @@ const sendMessage = async () => {
     resetTextareaHeight();
     isLoading.value = true;
     await scrollToBottom(true); // Force scroll when user sends a message
-    
 
     // Initialize session if needed
     if (!sessionFilename.value) {
@@ -413,7 +395,7 @@ const sendMessage = async () => {
 
         // Add to sessions list immediately for new sessions
         if (!props.sessionFile) {
-            const existingSession = claudeSessions.value.find(s => s.filename === sessionFilename.value);
+            const existingSession = claudeSessions.value.find((s) => s.filename === sessionFilename.value);
             if (!existingSession) {
                 claudeSessions.value.unshift({
                     filename: sessionFilename.value,
@@ -453,7 +435,7 @@ const sendMessage = async () => {
 
                 const assistantMessage = addAssistantMessage();
                 appendToMessage(assistantMessage.id, text, rawResponse);
-                
+
                 // Only scroll if user is not selecting text and is at bottom
                 if (!isUserInteracting.value && isAtBottom.value) {
                     scrollToBottom(false);
@@ -476,6 +458,13 @@ const sendMessage = async () => {
             startPolling(POLLING_INTERVAL_MS);
             // Immediately refresh conversations to show in sidebar
             await fetchConversations(true, true); // Force refresh silently
+            
+            // Update the URL immediately without losing state
+            if (!props.conversationId) {
+                const targetPath = `/claude/conversation/${conversationId.value}`;
+                window.history.replaceState({}, '', targetPath);
+            }
+            
             // Start temporary conversation polling to ensure sidebar updates
             startConversationPolling(1000); // Poll every 1 second temporarily
             setTimeout(() => stopConversationPolling(), 5000); // Stop after 5 seconds
@@ -510,15 +499,15 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 const archiveConversation = async () => {
     if (!conversationId.value || isArchiving.value) return;
-    
+
     isArchiving.value = true;
     try {
         await axios.post(`/api/conversations/${conversationId.value}/archive`);
         isArchived.value = true;
-        
+
         // Refresh conversations list to update sidebar
         await fetchConversations(false, true);
-        
+
         // Redirect to main Claude page after archiving
         router.visit('/claude');
     } catch (error) {
@@ -530,12 +519,12 @@ const archiveConversation = async () => {
 
 const unarchiveConversation = async () => {
     if (!conversationId.value || isArchiving.value) return;
-    
+
     isArchiving.value = true;
     try {
         await axios.post(`/api/conversations/${conversationId.value}/unarchive`);
         isArchived.value = false;
-        
+
         // Refresh conversations list to update sidebar
         await fetchConversations(false, true);
     } catch (error) {
@@ -546,45 +535,58 @@ const unarchiveConversation = async () => {
 };
 
 // Watchers
-watch(() => props.sessionFile, async (newFile, oldFile) => {
-    if (newFile !== oldFile) {
-        stopPolling();
-        incompleteMessageFound.value = false;
-        messages.value = [];
+watch(
+    () => props.sessionFile,
+    async (newFile, oldFile) => {
+        if (newFile !== oldFile) {
+            stopPolling();
+            incompleteMessageFound.value = false;
+            messages.value = [];
 
-        if (newFile) {
-            await loadSessionMessages();
-            // Force scroll to bottom when switching to a different conversation
-            await scrollToBottom(true);
-        } else {
-            sessionFilename.value = null;
-            sessionId.value = null;
+            if (newFile) {
+                await loadSessionMessages();
+                // Force scroll to bottom when switching to a different conversation
+                await scrollToBottom(true);
+            } else {
+                sessionFilename.value = null;
+                sessionId.value = null;
+            }
         }
-    }
-});
+    },
+);
 
-watch(() => props.repository, (newRepo) => {
-    selectedRepository.value = newRepo || null;
-}, { immediate: true });
+watch(
+    () => props.repository,
+    (newRepo) => {
+        selectedRepository.value = newRepo || null;
+    },
+    { immediate: true },
+);
 
 // Reset archive state when conversation changes
-watch(() => props.conversationId, (newId) => {
-    conversationId.value = newId || null;
-    // Reset archive button state when conversation changes
-    isArchived.value = props.isArchived || false;
-    isArchiving.value = false;
-});
+watch(
+    () => props.conversationId,
+    (newId) => {
+        conversationId.value = newId || null;
+        // Reset archive button state when conversation changes
+        isArchived.value = props.isArchived || false;
+        isArchiving.value = false;
+    },
+);
 
 // Update archive state when prop changes
-watch(() => props.isArchived, (newValue) => {
-    isArchived.value = newValue || false;
-});
+watch(
+    () => props.isArchived,
+    (newValue) => {
+        isArchived.value = newValue || false;
+    },
+);
 
 // Lifecycle
 onMounted(async () => {
     // Set up global selection tracking
     let selectionTimer: number | null = null;
-    
+
     const handleSelectionChange = () => {
         const selection = window.getSelection();
         if (selection && selection.toString().length > 0) {
@@ -598,7 +600,7 @@ onMounted(async () => {
             }, 100);
         }
     };
-    
+
     document.addEventListener('selectionchange', handleSelectionChange);
     document.addEventListener('mousedown', handleUserInteractionStart);
     document.addEventListener('mouseup', () => {
@@ -670,10 +672,7 @@ onUnmounted(() => {
         </template>
         <div class="flex h-[calc(100vh-4rem)] flex-col bg-background">
             <!-- Chat Messages -->
-            <ScrollArea 
-                ref="messagesContainer" 
-                class="flex-1 p-4"
-            >
+            <ScrollArea ref="messagesContainer" class="flex-1 p-4">
                 <div class="space-y-4">
                     <ChatMessage
                         v-for="message in filteredMessages"

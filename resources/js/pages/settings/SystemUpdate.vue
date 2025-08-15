@@ -3,13 +3,13 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
-import { Button } from '@/components/ui/button';
-import Alert from '@/components/ui/alert.vue';
 import AlertDescription from '@/components/ui/alert-description.vue';
+import Alert from '@/components/ui/alert.vue';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-vue-next';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-vue-next';
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -59,10 +59,7 @@ const runUpdate = () => {
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall 
-                    title="System Update" 
-                    description="Update the application to the latest version from the repository" 
-                />
+                <HeadingSmall title="System Update" description="Update the application to the latest version from the repository" />
 
                 <div class="space-y-4">
                     <Alert>
@@ -71,7 +68,10 @@ const runUpdate = () => {
                             <strong>Warning:</strong> This will run the following commands:
                             <ul class="mt-2 ml-4 list-disc text-sm">
                                 <li><code class="text-xs">git fetch</code> - Fetches latest changes from repository</li>
-                                <li><code class="text-xs">git reset --hard origin/master</code> - Resets to latest master branch (will discard local changes)</li>
+                                <li>
+                                    <code class="text-xs">git reset --hard origin/master</code> - Resets to latest master branch (will discard local
+                                    changes)
+                                </li>
                                 <li><code class="text-xs">composer install</code> - Installs/updates PHP dependencies</li>
                                 <li><code class="text-xs">npm run build</code> - Rebuilds the application assets</li>
                             </ul>
@@ -79,11 +79,7 @@ const runUpdate = () => {
                     </Alert>
 
                     <div class="flex items-center gap-4">
-                        <Button 
-                            @click="runUpdate" 
-                            :disabled="isUpdating"
-                            variant="default"
-                        >
+                        <Button @click="runUpdate" :disabled="isUpdating" variant="default">
                             <Loader2 v-if="isUpdating" class="mr-2 h-4 w-4 animate-spin" />
                             {{ isUpdating ? 'Updating...' : 'Run System Update' }}
                         </Button>
@@ -104,8 +100,8 @@ const runUpdate = () => {
                     </Alert>
 
                     <div v-if="updateOutput" class="mt-4">
-                        <h3 class="text-sm font-medium mb-2">Command Output:</h3>
-                        <pre class="bg-muted p-4 rounded-md text-xs overflow-x-auto whitespace-pre-wrap">{{ updateOutput }}</pre>
+                        <h3 class="mb-2 text-sm font-medium">Command Output:</h3>
+                        <pre class="overflow-x-auto rounded-md bg-muted p-4 text-xs whitespace-pre-wrap">{{ updateOutput }}</pre>
                     </div>
                 </div>
             </div>

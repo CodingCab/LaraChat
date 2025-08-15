@@ -39,7 +39,7 @@ const toggleRawResponse = () => {
         <div
             :class="[
                 'max-w-[70%] rounded-2xl px-4 py-2',
-                message.role === 'user' ? 'bg-muted text-foreground' : 'bg-card text-card-foreground border',
+                message.role === 'user' ? 'bg-muted text-foreground' : 'border bg-card text-card-foreground',
             ]"
         >
             <p class="text-sm break-words whitespace-pre-wrap" v-html="parsedContent"></p>

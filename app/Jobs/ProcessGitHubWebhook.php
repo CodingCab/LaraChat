@@ -64,9 +64,10 @@ class ProcessGitHubWebhook implements ShouldQueue
                 ->first();
                 
             if ($repository && $this->data['ref'] === 'refs/heads/' . ($repository->default_branch ?? 'main')) {
-                dispatch(new \App\Jobs\PullRepository($repository));
+                // TODO: Uncomment when PullRepository job is implemented
+                // dispatch(new \App\Jobs\PullRepository($repository));
                 
-                Log::info('Auto-pull triggered for repository', [
+                Log::info('Auto-pull would be triggered for repository (not yet implemented)', [
                     'repository' => $repositoryName,
                     'ref' => $this->data['ref'],
                 ]);

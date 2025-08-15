@@ -6,7 +6,7 @@ export function useChatUI() {
 
     const getScrollableViewport = () => {
         if (!messagesContainer.value) return null;
-        
+
         // Get the actual DOM element from the Vue component ref
         const element = (messagesContainer.value as any).$el || messagesContainer.value;
 
@@ -34,7 +34,7 @@ export function useChatUI() {
     const isAtBottom = () => {
         const viewport = getScrollableViewport();
         if (!viewport) return true; // Default to true if we can't determine
-        
+
         // Check if scrolled to bottom (within 50px threshold for floating point errors)
         const threshold = 50;
         return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < threshold;
@@ -43,7 +43,7 @@ export function useChatUI() {
     const scrollToBottom = async (force = false) => {
         await nextTick();
         const viewport = getScrollableViewport();
-        
+
         if (viewport && (force || isAtBottom())) {
             viewport.scrollTop = viewport.scrollHeight;
 
@@ -107,10 +107,6 @@ export function useChatUI() {
             }
             focusInput(isLoading);
         }
-    };
-
-    const handleVisibilityChange = (isLoading: boolean) => {
-        // Removed auto-focus on visibility change to not interrupt user actions
     };
 
     const setupFocusHandlers = (isLoading: { value: boolean }) => {
