@@ -53,7 +53,7 @@ const { messagesContainer, textareaRef, scrollToBottom, isAtBottom, adjustTextar
 const { messages, addUserMessage, addAssistantMessage, appendToMessage, formatTime } = useChatMessages();
 const { isLoading, sendMessageToApi, loadSession } = useClaudeApi();
 const { claudeSessions, refreshSessions } = useClaudeSessions();
-const { fetchConversations, startPolling: startConversationPolling, stopPolling: stopConversationPolling } = useConversations();
+const { conversations, fetchConversations, startPolling: startConversationPolling, stopPolling: stopConversationPolling } = useConversations();
 const { repositories, fetchRepositories } = useRepositories();
 
 // Local state
@@ -67,6 +67,7 @@ const isUserInteracting = ref(false);
 const pendingUpdates = ref<any[]>([]);
 const isArchived = ref(props.isArchived || false);
 const isArchiving = ref(false);
+const showArchiveConfirm = ref(false);
 
 // Polling state
 const pollingInterval = ref<number | null>(null);
@@ -504,12 +505,23 @@ const archiveConversation = async () => {
     try {
         await axios.post(`/api/conversations/${conversationId.value}/archive`);
         isArchived.value = true;
+        showArchiveConfirm.value = false;
 
         // Refresh conversations list to update sidebar
         await fetchConversations(false, true);
 
-        // Redirect to main Claude page after archiving
-        router.visit('/claude');
+        // Navigate to the previous conversation if available
+        const currentIndex = conversations.value.findIndex(c => c.id === conversationId.value);
+        if (currentIndex > 0 && conversations.value[currentIndex - 1]) {
+            // Go to previous conversation
+            router.visit(`/claude/conversation/${conversations.value[currentIndex - 1].id}`);
+        } else if (currentIndex < conversations.value.length - 1 && conversations.value[currentIndex + 1]) {
+            // Go to next conversation if no previous
+            router.visit(`/claude/conversation/${conversations.value[currentIndex + 1].id}`);
+        } else {
+            // No other conversations, go to main page
+            router.visit('/claude');
+        }
     } catch (error) {
         console.error('Error archiving conversation:', error);
     } finally {
@@ -571,6 +583,7 @@ watch(
         // Reset archive button state when conversation changes
         isArchived.value = props.isArchived || false;
         isArchiving.value = false;
+        showArchiveConfirm.value = false;
     },
 );
 
@@ -579,6 +592,7 @@ watch(
     () => props.isArchived,
     (newValue) => {
         isArchived.value = newValue || false;
+        showArchiveConfirm.value = false;
     },
 );
 
@@ -650,8 +664,8 @@ onUnmounted(() => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <template #header-actions>
             <Button
-                v-if="conversationId"
-                @click="isArchived ? unarchiveConversation() : archiveConversation()"
+                v-if="conversationId && !showArchiveConfirm"
+                @click="isArchived ? unarchiveConversation() : (showArchiveConfirm = true)"
                 variant="ghost"
                 size="icon"
                 :title="isArchived ? 'Unarchive Conversation' : 'Archive Conversation'"
@@ -660,6 +674,24 @@ onUnmounted(() => {
             >
                 <component :is="isArchived ? ArchiveRestore : Archive" class="h-4 w-4" />
             </Button>
+            <div v-if="conversationId && showArchiveConfirm && !isArchived" class="mr-2 flex gap-2">
+                <Button
+                    @click="showArchiveConfirm = false"
+                    variant="outline"
+                    size="sm"
+                    :disabled="isArchiving"
+                >
+                    Cancel
+                </Button>
+                <Button
+                    @click="archiveConversation()"
+                    variant="destructive"
+                    size="sm"
+                    :disabled="isArchiving"
+                >
+                    Are you sure?
+                </Button>
+            </div>
             <Button
                 @click="hideSystemMessages = !hideSystemMessages"
                 variant="ghost"
