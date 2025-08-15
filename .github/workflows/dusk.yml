@@ -41,7 +41,9 @@ jobs:
         restore-keys: ${{ runner.os }}-composer-
 
     - name: Install Composer dependencies
-      run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      run: |
+        composer validate --strict || composer update --no-scripts
+        composer install --no-interaction --prefer-dist --optimize-autoloader
 
     - name: Copy .env
       run: cp .env.example .env.dusk.local
