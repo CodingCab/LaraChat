@@ -9,6 +9,8 @@ on:
 jobs:
   dusk:
     runs-on: ubuntu-latest
+    env:
+      CI: true
     
     services:
       mysql:

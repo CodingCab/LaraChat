@@ -17,7 +17,8 @@ abstract class DuskTestCase extends BaseTestCase
     #[BeforeClass]
     public static function prepare(): void
     {
-        if (! static::runningInSail()) {
+        // ChromeDriver is started manually in CI
+        if (! static::runningInSail() && ! env('CI')) {
             static::startChromeDriver();
         }
     }
