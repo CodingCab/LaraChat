@@ -25,3 +25,9 @@ When asked to create a PR, use this command:
 git checkout -b feature/new-branch && git push -u fork feature/new-branch && gh pr create --base master --head AdamAidenCommet:feature/new-branch --repo CodingCab/LaraChat --title "PR title" --body "PR description"
 ```
 Replace `feature/new-branch` with appropriate branch name, and update title/body as needed.
+
+## Branch Reset Command
+When asked to reset branch, checkout to master, or similar, run:
+```bash
+scripts/refresh-master.sh
+```
