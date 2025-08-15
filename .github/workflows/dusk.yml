@@ -23,6 +23,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+      with:
+        chrome-version: stable
+
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -69,10 +74,15 @@ jobs:
       run: npm run build
 
     - name: Upgrade Chrome Driver
-      run: php artisan dusk:chrome-driver --detect
+      run: |
+        php artisan dusk:chrome-driver --detect
+        chmod +x ./vendor/laravel/dusk/bin/chromedriver-linux
 
     - name: Start Chrome Driver
-      run: ./vendor/laravel/dusk/bin/chromedriver-linux &
+      run: |
+        ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 &
+        sleep 5
+        curl http://127.0.0.1:9515/status || exit 1
 
     - name: Start Laravel Server
       env:
@@ -98,6 +108,7 @@ jobs:
         DB_CONNECTION: sqlite
         DB_DATABASE: database/database.sqlite
         DUSK_HEADLESS_DISABLED: false
+        DUSK_DRIVER_URL: http://127.0.0.1:9515
       run: php artisan dusk
 
     - name: Upload Screenshots
