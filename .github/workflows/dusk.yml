@@ -25,11 +25,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Chrome
-      uses: browser-actions/setup-chrome@v1
-      with:
-        chrome-version: stable
-
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -78,13 +73,12 @@ jobs:
     - name: Upgrade Chrome Driver
       run: |
         php artisan dusk:chrome-driver --detect
-        chmod +x ./vendor/laravel/dusk/bin/chromedriver-linux
+        chmod -R 0755 vendor/laravel/dusk/bin/
 
     - name: Start Chrome Driver
       run: |
-        ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 &
-        sleep 5
-        curl http://127.0.0.1:9515/status || exit 1
+        ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 > /dev/null 2>&1 &
+        sleep 2
 
     - name: Start Laravel Server
       env:
