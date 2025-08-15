@@ -85,3 +85,4 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 - when I ask you to do or create PR, you should use this commmand: git checkout -b feature/new-branch && git push -u fork feature/new-branch && gh pr create --base master --head
   AdamAidenCommet:feature/new-branch --repo CodingCab/LaraChat --title "PR title" --body "PR description"
+- when i tell you to reset branch, checkout to master or something similiar, run scripts/refresh-master.sh
