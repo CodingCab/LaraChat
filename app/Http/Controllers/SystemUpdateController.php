@@ -12,25 +12,23 @@ class SystemUpdateController extends Controller
     public function update(Request $request)
     {
         try {
-            $output = [];
-
-            $command = 'git fetch';
-            $output[] = "git fetch: " . $this->runCommand($command)->getOutput();
-
-            $command = 'git reset --hard origin/master';
-            $output[] = "git reset: " . $this->runCommand($command)->getOutput();
-
-            $command = 'composer install';
-            $output[] = "composer install: " . $this->runCommand($command)->getOutput();
-
-            $command = 'npm run build';
-            $output[] = "npm build: " . $this->runCommand($command)->getOutput();
-
-            Log::info('System update completed successfully', ['output' => implode("\n", $output)]);
+            // Run the refresh-master.sh script
+            $scriptPath = base_path('scripts/refresh-master.sh');
+            
+            // Make sure the script is executable
+            if (!file_exists($scriptPath)) {
+                throw new \Exception('Update script not found at: ' . $scriptPath);
+            }
+            
+            // Run the refresh-master.sh script
+            $process = $this->runCommand('bash ' . escapeshellarg($scriptPath));
+            $output = $process->getOutput();
+            
+            Log::info('System update completed successfully', ['output' => $output]);
 
             return back()->with('flash', [
                 'message' => 'System update completed successfully!',
-                'output' => implode("\n\n", $output)
+                'output' => $output
             ]);
 
         } catch (ProcessFailedException $e) {
