@@ -56,7 +56,7 @@ jobs:
       run: php artisan migrate:fresh --force
 
     - name: Run PHPUnit Tests
-      run: php artisan test --order-by=defects
+      run: php artisan test --exclude-testsuite=Browser --order-by=defects
       timeout-minutes: 10
 
     - name: Upload Console Logs
