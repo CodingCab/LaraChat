@@ -73,11 +73,6 @@ class ConversationsController extends Controller
 
     public function archive(Conversation $conversation)
     {
-        // Ensure the user owns this conversation
-        if ($conversation->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
         $conversation->archived = true;
         $conversation->save();
 
@@ -86,11 +81,6 @@ class ConversationsController extends Controller
 
     public function unarchive(Conversation $conversation)
     {
-        // Ensure the user owns this conversation
-        if ($conversation->user_id !== Auth::id()) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
         $conversation->archived = false;
         $conversation->save();
 
