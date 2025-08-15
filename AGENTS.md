@@ -18,3 +18,10 @@ Blue code is 19B
      - Create and checkout to a new feature branch
   4. Push to GitHub
   5. NEVER push directly to the default branch
+
+## PR Creation Command
+When asked to create a PR, use this command:
+```bash
+git checkout -b feature/new-branch && git push -u fork feature/new-branch && gh pr create --base master --head AdamAidenCommet:feature/new-branch --repo CodingCab/LaraChat --title "PR title" --body "PR description"
+```
+Replace `feature/new-branch` with appropriate branch name, and update title/body as needed.
