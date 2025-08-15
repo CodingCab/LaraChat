@@ -10,6 +10,7 @@
 .env
 .env.backup
 .env.production
+.env.dusk.local
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -28,3 +29,5 @@ yarn-error.log
 /storage/app/private/repositories
 /repositories
 /public/vendor/telescope
+/tests/Browser/screenshots
+/tests/Browser/console
