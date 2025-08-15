@@ -9,8 +9,32 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @group Claude AI Integration
+ * 
+ * APIs for interacting with Claude AI assistant
+ */
 class ClaudeController extends Controller
 {
+    /**
+     * Stop Claude process
+     * 
+     * Stop a running Claude AI process
+     * 
+     * @authenticated
+     * 
+     * @bodyParam processId string required The ID of the process to stop. Example: proc_123456
+     * 
+     * @response 200 scenario="Success" {
+     *   "success": true,
+     *   "message": "Process stopped successfully"
+     * }
+     * 
+     * @response 200 scenario="Process Not Found" {
+     *   "success": false,
+     *   "message": "Process not found or already stopped"
+     * }
+     */
     public function stop(Request $request)
     {
         $request->validate([
@@ -27,6 +51,36 @@ class ClaudeController extends Controller
     }
 
     /**
+     * Send message to Claude
+     * 
+     * Send a message to Claude AI and receive a response
+     * 
+     * @authenticated
+     * 
+     * @bodyParam prompt string required The message to send to Claude. Example: Can you help me debug this code?
+     * @bodyParam sessionId string optional The Claude session ID. Example: session_abc123
+     * @bodyParam sessionFilename string optional The session filename. Example: claude-sessions/2024-01-15T10-30-00-session-abc123.json
+     * @bodyParam conversationId integer optional The conversation ID. Example: 1
+     * @bodyParam repositoryPath string optional The repository path for context. Example: /projects/my-app
+     * 
+     * @response 200 scenario="Success" {
+     *   "success": true,
+     *   "message": "Message queued for processing",
+     *   "conversationId": 1,
+     *   "sessionFilename": "claude-sessions/2024-01-15T10-30-00-session-abc123.json"
+     * }
+     * 
+     * @response 403 scenario="Unauthorized" {
+     *   "message": "Forbidden"
+     * }
+     * 
+     * @response 422 scenario="Validation Error" {
+     *   "message": "The prompt field is required.",
+     *   "errors": {
+     *     "prompt": ["The prompt field is required."]
+     *   }
+     * }
+     * 
      * @throws Exception
      */
     public function store(Request $request)
@@ -107,6 +161,30 @@ class ClaudeController extends Controller
         ]);
     }
 
+    /**
+     * Get session messages
+     * 
+     * Retrieve all messages from a Claude AI session
+     * 
+     * @authenticated
+     * 
+     * @urlParam filename string required The session filename. Example: claude-sessions/2024-01-15T10-30-00-session-abc123.json
+     * 
+     * @response 200 scenario="Success" [{
+     *   "prompt": "Can you help me debug this code?",
+     *   "rawJsonResponses": ["Looking at your code..."],
+     *   "timestamp": "2024-01-15T10:30:00.000000Z",
+     *   "sessionId": "session_abc123"
+     * }]
+     * 
+     * @response 404 scenario="Session Not Found" {
+     *   "error": "Session file not found"
+     * }
+     * 
+     * @response 422 scenario="Invalid Session File" {
+     *   "error": "Invalid session file"
+     * }
+     */
     public function getSessionMessages($filename)
     {
         $path = $filename;

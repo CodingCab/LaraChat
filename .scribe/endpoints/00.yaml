@@ -1,0 +1,79 @@
+name: 'System Commands'
+description: |-
+
+  APIs for executing system commands
+endpoints:
+  -
+    httpMethods:
+      - POST
+    uri: api/run-command
+    metadata:
+      groupName: 'System Commands'
+      groupDescription: |-
+
+        APIs for executing system commands
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Execute command'
+      description: 'Run a system command and return the output'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      command:
+        name: command
+        description: 'The command to execute.'
+        required: true
+        example: 'ls -la'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanBodyParameters:
+      command: 'ls -la'
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "output": "total 48\ndrwxr-xr-x  12 user  staff   384 Jan 15 10:30 .\ndrwxr-xr-x   5 user  staff   160 Jan 10 08:00 ..",
+            "success": true
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 200
+        content: |-
+          {
+            "output": "ls: invalid option -- 'z'",
+            "success": false
+          }
+        headers: []
+        description: 'Command Failed'
+        custom: []
+      -
+        status: 500
+        content: |-
+          {
+            "output": "Command execution failed",
+            "success": false
+          }
+        headers: []
+        description: 'Execution Error'
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
