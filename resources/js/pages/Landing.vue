@@ -184,8 +184,9 @@ onUnmounted(() => {
                         Chat Platform
                     </h1>
                     <p class="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
-                        Transform your team's communication with LaraChat - the perfect fusion of Laravel's robustness, 
-                        Vue's reactivity, and Claude AI's intelligence. Built for developers, loved by users.
+                        The Chat & Code Platform That's Already Running.
+                        Accelerate your team's development workflow with LaraChat - where powerful infrastructure meets Claude AI's intelligence. 
+                        Built for project development, support, testing, and planning.
                     </p>
                     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/register">
