@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
@@ -86,21 +86,24 @@ onMounted(() => {
                     </div>
 
                     <!-- Main Input -->
-                    <div class="relative">
-                        <Input
-                            v-model="messageInput"
-                            placeholder="Type your message or question..."
-                            @keyup.enter="startChatWithMessage()"
-                            class="h-14 pr-14 pl-5 text-base"
-                        />
-                        <Button
-                            @click="startChatWithMessage()"
-                            :disabled="!messageInput.trim()"
-                            size="icon"
-                            class="absolute top-1/2 right-2 h-10 w-10 -translate-y-1/2 rounded-full"
-                        >
-                            <Send class="h-4 w-4" />
-                        </Button>
+                    <div class="space-y-2">
+                        <div class="relative">
+                            <Textarea
+                                v-model="messageInput"
+                                placeholder="Type your message or question..."
+                                @keyup.ctrl.enter="startChatWithMessage()"
+                                class="min-h-[100px] resize-y pr-14 pl-5 text-base"
+                            />
+                            <Button
+                                @click="startChatWithMessage()"
+                                :disabled="!messageInput.trim()"
+                                size="icon"
+                                class="absolute bottom-2 right-2 h-10 w-10 rounded-full"
+                            >
+                                <Send class="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <p class="text-xs text-muted-foreground text-center">Press Ctrl+Enter to send</p>
                     </div>
 
                     <!-- Quick Messages -->
