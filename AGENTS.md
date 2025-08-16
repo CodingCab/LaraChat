@@ -6,6 +6,7 @@ Blue code is 19B
 
 ## Important Instructions
 1. **Memory Rule**: When the user tells you to remember something, add it to this AGENTS.md file.
+2. **Answer First Rule**: When someone asks you a question, answer the question first before starting to code. Don't immediately jump into coding without answering what was asked.
 2. **ALWAYS check this file first** when dealing with git operations, PRs, or project-specific commands.
 
 ## Critical Git Operation Rules
@@ -20,7 +21,7 @@ Blue code is 19B
 3. **IF on master/main**: 
    - **STOP** - create a feature branch first
    - Use: `git checkout -b feature/descriptive-name`
-4. Then push: `git push -u origin feature/branch-name`
+4. Then push: `git push -u fork feature/branch-name`
 5. **NEVER EVER** push directly to master/main
 
 ### When user says "create PR" or "make PR":
@@ -47,22 +48,23 @@ git commit -m "Your commit message"
 ### Step 3: Create PR using EXACT command structure
 **CRITICAL**: Use this EXACT command pattern (DO NOT MODIFY THE STRUCTURE):
 ```bash
-git checkout -b feature/[descriptive-name] && git push -u origin feature/[descriptive-name] && gh pr create --base master --head feature/[descriptive-name] --repo CodingCab/LaraChat --title "[Your PR Title]" --body "[Your PR Description]"
+git checkout -b feature/[descriptive-name] && git push -u fork feature/[descriptive-name] && gh pr create --base master --head AdamAidenCommet:feature/[descriptive-name] --repo CodingCab/LaraChat --title "[Your PR Title]" --body "[Your PR Description]"
 ```
 
 **MANDATORY RULES**:
-- ✅ ALWAYS use `origin` (NOT `fork`)
+- ✅ ALWAYS use `fork` (NOT `origin`) for pushing
+- ✅ ALWAYS use `--head AdamAidenCommet:feature/[descriptive-name]` (the fork branch)
 - ✅ ALWAYS target `--repo CodingCab/LaraChat` (the ORIGIN repository)
 - ✅ ALWAYS use `--base master` (the main branch)
 - ✅ ALWAYS replace `[descriptive-name]` with a meaningful branch name (e.g., `fix-sidebar-navigation`, `add-user-profile`)
 - ✅ ALWAYS include a clear PR title and description
 - ❌ NEVER push directly to master
-- ❌ NEVER create PRs to a fork
+- ❌ NEVER push to origin, always use fork
 - ❌ NEVER skip the commit step if there are changes
 
 ### Example of CORRECT PR creation:
 ```bash
-git checkout -b feature/improve-chat-ui && git push -u origin feature/improve-chat-ui && gh pr create --base master --head feature/improve-chat-ui --repo CodingCab/LaraChat --title "Improve chat UI responsiveness" --body "- Enhanced mobile layout\n- Fixed message alignment\n- Added loading states"
+git checkout -b feature/improve-chat-ui && git push -u fork feature/improve-chat-ui && gh pr create --base master --head AdamAidenCommet:feature/improve-chat-ui --repo CodingCab/LaraChat --title "Improve chat UI responsiveness" --body "- Enhanced mobile layout\n- Fixed message alignment\n- Added loading states"
 ```
 
 ## Branch Reset Command - USE THIS SCRIPT
