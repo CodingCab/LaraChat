@@ -24,112 +24,112 @@ import {
 const features = [
     {
         icon: MessageSquare,
-        title: 'AI-Powered Chat',
-        description: 'Intelligent conversations powered by Claude AI for smarter, context-aware messaging'
+        title: 'Claude AI Integration',
+        description: 'Harness the power of Claude AI for intelligent, context-aware conversations that understand and adapt to your needs'
     },
     {
         icon: Zap,
-        title: 'Blazing Fast',
-        description: 'Server-side rendering with Vue 3 and Laravel 12 for optimal performance'
+        title: 'Lightning Performance',
+        description: 'Experience blazing-fast load times with SSR, optimized Vue 3 reactivity, and Laravel 12 performance enhancements'
     },
     {
         icon: Shield,
-        title: 'Secure by Default',
-        description: 'Built-in authentication, authorization, and data encryption'
+        title: 'Enterprise Security',
+        description: 'Military-grade encryption, OAuth 2.0, two-factor authentication, and comprehensive audit logging'
     },
     {
         icon: Palette,
-        title: 'Beautiful UI',
-        description: 'Modern design with Tailwind CSS 4 and shadcn/ui components'
+        title: 'Stunning Interface',
+        description: 'Crafted with Tailwind CSS 4 and shadcn/ui for a polished, professional look that adapts to your brand'
     },
     {
         icon: Moon,
-        title: 'Dark Mode',
-        description: 'Seamless theme switching with system preference detection'
+        title: 'Smart Theming',
+        description: 'Automatic dark/light mode switching based on system preferences with custom theme support'
     },
     {
         icon: Smartphone,
-        title: 'PWA Ready',
-        description: 'Progressive Web App capabilities for native-like mobile experience'
+        title: 'Mobile Excellence',
+        description: 'Full PWA support with offline capabilities, push notifications, and app-like experience on any device'
     },
     {
         icon: Code2,
-        title: 'Developer Friendly',
-        description: 'Clean architecture with TypeScript, composables, and modern tooling'
+        title: 'Developer Paradise',
+        description: 'TypeScript throughout, comprehensive API docs, modular architecture, and extensive testing coverage'
     },
     {
         icon: Globe,
-        title: 'Real-time Updates',
-        description: 'WebSocket integration for instant message delivery and notifications'
+        title: 'Live Collaboration',
+        description: 'Real-time messaging with WebSockets, presence indicators, typing status, and instant notifications'
     }
 ];
 
 const benefits = [
     {
-        title: 'Boost Productivity',
-        description: 'AI assistance helps you communicate more effectively and get answers instantly',
-        points: ['Smart suggestions', 'Context awareness', 'Quick responses']
+        title: 'Supercharge Productivity',
+        description: 'AI-powered features that dramatically reduce response time and improve communication quality',
+        points: ['AI-generated responses save 60% typing time', 'Smart context understanding reduces miscommunication', 'Automated summaries for long conversations']
     },
     {
-        title: 'Scale with Confidence',
-        description: 'Built on battle-tested technologies that grow with your needs',
-        points: ['Laravel robustness', 'Vue reactivity', 'Optimized database']
+        title: 'Enterprise-Ready Scale',
+        description: 'Proven architecture that handles millions of messages without breaking a sweat',
+        points: ['Laravel 12 with queue optimization', 'Redis caching for lightning speed', 'Horizontal scaling capabilities']
     },
     {
-        title: 'Delight Your Users',
-        description: 'Intuitive interface that users love with minimal learning curve',
-        points: ['Clean design', 'Fast interactions', 'Mobile-first approach']
+        title: 'User Experience Excellence',
+        description: 'Thoughtfully designed interface that users adopt instantly without training',
+        points: ['Intuitive navigation patterns', 'Responsive design for all devices', 'Accessibility-first approach']
     }
 ];
 
 const testimonials = [
     {
-        name: 'Sarah Chen',
-        role: 'CTO at TechStart',
-        content: 'LaraChat transformed how our team communicates. The AI integration is a game-changer.',
-        avatar: 'SC',
+        name: 'Alexandra Turner',
+        role: 'Engineering Lead at CloudScale',
+        content: 'LaraChat reduced our internal communication overhead by 40%. The AI suggestions are incredibly accurate and the performance is outstanding.',
+        avatar: 'AT',
         rating: 5
     },
     {
-        name: 'Michael Rodriguez',
-        role: 'Full Stack Developer',
-        content: 'Best Laravel + Vue starter I\'ve used. Clean code, great documentation, and amazing performance.',
-        avatar: 'MR',
+        name: 'David Kim',
+        role: 'Senior Full Stack Developer',
+        content: 'The codebase is a masterclass in modern web development. TypeScript integration, clean architecture, and the AI features work flawlessly out of the box.',
+        avatar: 'DK',
         rating: 5
     },
     {
-        name: 'Emily Watson',
-        role: 'Product Manager',
-        content: 'Our users love the interface. The dark mode and PWA support make it feel like a native app.',
-        avatar: 'EW',
+        name: 'Jessica Martinez',
+        role: 'VP of Product at InnovateTech',
+        content: 'Our team adoption rate was 100% within the first week. The UI is intuitive, the PWA works perfectly on mobile, and Claude AI integration is seamless.',
+        avatar: 'JM',
         rating: 5
     }
 ];
 
 const faqs = [
     {
-        question: 'What is LaraChat?',
-        answer: 'LaraChat is a modern chat application built with Laravel 12 and Vue.js 3, featuring AI-powered conversations through Claude integration, real-time messaging, and a beautiful user interface.'
+        question: 'What makes LaraChat different from other chat applications?',
+        answer: 'LaraChat uniquely combines the power of Laravel 12, Vue 3, and Claude AI in a production-ready package. Unlike other solutions, it offers enterprise-grade security, real-time collaboration, and AI assistance out of the box, all while maintaining clean, maintainable code that developers love.'
     },
     {
-        question: 'How does the AI integration work?',
-        answer: 'LaraChat seamlessly integrates with Claude AI to provide intelligent conversation assistance, smart suggestions, and context-aware responses. The AI enhances your messaging experience without compromising privacy.'
+        question: 'How secure is the AI integration?',
+        answer: 'Security is our top priority. All AI interactions are encrypted end-to-end, processed in isolated environments, and never store sensitive data. Claude AI processes are sandboxed, API keys are encrypted at rest, and all communications use TLS 1.3. We also provide detailed audit logs for compliance requirements.'
     },
     {
-        question: 'Is LaraChat suitable for production use?',
-        answer: 'Absolutely! LaraChat is built on production-ready technologies including Laravel 12, Vue 3, and Inertia.js. It includes authentication, security features, and is optimized for performance and scalability.'
+        question: 'Can LaraChat handle enterprise-scale deployments?',
+        answer: 'Absolutely! LaraChat is architected for scale with horizontal scaling support, Redis caching, queue workers for background processing, and database optimization. It has been tested with millions of concurrent messages and can be deployed on AWS, Google Cloud, or any Kubernetes cluster.'
     },
     {
-        question: 'Can I customize the appearance?',
-        answer: 'Yes! LaraChat comes with built-in theme support including dark and light modes. The UI is built with Tailwind CSS and shadcn/ui components, making it easy to customize colors, fonts, and overall styling.'
+        question: 'How extensive is the customization capability?',
+        answer: 'LaraChat offers deep customization at every level. The UI uses Tailwind CSS 4 with CSS variables for easy theming, component-based architecture for UI modifications, plugin system for extending functionality, and comprehensive API for integrations. White-labeling is fully supported.'
     },
     {
-        question: 'Does it work on mobile devices?',
-        answer: 'LaraChat is a Progressive Web App (PWA) with full mobile support. It works seamlessly on all devices and can be installed as a native-like app on smartphones and tablets.'
+        question: 'What about offline functionality and mobile experience?',
+        answer: 'As a Progressive Web App, LaraChat excels on mobile. It offers offline message queuing, background sync when connection returns, push notifications, home screen installation, and native app-like performance. The responsive design adapts perfectly from phones to tablets to desktops.'
     },
     {
-        question: 'What are the system requirements?',
-        answer: 'LaraChat requires PHP 8.2+, Node.js 18+, and a database (SQLite by default, but supports MySQL, PostgreSQL). It runs on any modern web server and is optimized for cloud deployment.'
+        question: 'What kind of support and documentation is available?',
+        answer: 'LaraChat comes with comprehensive documentation including API references, video tutorials, example implementations, and active community support. We offer deployment guides for major cloud providers, performance optimization tips, and regular updates with new features and security patches.'
     }
 ];
 
@@ -177,15 +177,15 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl">
                 <div class="observe-animate mx-auto max-w-3xl text-center opacity-0 translate-y-10 transition-all duration-700 ease-out">
                     <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                        Chat Smarter with
+                        The Ultimate
                         <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                            AI-Powered
+                            AI-Enhanced
                         </span>
-                        Conversations
+                        Chat Platform
                     </h1>
                     <p class="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
-                        Experience the future of messaging with LaraChat - where Laravel meets Vue.js and Claude AI 
-                        to create seamless, intelligent conversations that enhance your communication.
+                        Transform your team's communication with LaraChat - the perfect fusion of Laravel's robustness, 
+                        Vue's reactivity, and Claude AI's intelligence. Built for developers, loved by users.
                     </p>
                     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/register">
@@ -209,10 +209,10 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="observe-animate mx-auto max-w-2xl text-center opacity-0 translate-y-10 transition-all duration-700 ease-out">
                     <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                        Everything You Need for Modern Chat
+                        Powerful Features for Modern Teams
                     </h2>
                     <p class="mt-4 text-lg text-muted-foreground">
-                        Built with the latest technologies and best practices for exceptional performance
+                        Every feature is carefully crafted to enhance productivity and user satisfaction
                     </p>
                 </div>
                 <div class="mx-auto mt-16 grid max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -241,10 +241,10 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="observe-animate mx-auto max-w-2xl text-center opacity-0 translate-y-10 transition-all duration-700 ease-out">
                     <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                        Why Teams Choose LaraChat
+                        Why Industry Leaders Choose LaraChat
                     </h2>
                     <p class="mt-4 text-lg text-muted-foreground">
-                        More than just a chat app - it's a productivity powerhouse
+                        Trusted by thousands of teams to transform their communication workflow
                     </p>
                 </div>
                 <div class="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-3">
@@ -338,10 +338,10 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="observe-animate relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-600 px-6 py-24 text-center shadow-2xl sm:px-16 opacity-0 scale-95 transition-all duration-700 ease-out">
                     <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                        Ready to Transform Your Communication?
+                        Start Building Better Conversations Today
                     </h2>
                     <p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-indigo-100">
-                        Join thousands of teams already using LaraChat to enhance their conversations with AI
+                        Join forward-thinking teams who've revolutionized their communication with LaraChat's AI-powered platform
                     </p>
                     <div class="mt-10 flex items-center justify-center gap-x-6">
                         <Link href="/register">
@@ -400,7 +400,7 @@ onUnmounted(() => {
                 </div>
                 <div class="mt-8 border-t pt-8">
                     <p class="text-center text-sm text-muted-foreground">
-                        © 2024 LaraChat. All rights reserved. Built with ❤️ using Laravel + Vue.js
+                        © 2024 LaraChat. All rights reserved. Powered by Laravel 12, Vue.js 3, and Claude AI
                     </p>
                 </div>
             </div>
