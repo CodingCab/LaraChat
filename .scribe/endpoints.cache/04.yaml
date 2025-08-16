@@ -6,6 +6,77 @@ endpoints:
   -
     httpMethods:
       - POST
+    uri: api/github/webhook
+    metadata:
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - GET
+    uri: api/github/webhook
+    metadata:
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 401
+        content: '{"error":"Unauthorized"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
     uri: api/webhooks
     metadata:
       groupName: Endpoints
@@ -28,6 +99,61 @@ endpoints:
     cleanBodyParameters: []
     fileParameters: []
     responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - GET
+    uri: api/docs
+    metadata:
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 302
+        content: |-
+          <!DOCTYPE html>
+          <html>
+              <head>
+                  <meta charset="UTF-8" />
+                  <meta http-equiv="refresh" content="0;url='https://larachat-restricted.coding.cab/docs'" />
+
+                  <title>Redirecting to https://larachat-restricted.coding.cab/docs</title>
+              </head>
+              <body>
+                  Redirecting to <a href="https://larachat-restricted.coding.cab/docs">https://larachat-restricted.coding.cab/docs</a>.
+              </body>
+          </html>
+        headers:
+          cache-control: 'no-cache, private'
+          location: 'https://larachat-restricted.coding.cab/docs'
+          content-type: 'text/html; charset=utf-8'
+          vary: X-Inertia
+          access-control-allow-origin: '*'
+          set-cookie: 'XSRF-TOKEN=eyJpdiI6ImV2ZVdlZU13ZXU3Z2s1TFZNTUdjL2c9PSIsInZhbHVlIjoiclFSZ2hhS3VES3ZGQU5kYWhycXNpQmlERnpnV0xVVEJCVXZRaTM0NmxUVHh3Q2g1TGRlUFFZSjBVQ1dxaGEyYTRSZDFZRDNnVDRWRkJHRkhYa0syMDcyQVdPMGpSNVpGYzFrUTdnVkFiNTk0MTliSy9RRE9lSVNlK3Z1WWkwWFQiLCJtYWMiOiI1Yzk2ZWE0NzE1NDViYzFkNzkxMmZhZDE5ZGFmMTU4NWFiOTljNjJmNzhjNDkwNjA4M2RiNzk0NzYzZjM5M2EwIiwidGFnIjoiIn0%3D; expires=Sat, 16 Aug 2025 11:22:41 GMT; Max-Age=7200; path=/; secure; samesite=lax; laravel_session=eyJpdiI6IkQwbVRPV0t1cDU4MWNqODYwbEFkc3c9PSIsInZhbHVlIjoiUHdkcUNETzNxSm9GTXBxbTF6enM2VlUxNDNWNXJ4MlVTSmZuZkdxMktiSjh2VzVWSFpKTkZQU3Q2dGVYRnduTjlVUXVKYmpPVmRrODVkUmpTMGFJaUNmTjVpWmwva2RzN1IwSHFjVVRmUWVKYVZaMWNyRGlCbGY1eXFkZmE4OGMiLCJtYWMiOiJhOTE3NGQzOGQ4ZjQ5ZWYyYjEwYTg1NGRkY2MwZDgyODk3ZjQ5NDliYWRhYTcwZDhhY2RiODE1OGZhNTc4NDUzIiwidGFnIjoiIn0%3D; expires=Sat, 16 Aug 2025 11:22:41 GMT; Max-Age=7200; path=/; secure; httponly; samesite=lax'
+        description: null
+        custom: []
     responseFields: []
     auth: []
     controller: null
