@@ -109,14 +109,17 @@ class InitializeConversationSessionJob implements ShouldQueue
                 'project_directory' => $this->conversation->project_directory,
             ]);
         } catch (\Exception $e) {
-            Log::warning('InitializeConversationSessionJob: Could not update project repository', [
+            Log::error('InitializeConversationSessionJob: Failed to update project repository using refresh-master script', [
                 'repository' => $this->conversation->repository,
                 'project_directory' => $this->conversation->project_directory,
                 'error' => $e->getMessage(),
             ]);
             
-            // Continue with the conversation even if Git update fails
-            // The repository is still functional, just might not be on latest
+            // Mark conversation as failed
+            $this->conversation->update(['is_processing' => false]);
+            
+            // Re-throw the exception to fail the job
+            throw $e;
         }
     }
 
