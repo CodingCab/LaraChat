@@ -1,6 +1,6 @@
 # Introduction
 
-API documentation for LaraChat - A Laravel application with real-time chat capabilities and repository management.
+
 
 <aside>
     <strong>Base URL</strong>: <code>https://larachat-restricted.coding.cab</code>
