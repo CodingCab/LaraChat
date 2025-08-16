@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ConversationsController;
+use App\Http\Controllers\DocsController;
 use App\Http\Controllers\RepositoryDashboardController;
 use App\Http\Controllers\ClaudeController;
 use Illuminate\Support\Facades\Route;
@@ -9,6 +10,11 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect('/claude');
 })->name('home');
+
+// API Documentation
+Route::get('/docs', [DocsController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('docs');
 
 // Redirect from /api/docs to /docs for convenience
 Route::get('/api/docs', function () {
