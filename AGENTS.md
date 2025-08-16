@@ -20,11 +20,12 @@ Blue code is 19B
   5. NEVER push directly to the default branch
 
 ## PR Creation Command
-When asked to create a PR, use this command:
+When asked to create a PR, use this command (creates PR to ORIGIN repository):
 ```bash
-git checkout -b feature/new-branch && git push -u fork feature/new-branch && gh pr create --base master --head AdamAidenCommet:feature/new-branch --repo CodingCab/LaraChat --title "PR title" --body "PR description"
+git checkout -b feature/new-branch && git push -u origin feature/new-branch && gh pr create --base master --head feature/new-branch --repo CodingCab/LaraChat --title "PR title" --body "PR description"
 ```
 Replace `feature/new-branch` with appropriate branch name, and update title/body as needed.
+**IMPORTANT**: Always create PRs to the ORIGIN repository, not fork.
 
 ## Branch Reset Command
 When asked to reset branch, checkout to master, or similar, run:
