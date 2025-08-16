@@ -43,6 +43,18 @@ class InitializeConversationSessionJob implements ShouldQueue
 
         if (!File::exists($from)) {
             CopyRepositoryToHotJob::dispatchSync($this->conversation->repository);
+            
+            // Check again after the copy job
+            if (!File::exists($from)) {
+                Log::error('InitializeConversationSessionJob: Repository not found after copy attempt', [
+                    'repository' => $this->conversation->repository,
+                    'from' => $from,
+                ]);
+                
+                // Mark conversation as failed
+                $this->conversation->update(['is_processing' => false]);
+                return;
+            }
         }
 
         // If project_directory starts with absolute path from PROJECT_DIRECTORY env, use it directly

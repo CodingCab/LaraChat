@@ -21,6 +21,14 @@ class GitHubWebhookController extends Controller
 
         $event = $request->header('X-GitHub-Event');
         $data = json_decode($payload, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            Log::error('GitHub webhook invalid JSON', [
+                'error' => json_last_error_msg(),
+                'payload' => substr($payload, 0, 100),
+            ]);
+            return response()->json(['error' => 'Invalid JSON payload'], 400);
+        }
 
         $webhookLog = GitHubWebhookLog::create([
             'event_type' => $event,

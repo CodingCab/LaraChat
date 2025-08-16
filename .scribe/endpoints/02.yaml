@@ -1,0 +1,369 @@
+name: 'Repository Management'
+description: |-
+
+  APIs for managing Git repositories
+endpoints:
+  -
+    httpMethods:
+      - GET
+    uri: api/repositories
+    metadata:
+      groupName: 'Repository Management'
+      groupDescription: |-
+
+        APIs for managing Git repositories
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List repositories'
+      description: 'Get a list of all repositories with their hot folder status'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          [{
+            "id": 1,
+            "name": "my-project",
+            "url": "https://github.com/user/my-project.git",
+            "local_path": "repositories/base/my-project",
+            "branch": "main",
+            "last_pulled_at": "2024-01-15T10:30:00.000000Z",
+            "has_hot_folder": true,
+            "slug": "my-project",
+            "created_at": "2024-01-10T08:00:00.000000Z",
+            "updated_at": "2024-01-15T10:30:00.000000Z"
+          }]
+        headers: []
+        description: Success
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: api/repositories
+    metadata:
+      groupName: 'Repository Management'
+      groupDescription: |-
+
+        APIs for managing Git repositories
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Clone repository'
+      description: 'Clone a new Git repository to the local system'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      url:
+        name: url
+        description: 'The Git repository URL.'
+        required: true
+        example: 'https://github.com/user/repo.git'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+      branch:
+        name: branch
+        description: 'optional The branch to clone. If not specified, the default branch will be used.'
+        required: false
+        example: develop
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: true
+        custom: []
+    cleanBodyParameters:
+      url: 'https://github.com/user/repo.git'
+      branch: develop
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Repository cloned successfully",
+            "repository": {
+              "id": 1,
+              "name": "my-project",
+              "url": "https://github.com/user/my-project.git",
+              "local_path": "repositories/base/my-project",
+              "branch": "main",
+              "last_pulled_at": "2024-01-15T10:30:00.000000Z"
+            }
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 409
+        content: |-
+          {
+            "message": "Repository already exists",
+            "repository": {}
+          }
+        headers: []
+        description: 'Repository Exists'
+        custom: []
+      -
+        status: 422
+        content: |-
+          {
+            "message": "Failed to clone repository",
+            "error": "fatal: repository not found"
+          }
+        headers: []
+        description: 'Clone Failed'
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - DELETE
+    uri: 'api/repositories/{repository_slug}'
+    metadata:
+      groupName: 'Repository Management'
+      groupDescription: |-
+
+        APIs for managing Git repositories
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Delete repository'
+      description: 'Remove a repository from the system'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      repository_slug:
+        name: repository_slug
+        description: 'The slug of the repository.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        custom: []
+      repository:
+        name: repository
+        description: 'The ID of the repository.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanUrlParameters:
+      repository_slug: architecto
+      repository: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Repository deleted successfully"
+          }
+        headers: []
+        description: Success
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: 'api/repositories/{repository_slug}/pull'
+    metadata:
+      groupName: 'Repository Management'
+      groupDescription: |-
+
+        APIs for managing Git repositories
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Pull repository updates'
+      description: 'Pull the latest changes from the remote repository'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      repository_slug:
+        name: repository_slug
+        description: 'The slug of the repository.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        custom: []
+      repository:
+        name: repository
+        description: 'The ID of the repository.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanUrlParameters:
+      repository_slug: architecto
+      repository: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Repository updated successfully",
+            "repository": {
+              "id": 1,
+              "name": "my-project",
+              "url": "https://github.com/user/my-project.git",
+              "local_path": "repositories/base/my-project",
+              "branch": "main",
+              "last_pulled_at": "2024-01-15T11:00:00.000000Z"
+            }
+          }
+        headers: []
+        description: Success
+        custom: []
+      -
+        status: 422
+        content: |-
+          {
+            "message": "Failed to pull repository",
+            "error": "error: Your local changes would be overwritten"
+          }
+        headers: []
+        description: 'Pull Failed'
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []
+  -
+    httpMethods:
+      - POST
+    uri: 'api/repositories/{repository_slug}/copy-to-hot'
+    metadata:
+      groupName: 'Repository Management'
+      groupDescription: |-
+
+        APIs for managing Git repositories
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Copy repository to hot folder'
+      description: 'Check if a hot folder exists for the repository or trigger creation'
+      authenticated: true
+      deprecated: false
+      custom: []
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      repository_slug:
+        name: repository_slug
+        description: 'The slug of the repository.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        custom: []
+      repository:
+        name: repository
+        description: 'The ID of the repository.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        custom: []
+    cleanUrlParameters:
+      repository_slug: architecto
+      repository: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Hot folder already exists",
+            "has_hot_folder": true
+          }
+        headers: []
+        description: 'Hot Folder Exists'
+        custom: []
+      -
+        status: 200
+        content: |-
+          {
+            "message": "Repository copy job dispatched",
+            "has_hot_folder": false
+          }
+        headers: []
+        description: 'Copy Job Dispatched'
+        custom: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+    custom: []

@@ -212,64 +212,64 @@
 
 /* Custom scrollbar styles for sidebar - Light theme */
 [data-sidebar] *::-webkit-scrollbar,
-[data-sidebar="content"]::-webkit-scrollbar,
-[data-slot="sidebar-content"]::-webkit-scrollbar {
+[data-sidebar='content']::-webkit-scrollbar,
+[data-slot='sidebar-content']::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
 [data-sidebar] *::-webkit-scrollbar-track,
-[data-sidebar="content"]::-webkit-scrollbar-track,
-[data-slot="sidebar-content"]::-webkit-scrollbar-track {
+[data-sidebar='content']::-webkit-scrollbar-track,
+[data-slot='sidebar-content']::-webkit-scrollbar-track {
     background: transparent;
 }
 
 [data-sidebar] *::-webkit-scrollbar-thumb,
-[data-sidebar="content"]::-webkit-scrollbar-thumb,
-[data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
+[data-sidebar='content']::-webkit-scrollbar-thumb,
+[data-slot='sidebar-content']::-webkit-scrollbar-thumb {
     background-color: hsl(0 0% 0% / 0.2);
     border-radius: 3px;
     transition: background-color 0.2s ease;
 }
 
 [data-sidebar] *::-webkit-scrollbar-thumb:hover,
-[data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
-[data-slot="sidebar-content"]::-webkit-scrollbar-thumb:hover {
+[data-sidebar='content']::-webkit-scrollbar-thumb:hover,
+[data-slot='sidebar-content']::-webkit-scrollbar-thumb:hover {
     background-color: hsl(0 0% 0% / 0.3);
 }
 
 /* Dark theme scrollbar */
 .dark [data-sidebar] *::-webkit-scrollbar-thumb,
-.dark [data-sidebar="content"]::-webkit-scrollbar-thumb,
-.dark [data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
+.dark [data-sidebar='content']::-webkit-scrollbar-thumb,
+.dark [data-slot='sidebar-content']::-webkit-scrollbar-thumb {
     background-color: hsl(0 0% 100% / 0.2);
 }
 
 .dark [data-sidebar] *::-webkit-scrollbar-thumb:hover,
-.dark [data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
-.dark [data-slot="sidebar-content"]::-webkit-scrollbar-thumb:hover {
+.dark [data-sidebar='content']::-webkit-scrollbar-thumb:hover,
+.dark [data-slot='sidebar-content']::-webkit-scrollbar-thumb:hover {
     background-color: hsl(0 0% 100% / 0.3);
 }
 
 /* Firefox scrollbar styles */
 [data-sidebar],
 [data-sidebar] *,
-[data-sidebar="content"],
-[data-slot="sidebar-content"] {
+[data-sidebar='content'],
+[data-slot='sidebar-content'] {
     scrollbar-width: thin;
     scrollbar-color: hsl(0 0% 0% / 0.2) transparent;
 }
 
 .dark [data-sidebar],
 .dark [data-sidebar] *,
-.dark [data-sidebar="content"],
-.dark [data-slot="sidebar-content"] {
+.dark [data-sidebar='content'],
+.dark [data-slot='sidebar-content'] {
     scrollbar-color: hsl(0 0% 100% / 0.2) transparent;
 }
 
 /* Hide scrollbar when sidebar is collapsed */
-.group-data-[collapsible=icon] [data-sidebar="content"]::-webkit-scrollbar,
-.group-data-[collapsible=icon] [data-slot="sidebar-content"]::-webkit-scrollbar {
+.group-data-[collapsible='icon'] [data-sidebar='content']::-webkit-scrollbar,
+.group-data-[collapsible='icon'] [data-slot='sidebar-content']::-webkit-scrollbar {
     width: 0;
     height: 0;
 }

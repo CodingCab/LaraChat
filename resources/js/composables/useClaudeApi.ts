@@ -5,7 +5,10 @@ import { ref } from 'vue';
 export function useClaudeApi() {
     const isLoading = ref(false);
 
-    const sendMessageToApi = async (request: ClaudeApiRequest, onChunk: (text: string, rawResponse: any) => void): Promise<{ conversationId: number | null; sessionFilename: string | null } | null> => {
+    const sendMessageToApi = async (
+        request: ClaudeApiRequest,
+        onChunk: (text: string, rawResponse: any) => void,
+    ): Promise<{ conversationId: number | null; sessionFilename: string | null } | null> => {
         const response = await fetch('/api/claude', {
             method: 'POST',
             headers: {
@@ -29,7 +32,7 @@ export function useClaudeApi() {
             onChunk('', {
                 type: 'system',
                 subtype: 'queued',
-                message: data.message || 'Message queued for processing'
+                message: data.message || 'Message queued for processing',
             });
 
             // Return the conversation ID and filename

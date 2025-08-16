@@ -26,7 +26,7 @@ export function useRepositories() {
         if (hasInitialized && !force && repositories.value.length > 0) {
             return;
         }
-        
+
         loading.value = true;
         error.value = null;
         try {

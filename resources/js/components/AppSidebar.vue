@@ -17,12 +17,12 @@ import {
 import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
+import { BookOpen, GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const { conversations, fetchConversations, cleanup } = useConversations();
+const { conversations, fetchConversations, startPolling, stopPolling, cleanup } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
 
 const showCloneDialog = ref(false);
@@ -33,10 +33,25 @@ const cloneError = ref('');
 onMounted(async () => {
     await fetchRepositories();
     await fetchConversations(false, true); // Force initial fetch
+    
+    // Set up periodic refresh for conversations
+    // This ensures new conversations appear without manual refresh
+    const refreshInterval = setInterval(() => {
+        fetchConversations(true, true); // Silent forced refresh
+    }, 3000); // Check every 3 seconds
+    
+    // Store interval ID for cleanup
+    (window as any).__sidebarRefreshInterval = refreshInterval;
 });
 
 onUnmounted(() => {
     cleanup(); // Clean up the refresh interval when component unmounts
+    
+    // Clean up sidebar refresh interval
+    if ((window as any).__sidebarRefreshInterval) {
+        clearInterval((window as any).__sidebarRefreshInterval);
+        delete (window as any).__sidebarRefreshInterval;
+    }
 });
 
 const handleCloneRepository = async () => {
@@ -75,6 +90,19 @@ const handleRepositoryClick = (repositorySlug: string) => {
 
         <SidebarContent>
             <SidebarGroup class="px-2 py-0">
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton as-child :is-active="page.url === '/docs'">
+                            <Link href="/docs" :preserve-scroll="true" :preserve-state="true">
+                                <BookOpen />
+                                <span>Documentation</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup class="px-2 py-0">
                 <div class="flex items-center justify-between">
                     <SidebarGroupLabel>Repositories</SidebarGroupLabel>
                     <button
@@ -105,7 +133,12 @@ const handleRepositoryClick = (repositorySlug: string) => {
                 <SidebarMenu>
                     <SidebarMenuItem v-for="conversation in conversations" :key="conversation.id" class="mb-1">
                         <SidebarMenuButton as-child :is-active="page.url === `/claude/conversation/${conversation.id}`">
-                            <Link :href="`/claude/conversation/${conversation.id}`" :preserve-scroll="true" :preserve-state="true" class="flex items-center">
+                            <Link
+                                :href="`/claude/conversation/${conversation.id}`"
+                                :preserve-scroll="true"
+                                :preserve-state="true"
+                                class="flex items-center"
+                            >
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
                                     <span class="block truncate">{{ conversation.title }}</span>
