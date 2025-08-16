@@ -86,16 +86,25 @@ class InitializeConversationSessionJob implements ShouldQueue
             return;
         }
 
-        // Update the Git repository in the moved directory
+        // Update the Git repository in the moved directory using refresh-master script
         try {
-            // Get the default branch name
-            $defaultBranch = $this->getDefaultBranch($to);
+            $scriptPath = base_path('scripts/refresh-master.sh');
             
-            $this->runGitCommand('checkout ' . $defaultBranch, $to);
-            $this->runGitCommand('fetch', $to);
-            $this->runGitCommand('reset --hard origin/' . $defaultBranch, $to);
+            // Make sure the script is executable
+            if (File::exists($scriptPath)) {
+                chmod($scriptPath, 0755);
+            }
             
-            Log::info('InitializeConversationSessionJob: Updated project repository to latest version', [
+            // Run the refresh-master script in the project directory
+            $result = Process::path($to)
+                ->timeout(120) // 2 minutes timeout
+                ->run('bash ' . escapeshellarg($scriptPath));
+            
+            if (!$result->successful()) {
+                throw new \RuntimeException("refresh-master script failed. Output: " . $result->errorOutput());
+            }
+            
+            Log::info('InitializeConversationSessionJob: Updated project repository using refresh-master script', [
                 'repository' => $this->conversation->repository,
                 'project_directory' => $this->conversation->project_directory,
             ]);
@@ -111,51 +120,4 @@ class InitializeConversationSessionJob implements ShouldQueue
         }
     }
 
-    protected function runGitCommand(string $command, ?string $cwd = null): void
-    {
-        $gitCommand = "git {$command}";
-        
-        $result = Process::path($cwd ?? base_path())
-            ->run($gitCommand);
-        
-        if (!$result->successful()) {
-            throw new \RuntimeException("Git command failed: {$gitCommand}. Output: " . $result->errorOutput());
-        }
-    }
-    
-    protected function getDefaultBranch(string $workingDirectory): string
-    {
-        try {
-            // Try to get the default branch from remote HEAD
-            $result = Process::path($workingDirectory)
-                ->run('git symbolic-ref refs/remotes/origin/HEAD');
-            
-            if ($result->successful()) {
-                $output = trim($result->output());
-                if ($output && str_contains($output, 'refs/remotes/origin/')) {
-                    return str_replace('refs/remotes/origin/', '', $output);
-                }
-            }
-        } catch (\Exception $e) {
-            // Continue to fallback
-        }
-        
-        try {
-            // If that fails, try to get the current branch
-            $result = Process::path($workingDirectory)
-                ->run('git rev-parse --abbrev-ref HEAD');
-            
-            if ($result->successful()) {
-                $branch = trim($result->output());
-                if ($branch && $branch !== 'HEAD') {
-                    return $branch;
-                }
-            }
-        } catch (\Exception $e) {
-            // Continue to fallback
-        }
-        
-        // Fall back to 'main' as it's the most common default now
-        return 'main';
-    }
 }
