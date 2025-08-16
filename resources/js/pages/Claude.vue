@@ -702,7 +702,7 @@ onUnmounted(() => {
                 <component :is="hideSystemMessages ? EyeOff : Eye" class="h-4 w-4" />
             </Button>
         </template>
-        <div class="flex h-[calc(100vh-4rem)] flex-col bg-background">
+        <div class="flex h-[calc(100dvh-4rem)] flex-col bg-background">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
                 <div class="space-y-4">
