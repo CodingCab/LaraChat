@@ -177,15 +177,14 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl">
                 <div class="observe-animate mx-auto max-w-3xl text-center opacity-0 translate-y-10 transition-all duration-700 ease-out">
                     <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                        The Ultimate
+                        The Chat & Code Platform
                         <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                            AI-Enhanced
+                            That's Already Running
                         </span>
-                        Chat Platform
                     </h1>
                     <p class="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
-                        Transform your team's communication with LaraChat - the perfect fusion of Laravel's robustness, 
-                        Vue's reactivity, and Claude AI's intelligence. Built for developers, loved by users.
+                        Accelerate your team's development workflow with LaraChat - where powerful infrastructure meets Claude AI's intelligence. 
+                        Built for project development, support, testing, and planning.
                     </p>
                     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/register">
@@ -199,6 +198,72 @@ onUnmounted(() => {
                                 Try Demo
                             </Button>
                         </Link>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Value Proposition with Screenshot -->
+        <section class="py-16 sm:py-20">
+            <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                <div class="observe-animate opacity-0 translate-y-10 transition-all duration-700 ease-out">
+                    <div class="mx-auto max-w-5xl text-center mb-12">
+                        <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
+                            Always Ready. Always Coding. Always Live.
+                        </h2>
+                        <p class="text-lg text-muted-foreground max-w-3xl mx-auto mb-4">
+                            LaraChat is instantly ready to start conversations, begin coding, and provides immediate live preview. 
+                            No setup delays, no waiting - just pure productivity from the moment you launch.
+                        </p>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                            <span class="text-sm font-semibold text-primary">Professional Fusion with Vibe Coding</span>
+                            <span class="text-xs text-muted-foreground">•</span>
+                            <span class="text-sm text-muted-foreground">Enterprise-grade implementation</span>
+                        </div>
+                    </div>
+                    
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-border">
+                        <img 
+                            src="https://www.dropbox.com/scl/fi/u93zkurmzxkdxulyoa3da/Monosnap-Laravel-2025-08-16-12-41-58.png?rlkey=a0p6anklyr2adso07d4iyhdtk&dl=1" 
+                            alt="LaraChat Application Interface - Always Ready to Code"
+                            class="w-full h-auto"
+                        />
+                        <div class="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent pointer-events-none" />
+                        <div class="absolute bottom-0 left-0 right-0 p-8 text-white">
+                            <div class="flex flex-wrap gap-6 justify-center">
+                                <div class="flex items-center gap-2">
+                                    <CheckCircle class="h-5 w-5 text-green-400" />
+                                    <span class="text-sm font-medium">Instant Start</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <CheckCircle class="h-5 w-5 text-green-400" />
+                                    <span class="text-sm font-medium">Live Preview</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <CheckCircle class="h-5 w-5 text-green-400" />
+                                    <span class="text-sm font-medium">Zero Configuration</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <CheckCircle class="h-5 w-5 text-green-400" />
+                                    <span class="text-sm font-medium">Production Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary mb-2">0s</div>
+                            <p class="text-sm text-muted-foreground">Setup Time</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary mb-2">100%</div>
+                            <p class="text-sm text-muted-foreground">Real-time Updates</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary mb-2">24/7</div>
+                            <p class="text-sm text-muted-foreground">Always Available</p>
+                        </div>
                     </div>
                 </div>
             </div>
