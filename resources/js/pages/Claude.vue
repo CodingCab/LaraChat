@@ -14,7 +14,7 @@ import { type BreadcrumbItem } from '@/types';
 import { extractTextFromResponse } from '@/utils/claudeResponseParser';
 import { router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Archive, ArchiveRestore, Eye, EyeOff, GitBranch, Send } from 'lucide-vue-next';
+import { Archive, ArchiveRestore, Eye, EyeOff, ExternalLink, GitBranch, Send } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 // Constants
@@ -663,6 +663,16 @@ onUnmounted(() => {
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
         <template #header-actions>
+            <Button
+                v-if="conversationId && conversations.find(c => c.id === conversationId)?.project_directory"
+                @click="window.open(`https://${conversations.find(c => c.id === conversationId)?.project_directory.split('/').pop()}.larachat-restricted.coding.cab`, '_blank')"
+                variant="ghost"
+                size="icon"
+                :title="`Preview ${conversations.find(c => c.id === conversationId)?.project_directory.split('/').pop()}`"
+                class="mr-2"
+            >
+                <ExternalLink class="h-4 w-4" />
+            </Button>
             <Button
                 v-if="conversationId && !showArchiveConfirm"
                 @click="isArchived ? unarchiveConversation() : (showArchiveConfirm = true)"

@@ -165,16 +165,6 @@ const handleLinkClick = () => {
                                             <GitBranch class="h-3 w-3 shrink-0" />
                                             <span class="truncate">{{ conversation.repository }}</span>
                                         </div>
-                                        <span v-else></span>
-                                        <a
-                                            v-if="conversation.project_directory"
-                                            :href="`https://${conversation.project_directory.split('/').pop()}.larachat-restricted.coding.cab`"
-                                            target="_blank"
-                                            class="truncate text-right hover:underline"
-                                            @click.stop
-                                        >
-                                            {{ conversation.project_directory.split('/').pop() }}
-                                        </a>
                                     </div>
                                 </div>
                                 <Loader2 v-if="conversation.is_processing" class="ml-auto h-3 w-3 animate-spin text-muted-foreground" />
