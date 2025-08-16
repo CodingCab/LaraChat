@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return redirect('/claude');
+    return Inertia::render('Landing');
 })->name('home');
 
 // API Documentation
