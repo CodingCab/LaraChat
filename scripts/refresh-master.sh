@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# Function to find composer
+find_composer() {
+    # Check if composer is already in PATH
+    if command -v composer >/dev/null 2>&1; then
+        echo "composer"
+        return 0
+    fi
+    
+    # Check common composer installation locations
+    local composer_paths=(
+        "/Users/customer/Library/Application Support/Herd/bin/composer"
+        "/usr/local/bin/composer"
+        "/opt/homebrew/bin/composer"
+        "$HOME/.composer/vendor/bin/composer"
+        "/usr/bin/composer"
+    )
+    
+    # Check each path
+    for composer_path in "${composer_paths[@]}"; do
+        if [ -x "$composer_path" ]; then
+            echo "$composer_path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
 # Function to find npm
 find_npm() {
     # Check if npm is already in PATH
@@ -44,6 +72,21 @@ elif [ -f "/Users/customer/Library/Application Support/Herd/config/nvm/nvm.sh" ]
     source "/Users/customer/Library/Application Support/Herd/config/nvm/nvm.sh" 2>/dev/null
 fi
 
+# Find composer
+COMPOSER_CMD=$(find_composer)
+
+if [ -z "$COMPOSER_CMD" ]; then
+    echo "Error: composer not found. Please ensure Composer is installed."
+    echo "Checked common installation locations including:"
+    echo "  - System PATH"
+    echo "  - Herd installation"
+    echo "  - Homebrew (/usr/local/bin and /opt/homebrew/bin)"
+    echo "  - Composer home directory"
+    exit 1
+fi
+
+echo "Using composer from: $COMPOSER_CMD"
+
 # Find npm
 NPM_CMD=$(find_npm)
 
@@ -60,4 +103,4 @@ fi
 echo "Using npm from: $NPM_CMD"
 
 # Refresh master branch with latest changes and rebuild
-git checkout master && git reset --hard HEAD && git pull origin master && composer install && "$NPM_CMD" install && "$NPM_CMD" run build && rm -rf public/hot
+git checkout master && git reset --hard HEAD && git pull origin master && "$COMPOSER_CMD" install && "$NPM_CMD" install && "$NPM_CMD" run build && rm -rf public/hot
