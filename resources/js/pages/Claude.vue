@@ -510,14 +510,14 @@ const archiveConversation = async () => {
         // Refresh conversations list to update sidebar
         await fetchConversations(false, true);
 
-        // Navigate to the previous conversation if available
+        // Navigate to the next conversation below the archived one
         const currentIndex = conversations.value.findIndex(c => c.id === conversationId.value);
-        if (currentIndex > 0 && conversations.value[currentIndex - 1]) {
-            // Go to previous conversation
-            router.visit(`/claude/conversation/${conversations.value[currentIndex - 1].id}`);
-        } else if (currentIndex < conversations.value.length - 1 && conversations.value[currentIndex + 1]) {
-            // Go to next conversation if no previous
+        if (currentIndex < conversations.value.length - 1 && conversations.value[currentIndex + 1]) {
+            // Go to next conversation (below the archived one)
             router.visit(`/claude/conversation/${conversations.value[currentIndex + 1].id}`);
+        } else if (currentIndex > 0 && conversations.value[currentIndex - 1]) {
+            // If no next conversation, go to previous
+            router.visit(`/claude/conversation/${conversations.value[currentIndex - 1].id}`);
         } else {
             // No other conversations, go to main page
             router.visit('/claude');
