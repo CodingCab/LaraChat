@@ -46,6 +46,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Telescope Allowed Emails
+    |--------------------------------------------------------------------------
+    |
+    | This configuration value determines which email addresses are allowed
+    | to access Telescope. Separate multiple emails with commas.
+    |
+    */
+
+    'allowed_emails' => env('TELESCOPE_ALLOWED_EMAILS', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Telescope Storage Driver
     |--------------------------------------------------------------------------
     |
