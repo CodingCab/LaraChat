@@ -19,40 +19,92 @@ import { useRepositories } from '@/composables/useRepositories';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { BookOpen, GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
 const { conversations, fetchConversations, startPolling, stopPolling, cleanup } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
-const { isMobile, setOpenMobile } = useSidebar();
+const { isMobile, setOpenMobile, open } = useSidebar();
 
 const showCloneDialog = ref(false);
 const repositoryUrl = ref('');
 const branch = ref('');
 const cloneError = ref('');
+const sidebarRefreshInterval = ref<number | null>(null);
+const lastMobileOpenState = ref(false);
+
+// Function to start sidebar refresh interval
+const startSidebarRefresh = () => {
+    // Clear existing interval if any
+    if (sidebarRefreshInterval.value) {
+        clearInterval(sidebarRefreshInterval.value);
+    }
+    
+    // Start new interval for 10 seconds
+    sidebarRefreshInterval.value = window.setInterval(() => {
+        // Only refresh if sidebar is visible
+        if (open.value) {
+            fetchConversations(true, true); // Silent forced refresh
+        }
+    }, 10000); // Refresh every 10 seconds
+};
+
+// Function to stop sidebar refresh interval
+const stopSidebarRefresh = () => {
+    if (sidebarRefreshInterval.value) {
+        clearInterval(sidebarRefreshInterval.value);
+        sidebarRefreshInterval.value = null;
+    }
+};
+
+// Watch for sidebar visibility changes
+const handleSidebarVisibilityChange = () => {
+    if (open.value) {
+        // Sidebar is now visible
+        if (isMobile.value && !lastMobileOpenState.value) {
+            // On mobile, refresh immediately when sidebar opens
+            fetchConversations(true, true);
+        }
+        // Start the refresh interval
+        startSidebarRefresh();
+    } else {
+        // Sidebar is hidden, stop refreshing
+        stopSidebarRefresh();
+    }
+    
+    // Track mobile open state
+    if (isMobile.value) {
+        lastMobileOpenState.value = open.value;
+    }
+};
 
 onMounted(async () => {
     await fetchRepositories();
     await fetchConversations(false, true); // Force initial fetch
     
-    // Set up periodic refresh for conversations
-    // This ensures new conversations appear without manual refresh
-    const refreshInterval = setInterval(() => {
-        fetchConversations(true, true); // Silent forced refresh
-    }, 3000); // Check every 3 seconds
+    // Set up visibility-based refresh
+    if (open.value) {
+        startSidebarRefresh();
+    }
     
-    // Store interval ID for cleanup
-    (window as any).__sidebarRefreshInterval = refreshInterval;
+    // Watch for sidebar visibility changes
+    const unwatch = watch(() => open.value, handleSidebarVisibilityChange);
+    
+    // Store unwatch function for cleanup
+    (window as any).__sidebarUnwatch = unwatch;
 });
 
 onUnmounted(() => {
     cleanup(); // Clean up the refresh interval when component unmounts
     
     // Clean up sidebar refresh interval
-    if ((window as any).__sidebarRefreshInterval) {
-        clearInterval((window as any).__sidebarRefreshInterval);
-        delete (window as any).__sidebarRefreshInterval;
+    stopSidebarRefresh();
+    
+    // Clean up watcher
+    if ((window as any).__sidebarUnwatch) {
+        (window as any).__sidebarUnwatch();
+        delete (window as any).__sidebarUnwatch;
     }
 });
 
