@@ -1,11 +1,15 @@
 <svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
     <defs>
         <linearGradient id="grad96" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#0284c7;stop-opacity:1" />
+            <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
         </linearGradient>
     </defs>
-    <rect width="96" height="96" fill="url(#grad96)" rx="9.600000000000001" />
-    <circle cx="48" cy="48" r="33.599999999999994" fill="white" />
-    <text x="48" y="48" font-family="Arial, sans-serif" font-size="28.799999999999997" font-weight="bold" fill="#0ea5e9" text-anchor="middle" dominant-baseline="middle">LC</text>
+    <rect width="96" height="96" fill="url(#grad96)" rx="14.40" />
+    <g transform="translate(48, 48)">
+        <path d="M -22.464 -7.488 Q -22.464 -14.976 -14.976 -14.976 L 14.976 -14.976 Q 22.464 -14.976 22.464 -7.488 L 22.464 3.744 Q 22.464 11.232 14.976 11.232 L 3.744 11.232 L -7.488 18.720 L -7.488 11.232 L -14.976 11.232 Q -22.464 11.232 -22.464 3.744 Z" fill="white" stroke="none"/>
+        <circle cx="-11.232" cy="-1.824" r="1.4976" fill="#000000"/>
+        <circle cx="0" cy="-1.824" r="1.4976" fill="#000000"/>
+        <circle cx="11.232" cy="-1.824" r="1.4976" fill="#000000"/>
+    </g>
 </svg>
