@@ -557,6 +557,17 @@ const unarchiveConversation = async () => {
     }
 };
 
+const openPreview = () => {
+    if (!conversationId.value) return;
+    
+    const conversation = conversations.value.find(c => c.id === conversationId.value);
+    if (!conversation?.project_directory) return;
+    
+    const subdomain = conversation.project_directory.split('/').pop();
+    const url = `https://${subdomain}.larachat-restricted.coding.cab`;
+    window.open(url, '_blank');
+};
+
 // Watchers
 watch(
     () => props.sessionFile,
@@ -676,7 +687,7 @@ onUnmounted(() => {
         <template #header-actions>
             <Button
                 v-if="conversationId && conversations.find(c => c.id === conversationId)?.project_directory"
-                @click="window.open(`https://${conversations.find(c => c.id === conversationId)?.project_directory.split('/').pop()}.larachat-restricted.coding.cab`, '_blank')"
+                @click="openPreview"
                 variant="ghost"
                 size="icon"
                 :title="`Preview ${conversations.find(c => c.id === conversationId)?.project_directory.split('/').pop()}`"
