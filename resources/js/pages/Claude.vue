@@ -455,16 +455,8 @@ const sendMessage = async () => {
                 }
             }
             
-            // Start polling to get updates from the server
-            startPolling(POLLING_INTERVAL_MS);
             // Immediately refresh conversations to show in sidebar
             await fetchConversations(true, true); // Force refresh silently
-            
-            // Update the URL immediately without losing state
-            if (!props.conversationId) {
-                const targetPath = `/claude/conversation/${conversationId.value}`;
-                window.history.replaceState({}, '', targetPath);
-            }
             
             // Start temporary conversation polling to ensure sidebar updates
             startConversationPolling(1000); // Poll every 1 second temporarily
@@ -473,6 +465,9 @@ const sendMessage = async () => {
         if (result?.sessionFilename && !sessionFilename.value) {
             sessionFilename.value = result.sessionFilename;
         }
+        
+        // Always start polling after sending a message to get server updates
+        startPolling(POLLING_INTERVAL_MS);
     } catch (error) {
         console.error('Error sending message:', error);
         const errorMessage = addAssistantMessage();
