@@ -177,11 +177,7 @@ onUnmounted(() => {
             <div class="mx-auto max-w-7xl">
                 <div class="observe-animate mx-auto max-w-3xl text-center opacity-0 translate-y-10 transition-all duration-700 ease-out">
                     <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                        The Ultimate
-                        <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                            AI-Enhanced
-                        </span>
-                        Chat Platform
+                        The Chat & Code Platform That's Already Running
                     </h1>
                     <p class="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
                         The Chat & Code Platform That's Already Running.
