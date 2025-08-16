@@ -57,10 +57,10 @@ defineProps<Props>();
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">
-        <a class="flex w-full items-center" href="https://laravel.com/docs/starter-kits#vue" target="_blank" rel="noopener noreferrer">
+        <Link class="flex w-full items-center" href="/docs" :preserve-scroll="true" :preserve-state="true">
             <BookOpen class="mr-2 h-4 w-4" />
             Documentation
-        </a>
+        </Link>
     </DropdownMenuItem>
     <DropdownMenuSeparator />
     <DropdownMenuItem :as-child="true">

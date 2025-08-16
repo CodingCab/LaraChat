@@ -18,7 +18,7 @@ import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
 import { useSidebar } from '@/components/ui/sidebar';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import { BookOpen, GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
+import { GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -158,19 +158,6 @@ const handleLinkClick = () => {
         </SidebarHeader>
 
         <SidebarContent>
-            <SidebarGroup class="px-2 py-0">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton as-child :is-active="page.url === '/docs'">
-                            <Link href="/docs" :preserve-scroll="true" :preserve-state="true" @click="handleLinkClick">
-                                <BookOpen />
-                                <span>Documentation</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarGroup>
-
             <SidebarGroup class="px-2 py-0">
                 <div class="flex items-center justify-between">
                     <SidebarGroupLabel>Repositories</SidebarGroupLabel>
