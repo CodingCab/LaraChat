@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useConversations } from '@/composables/useConversations';
 import { useRepositories } from '@/composables/useRepositories';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { BookOpen, GitBranch, Loader2, MessageSquarePlus, Plus } from 'lucide-vue-next';
 import { onMounted, onUnmounted, ref } from 'vue';
@@ -24,6 +25,7 @@ import AppLogo from './AppLogo.vue';
 const page = usePage();
 const { conversations, fetchConversations, startPolling, stopPolling, cleanup } = useConversations();
 const { repositories, fetchRepositories, cloneRepository, loading } = useRepositories();
+const { isMobile, setOpenMobile } = useSidebar();
 
 const showCloneDialog = ref(false);
 const repositoryUrl = ref('');
@@ -67,10 +69,25 @@ const handleCloneRepository = async () => {
 };
 
 const handleRepositoryClick = (repositorySlug: string) => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
     router.visit(`/repository/${repositorySlug}`, {
         preserveScroll: true,
         preserveState: true,
     });
+};
+
+const handleConversationClick = (conversationId: number) => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
+};
+
+const handleLinkClick = () => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
 };
 </script>
 
@@ -80,7 +97,7 @@ const handleRepositoryClick = (repositorySlug: string) => {
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="route('claude')" :preserve-scroll="true" :preserve-state="true">
+                        <Link :href="route('claude')" :preserve-scroll="true" :preserve-state="true" @click="handleLinkClick">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -93,7 +110,7 @@ const handleRepositoryClick = (repositorySlug: string) => {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton as-child :is-active="page.url === '/docs'">
-                            <Link href="/docs" :preserve-scroll="true" :preserve-state="true">
+                            <Link href="/docs" :preserve-scroll="true" :preserve-state="true" @click="handleLinkClick">
                                 <BookOpen />
                                 <span>Documentation</span>
                             </Link>
@@ -138,6 +155,7 @@ const handleRepositoryClick = (repositorySlug: string) => {
                                 :preserve-scroll="true"
                                 :preserve-state="true"
                                 class="flex items-center"
+                                @click="handleConversationClick(conversation.id)"
                             >
                                 <MessageSquarePlus />
                                 <div class="min-w-0 flex-1">
