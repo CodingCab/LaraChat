@@ -708,14 +708,6 @@ onUnmounted(() => {
             </Button>
             <div v-if="conversationId && showArchiveConfirm && !isArchived" class="mr-2 flex gap-2">
                 <Button
-                    @click="showArchiveConfirm = false"
-                    variant="outline"
-                    size="sm"
-                    :disabled="isArchiving"
-                >
-                    Cancel
-                </Button>
-                <Button
                     @click="archiveConversation()"
                     variant="destructive"
                     size="sm"
