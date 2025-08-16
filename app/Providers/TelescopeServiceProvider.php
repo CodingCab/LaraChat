@@ -55,11 +55,23 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function ($user) {
-            return in_array($user->email, [
-                // Add authorized emails here for production access
-                // 'admin@example.com',
-            ]);
+        Gate::define('viewTelescope', function ($user = null) {
+            // Get allowed emails from .env file
+            $allowedEmails = env('TELESCOPE_ALLOWED_EMAILS', '');
+            
+            // Convert comma-separated emails to array
+            $emails = array_map('trim', explode(',', $allowedEmails));
+            
+            // Remove empty values
+            $emails = array_filter($emails);
+            
+            // If no emails configured, deny access in production
+            if (empty($emails) && $this->app->environment('production')) {
+                return false;
+            }
+            
+            // Check if user email is in the allowed list
+            return $user && in_array($user->email, $emails);
         });
     }
 }
