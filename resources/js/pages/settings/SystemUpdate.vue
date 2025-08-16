@@ -70,6 +70,8 @@ const runUpdate = () => {
                                 <li><code class="text-xs">git checkout master</code> - Switches to master branch</li>
                                 <li><code class="text-xs">git reset --hard HEAD</code> - Discards any local changes</li>
                                 <li><code class="text-xs">git pull origin master</code> - Fetches and merges latest changes from repository</li>
+                                <li><code class="text-xs">composer install</code> - Installs/updates PHP dependencies</li>
+                                <li><code class="text-xs">npm install</code> - Installs/updates Node.js dependencies</li>
                                 <li><code class="text-xs">npm run build</code> - Rebuilds the application assets</li>
                                 <li>Cleans up hot reload files</li>
                             </ul>
