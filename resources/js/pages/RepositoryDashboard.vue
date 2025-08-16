@@ -91,7 +91,8 @@ onMounted(() => {
                             <Textarea
                                 v-model="messageInput"
                                 placeholder="Type your message or question..."
-                                @keyup.ctrl.enter="startChatWithMessage()"
+                                @keydown.meta.enter.prevent="startChatWithMessage()"
+                                @keydown.alt.enter.prevent="startChatWithMessage()"
                                 class="min-h-[100px] resize-y pr-14 pl-5 text-base"
                             />
                             <Button
@@ -103,7 +104,7 @@ onMounted(() => {
                                 <Send class="h-4 w-4" />
                             </Button>
                         </div>
-                        <p class="text-xs text-muted-foreground text-center">Press Ctrl+Enter to send</p>
+                        <p class="text-xs text-muted-foreground text-center">Press Cmd+Enter (Mac) or Alt+Enter (Windows) to send</p>
                     </div>
 
                     <!-- Quick Messages -->
