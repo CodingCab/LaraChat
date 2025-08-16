@@ -52,16 +52,52 @@ class SystemUpdateController extends Controller
 
     public function runCommand(string $command): Process
     {
-        // Set up PATH with all necessary binaries
-        $herdBin = '/Users/customer/Library/Application Support/Herd/bin';
-        $nodeBin = '/Users/customer/Library/Application Support/Herd/config/nvm/versions/node/v22.17.1/bin';
-        $systemPath = '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin';
+        // Set up PATH with all necessary binaries - include multiple possible locations
+        $paths = [
+            '/Users/customer/Library/Application Support/Herd/bin',
+            '/Users/customer/Library/Application Support/Herd/config/nvm/versions/node/v22.17.1/bin',
+            '/opt/homebrew/bin', // Homebrew on Apple Silicon
+            '/usr/local/bin',    // Homebrew on Intel / standard Unix
+            '/usr/bin',
+            '/bin',
+            '/usr/sbin',
+            '/sbin',
+        ];
+        
+        // Add user's home directories for various Node.js version managers
+        $home = $_SERVER['HOME'] ?? '/Users/customer';
+        
+        // NVM paths
+        if (is_dir($home . '/.nvm/versions/node')) {
+            // Try to find the latest version
+            $nvmVersions = glob($home . '/.nvm/versions/node/*/bin');
+            if (!empty($nvmVersions)) {
+                $paths[] = end($nvmVersions); // Use the latest version
+            }
+        }
+        $paths[] = $home . '/.nvm/versions/node/default/bin';
+        
+        // Other Node.js version managers
+        $paths[] = $home . '/.volta/bin';
+        $paths[] = $home . '/.fnm/aliases/default/bin';
+        $paths[] = $home . '/.asdf/shims';
+        
+        // Remove duplicates and non-existent paths
+        $paths = array_unique(array_filter($paths, 'is_dir'));
         
         // Combine all paths
-        $fullPath = $herdBin . ':' . $nodeBin . ':' . $systemPath;
+        $fullPath = implode(':', $paths);
+        
+        // Source NVM if available and then run command
+        $nvmSource = '';
+        if (file_exists($home . '/.nvm/nvm.sh')) {
+            $nvmSource = 'source ' . escapeshellarg($home . '/.nvm/nvm.sh') . ' 2>/dev/null && ';
+        } elseif (file_exists('/Users/customer/Library/Application Support/Herd/config/nvm/nvm.sh')) {
+            $nvmSource = 'source ' . escapeshellarg('/Users/customer/Library/Application Support/Herd/config/nvm/nvm.sh') . ' 2>/dev/null && ';
+        }
         
         // Create the shell command with the proper PATH
-        $shellCommand = 'export PATH="' . $fullPath . '" && ' . $command;
+        $shellCommand = 'export PATH="' . $fullPath . ':$PATH" && ' . $nvmSource . $command;
         
         // Use bash to execute the command with the environment
         $process = Process::fromShellCommandline($shellCommand);
