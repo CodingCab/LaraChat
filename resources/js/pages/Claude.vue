@@ -724,7 +724,7 @@ onUnmounted(() => {
         <div class="flex h-[calc(100dvh-4rem)] flex-col bg-background">
             <!-- Chat Messages -->
             <ScrollArea ref="messagesContainer" class="flex-1 p-4">
-                <div class="space-y-4">
+                <div class="space-y-2">
                     <ChatMessage
                         v-for="message in filteredMessages"
                         :key="message.id"
@@ -734,7 +734,7 @@ onUnmounted(() => {
                     />
 
                     <div v-if="isLoading" class="flex justify-start">
-                        <div class="max-w-[70%] rounded-2xl bg-card px-4 py-2 shadow-sm">
+                        <div class="max-w-full sm:max-w-[70%] rounded-2xl bg-card px-4 py-2 shadow-sm">
                             <div class="flex space-x-1">
                                 <div class="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.3s]"></div>
                                 <div class="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50 [animation-delay:-0.15s]"></div>
