@@ -60,4 +60,4 @@ fi
 echo "Using npm from: $NPM_CMD"
 
 # Refresh master branch with latest changes and rebuild
-git checkout master && git reset --hard HEAD && git pull origin master && "$NPM_CMD" run build && rm -rf public/hot
+git checkout master && git reset --hard HEAD && git pull origin master && composer install && "$NPM_CMD" install && "$NPM_CMD" run build && rm -rf public/hot
