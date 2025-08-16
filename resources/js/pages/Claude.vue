@@ -321,19 +321,69 @@ const loadSessionMessages = async (isPolling = false) => {
                 if (!lastConversation.isComplete) {
                     incompleteMessageFound.value = true;
 
-                    // Update only if we have new responses
-                    const existingResponseCount = messages.value.filter((m) => m.role === 'assistant').length;
-                    const newResponses = lastConversation.rawJsonResponses?.slice(existingResponseCount) || [];
-
-                    newResponses.forEach((rawResponse: any, i: number) => {
-                        const content = extractTextFromResponse(rawResponse);
+                    // Count existing messages from ALL conversations, not just assistant messages
+                    let totalExistingMessages = 0;
+                    for (let i = 0; i < sessionData.length - 1; i++) {
+                        const conv = sessionData[i];
+                        // Count user message
+                        if (conv.userMessage) totalExistingMessages++;
+                        // Count responses
+                        totalExistingMessages += (conv.rawJsonResponses?.length || 0);
+                    }
+                    
+                    // For the last conversation, check how many messages we already have
+                    const lastConvUserMessageShown = messages.value.some(m => 
+                        m.role === 'user' && m.content === lastConversation.userMessage
+                    );
+                    if (!lastConvUserMessageShown && lastConversation.userMessage) {
+                        // Add the user message if not shown
                         messages.value.push({
+                            id: Date.now() + Math.random(),
+                            content: lastConversation.userMessage,
+                            role: 'user',
+                            timestamp: new Date(lastConversation.timestamp),
+                        });
+                    }
+                    
+                    // Calculate how many assistant messages from this conversation we already have
+                    const currentConvAssistantCount = messages.value.filter(m => 
+                        m.role === 'assistant' && 
+                        messages.value.indexOf(m) >= totalExistingMessages
+                    ).length;
+                    
+                    // Get new responses from this position
+                    const newResponses = lastConversation.rawJsonResponses?.slice(currentConvAssistantCount) || [];
+
+                    newResponses.forEach((rawResponseStr: any, i: number) => {
+                        let rawResponse: any;
+                        
+                        // Parse if it's a string, otherwise use as-is
+                        if (typeof rawResponseStr === 'string') {
+                            try {
+                                rawResponse = JSON.parse(rawResponseStr);
+                            } catch (e) {
+                                console.error('Failed to parse raw response:', e);
+                                rawResponse = { type: 'error', content: rawResponseStr };
+                            }
+                        } else {
+                            rawResponse = rawResponseStr;
+                        }
+                        
+                        const content = extractTextFromResponse(rawResponse);
+                        const newMessage = {
                             id: Date.now() + Math.random() + i,
                             content: content || `[${rawResponse.type || 'unknown'} response]`,
                             role: 'assistant',
                             timestamp: new Date(lastConversation.timestamp),
                             rawResponses: [rawResponse],
-                        });
+                        };
+                        
+                        // Add or queue the message
+                        if (isUserInteracting.value) {
+                            pendingUpdates.value.push({ type: 'append', data: [newMessage] });
+                        } else {
+                            messages.value.push(newMessage);
+                        }
                     });
                 }
             }
